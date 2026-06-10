@@ -214,25 +214,48 @@
         }
 
         function tryLocate() {
-            if (!navigator.geolocation) { setUserPos(userPos[0], userPos[1], '默认位置(广州)'); return; }
             document.getElementById('locateBtn').classList.add('locating');
-            navigator.geolocation.getCurrentPosition(
-                p => { document.getElementById('locateBtn').classList.remove('locating'); setUserPos(p.coords.longitude, p.coords.latitude, '定位成功'); },
-                () => { document.getElementById('locateBtn').classList.remove('locating'); tryAmapLocate(); },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    p => { 
+                        document.getElementById('locateBtn').classList.remove('locating'); 
+                        setUserPos(p.coords.longitude, p.coords.latitude, '定位成功'); 
+                    },
+                    () => { 
+                        document.getElementById('locateBtn').classList.remove('locating'); 
+                        tryAmapLocate(); 
+                    },
+                    { enableHighAccuracy: true, timeout: 8000 }
+                );
+            } else {
+                tryAmapLocate();
+            }
+            
+            setTimeout(() => {
+                document.getElementById('locateBtn').classList.remove('locating');
+            }, 10000);
         }
 
         function tryAmapLocate() {
             try {
+                if (typeof AMap === 'undefined') {
+                    setUserPos(userPos[0], userPos[1], '默认位置(广州)');
+                    return;
+                }
                 AMap.plugin('AMap.Geolocation', function() {
-                    new AMap.Geolocation({ enableHighAccuracy: true, timeout: 10000 })
-                        .getCurrentPosition((s, r) => {
-                            if (s === 'complete') setUserPos(r.position.lng, r.position.lat, '定位成功');
-                            else setUserPos(userPos[0], userPos[1], '默认位置(广州)');
-                        });
+                    var geolocation = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 8000 });
+                    geolocation.getCurrentPosition((s, r) => {
+                        if (s === 'complete' && r && r.position) {
+                            setUserPos(r.position.lng, r.position.lat, '定位成功');
+                        } else {
+                            setUserPos(userPos[0], userPos[1], '默认位置(广州)');
+                        }
+                    });
                 });
-            } catch(e) { setUserPos(userPos[0], userPos[1], '默认位置(广州)'); }
+            } catch(e) { 
+                setUserPos(userPos[0], userPos[1], '默认位置(广州)'); 
+            }
         }
 
         function setUserPos(lng, lat, msg) {
