@@ -356,7 +356,7 @@
         .quick-action-btn.active { background: #e6f0ff; color: #1677ff; }
         .quick-action-btn .icon { font-size: 16px; flex-shrink: 0; }
 
-        /* ===== POI卡片 ===== */
+        /* ===== POI卡片（自适应布局，内容不截断） ===== */
         .poi-card { 
             background: #fff; 
             border: 1px solid #f0f0f0; 
@@ -365,42 +365,79 @@
             margin-bottom: 12px; 
             cursor: pointer; 
             transition: all 0.2s;
+            /* 自适应高度，防止内容被截断 */
+            display: block;
+            min-height: 60px;
+            /* 防截断：明确禁止内容溢出截断 */
+            overflow: visible;
+            box-sizing: border-box;
         }
         .poi-card:hover { 
             background: #f8f9fa; 
             transform: translateX(2px); 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
         }
         .poi-card:active { transform: scale(0.99); }
-        .poi-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        /* 主信息行：名称+距离 自适应布局 */
+        .poi-main { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            gap: 12px;
+            width: 100%;
+        }
         .poi-name { 
             font-size: 16px; 
             font-weight: 600; 
             color: #333; 
-            flex: 1; 
-            word-break: break-all;
+            flex: 1 1 auto; /* 自适应宽度 */
+            min-width: 0;     /* 允许长名称自动换行 */
+            word-break: break-word; /* 长名称换行，不截断 */
+            overflow-wrap: break-word;
+            line-height: 1.4;
         }
-        /* P2-3: 数据数值颜色区分 */
+        /* P2-3: 距离数值 + 图标 */
         .poi-dist { 
-            font-size: 14px; 
+            font-size: 13px; 
             color: #1677ff; 
-            font-weight: 600; /* 核心数据加粗 */
-            flex-shrink: 0;
+            font-weight: 600;
+            flex-shrink: 0;         /* 不被压缩，保证可读 */
+            white-space: nowrap;
+            min-width: 60px;
+            text-align: right;
+            padding-left: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
         }
+        /* 地址行：预留足够空间，防滚动截断 */
         .poi-addr { 
             font-size: 13px; 
-            color: #666; /* 辅助说明用浅灰色 */
+            color: #666; 
             margin-top: 8px; 
-            line-height: 1.5;
-            word-break: break-all;
+            line-height: 1.6;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            width: 100%;
+            /* 不截断任何内容 */
+            display: block;
+            padding-right: 0;
         }
-        .poi-tags { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .poi-tags { 
+            display: flex; 
+            gap: 8px; 
+            margin-top: 12px; 
+            flex-wrap: wrap;
+            width: 100%;
+        }
         .poi-tag { 
             font-size: 12px; 
             padding: 4px 10px; 
             background: #f0f5ff; 
             color: #597ef7; 
             border-radius: 6px;
+            line-height: 1.4;
+            white-space: nowrap;
         }
         .poi-tag.orange { background: #fff7e6; color: #fa8c16; }
         .poi-tag.green { background: #f6ffed; color: #52c41a; }
@@ -410,10 +447,14 @@
         .poi-tag .red, .poi-tag.red { background: #fff1f0; color: #ff4d4f; }
         .poi-tag .orange, .poi-tag.orange { background: #fff7e6; color: #fa8c16; }
         .poi-tag .yellow { background: #fffbe6; color: #faad14; }
-        .poi-action { margin-top: 12px; }
+        /* 导航按钮：占满一行，可自适应高度 */
+        .poi-action { 
+            margin-top: 14px; 
+            width: 100%;
+        }
         .poi-nav-btn { 
             width: 100%; 
-            padding: 12px; 
+            padding: 12px 16px; 
             background: linear-gradient(135deg, #1677ff, #0958d9); 
             color: #fff; 
             border: none; 
@@ -422,8 +463,18 @@
             font-weight: 500; 
             cursor: pointer;
             transition: all 0.2s;
+            box-sizing: border-box;
+            line-height: 1.5;
+            min-height: 44px;
+            /* 自适应按钮高度（多行文本支持） */
+            height: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: normal;
+            word-break: break-word;
         }
-        .poi-nav-btn:hover { background: #0958d9; transform: scale(1.02); }
+        .poi-nav-btn:hover { background: #0958d9; transform: scale(1.01); }
         .poi-nav-btn:active { transform: scale(0.98); }
 
         /* ===== 加载更多按钮 ===== */
@@ -615,9 +666,13 @@
         .mini-btn:active { transform: scale(0.98); }
         
         .panel-content { 
-            padding: 0 16px 16px; 
+            padding: 16px 16px 24px; /* 底部加大内边距，防止最后一个卡片被截断 */
             overflow-y: auto; 
-            max-height: calc(65vh - 44px); 
+            /* 更合理的最大高度：减去 handle 高度 + 底部间距 */
+            max-height: calc(65vh - 44px);
+            -webkit-overflow-scrolling: touch; /* 移动端顺滑滚动 */
+            scroll-behavior: smooth;
+            box-sizing: border-box;
         }
         .panel-title { 
             font-size: 17px; 
@@ -629,6 +684,14 @@
             font-size: 13px; 
             color: #999; 
             margin-bottom: 16px; 
+        }
+        /* POI 列表容器：确保每个卡片被完整显示 */
+        .poi-list { 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            box-sizing: border-box;
         }
 
         /* ===== 空状态样式 ===== */
@@ -3677,82 +3740,155 @@
         }
 
         // 在地图上渲染标记点
+        // ============================================================
+        // 核心：渲染地图点位 - 批量生成独立标记 + 聚合渲染
+        // 确保每个POI都生成对应的marker，并自动启用AMap.MarkerClusterer聚合
+        // 注意：先清理旧实例 + 严格校验坐标/数据完整性
+        // ============================================================
         function renderMapMarkers(pois, kw) {
-            map.clearMap();
-
-            // P1-03: 深色模式检测
-            var isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-            // 中心点标记 - P1-03: 深色模式使用亮色图标
-            var centerIconColor = isDarkMode ? '#ffffff' : '#1677ff';
-            var centerIconBase64 = isDarkMode 
-                ? 'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjZmZmZiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjQiIGZpbGw9IiMxNjc3ZmYiLz48L3N2Zz4='
-                : 'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjMTY3N2ZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==';
-            myMarker = new AMap.Marker({
-                position: userPos, map: map,
-                icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: 'data:image/svg+xml;base64,' + centerIconBase64, imageSize: new AMap.Size(24, 24) }),
-                offset: new AMap.Pixel(-12, -12)
-            });
-
-            // POI标记（聚合渲染）
-            var markers = [];
-            pois.forEach(function(p, idx) {
-                // P1-03: 深色模式使用高对比度配色
-                var iconColor = kw === '停车场' 
-                    ? (isDarkMode ? '#66b2ff' : '#1677ff')   // 深色模式用亮蓝
-                    : (isDarkMode ? '#8ce98c' : '#52c41a');  // 深色模式用亮绿
-                var iconUrl = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="' + iconColor + '"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">' + (idx + 1) + '</text></svg>');
-
-                var marker = new AMap.Marker({
-                    position: p.lngLat,
-                    icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: iconUrl, imageSize: new AMap.Size(24, 24) }),
-                    offset: new AMap.Pixel(-12, -12),
-                    title: p.name,
-                    extData: { name: p.name, address: p.address, lngLat: p.lngLat, kw: kw, extra: p.extra }
-                });
-
-                marker.on('click', function() {
-                    var data = marker.getExtData();
-                    showDetail(data.name, data.address, data.lngLat, data.kw, data.extra);
-                });
-
-                markers.push(marker);
-            });
-
-            // 使用聚合器渲染 - P0-01优化：减小gridSize增强密集区域聚合
-            if (markers.length > 0) {
-                // P0-01: 先清除旧聚合实例，避免内存泄漏
-                if (markerClusterer) {
-                    markerClusterer.setMap(null);
-                    markerClusterer = null;
-                }
-                markerClusterer = new AMap.MarkerClusterer(map, markers, {
-                    gridSize: 40,  // P0-01: 减小gridSize增强聚合效果（60->40）
-                    maxZoom: 16,   // P0-01: 超过此缩放级别则拆分聚合点
-                    minClusterSize: 3,  // P0-01: 少于此数量不聚合
-                    renderClusterMarker: function(context) {
-                        var count = context.count;
-                        var factor = Math.min(count / 20, 1);
-                        var size = 30 + factor * 20;
-                        // P0-01: 聚合标记使用渐变蓝底白字，视觉更突出
-                        // P1-03: 深色模式适配 - 使用亮色边框确保可见
-                        var clusterBg = isDarkMode 
-                            ? 'linear-gradient(135deg,rgba(102,178,255,0.9),rgba(102,178,255,0.75))' 
-                            : 'linear-gradient(135deg,rgba(22,119,255,0.9),rgba(22,119,255,0.75))';
-                        var clusterBorder = isDarkMode ? '#ffd700' : '#fff';  // 深色模式用金色边框更醒目
-                        return new AMap.Marker({
-                            position: context.center,
-                            content: '<div style="background:' + clusterBg + ';border:2px solid ' + clusterBorder + ';color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:12px;font-weight:600;box-shadow:0 3px 10px rgba(0,0,0,0.35);cursor:pointer;">' + count + '</div>',
-                            offset: new AMap.Pixel(-size / 2, -size / 2)
+            // 1. 参数与地图校验
+            if (!map) {
+                console.warn('[renderMapMarkers] map未初始化，跳过点位渲染');
+                return;
+            }
+            if (!pois || !(pois instanceof Array) || pois.length === 0) {
+                console.warn('[renderMapMarkers] pois为空');
+                try { map.clearMap(); } catch(e) {}
+                try {
+                    if (userPos && userPos.length === 2) {
+                        myMarker = new AMap.Marker({
+                            position: userPos, map: map,
+                            icon: new AMap.Icon({ size: new AMap.Size(28, 28), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjMTY3N2ZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(28, 28) }),
+                            offset: new AMap.Pixel(-14, -14), zIndex: 200
                         });
                     }
-                });
-                // P0-02: 根据检索半径计算合适的缩放级别并调整视口
-                var radiusZoom = getZoomForRadius(searchRadius);
-                map.setZoom(radiusZoom, false);
-                map.setFitView(markers, false, [50, 50, 50, 50]);  // P0-02: 设置边距避免marker被遮挡
+                } catch(e) {}
+                return;
+            }
+            console.log('[renderMapMarkers] 开始渲染，共' + pois.length + '个POI, 类型=' + kw);
+
+            // 2. 清理旧聚合器
+            if (markerClusterer) {
+                try { markerClusterer.setMap(null); } catch(e) {}
+                markerClusterer = null;
+            }
+            try { map.clearMap(); } catch(e) {}
+
+            // 3. 深色模式
+            var isDarkMode = false;
+            try {
+                isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } catch(e) {}
+
+            // 4. 绘制中心点标记
+            try {
+                if (userPos && userPos.length === 2) {
+                    var centerIconBase64 = isDarkMode
+                        ? 'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iIzE2NzdmZiIvPjwvc3ZnPg=='
+                        : 'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjMTY3N2ZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==';
+                    myMarker = new AMap.Marker({
+                        position: userPos, map: map,
+                        icon: new AMap.Icon({ size: new AMap.Size(28, 28), image: 'data:image/svg+xml;base64,' + centerIconBase64, imageSize: new AMap.Size(28, 28) }),
+                        offset: new AMap.Pixel(-14, -14), zIndex: 200
+                    });
+                }
+            } catch(e) { console.warn('[renderMapMarkers] 中心点标记绘制失败:', e); }
+
+            // 5. 批量生成每个POI的独立marker
+            var markers = [];
+            var validCount = 0;
+            var iconColor = kw === '停车场'
+                ? (isDarkMode ? '#66b2ff' : '#1677ff')
+                : (isDarkMode ? '#8ce98c' : '#52c41a');
+
+            for (var idx = 0; idx < pois.length; idx++) {
+                var p = pois[idx];
+                if (!p || !p.lngLat || !p.lngLat[0] || !p.lngLat[1]) {
+                    console.warn('[renderMapMarkers] 跳过无效POI: idx=' + idx);
+                    continue;
+                }
+
+                try {
+                    var iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="32" viewBox="0 0 26 32">' +
+                        '<path d="M13 0C5.8 0 0 5.8 0 13c0 9.8 13 19 13 19s13-9.2 13-19C26 5.8 20.2 0 13 0z" fill="' + iconColor + '" stroke="#ffffff" stroke-width="2"/>' +
+                        '<circle cx="13" cy="13" r="5.5" fill="#ffffff"/>' +
+                        '<text x="13" y="17" text-anchor="middle" fill="' + iconColor + '" font-size="11" font-weight="700">' + (idx + 1) + '</text></svg>';
+                    var iconUrl = 'data:image/svg+xml;charset=utf-8;base64,' + btoa(unescape(encodeURIComponent(iconSvg)));
+
+                    var marker = new AMap.Marker({
+                        position: p.lngLat,
+                        icon: new AMap.Icon({ size: new AMap.Size(26, 32), image: iconUrl, imageSize: new AMap.Size(26, 32) }),
+                        offset: new AMap.Pixel(-13, -32),
+                        title: p.name || '',
+                        extData: { name: p.name, address: p.address, lngLat: p.lngLat, kw: kw, extra: p.extra, index: idx },
+                        zIndex: 100 + idx
+                    });
+
+                    marker.on('click', function(ev) {
+                        var data = this.getExtData();
+                        if (!data) return;
+                        showDetail(data.name, data.address, data.lngLat, data.kw, data.extra);
+                        if (map && data.lngLat) map.setCenter(data.lngLat);
+                    });
+
+                    markers.push(marker);
+                    validCount++;
+                } catch(e) {
+                    console.warn('[renderMapMarkers] POI ' + idx + '标记创建失败:', e);
+                    continue;
+                }
+            }
+
+            console.log('[renderMapMarkers] 有效标记数量: ' + validCount + '/' + pois.length);
+
+            // 6. 使用MarkerClusterer聚合渲染
+            if (markers.length > 0) {
+                try {
+                    markerClusterer = new AMap.MarkerClusterer(map, markers, {
+                        gridSize: 60,
+                        maxZoom: 17,
+                        minClusterSize: 3,
+                        renderClusterMarker: function(context) {
+                            var count = context.count;
+                            var factor = Math.min(count / 30, 1);
+                            var size = 36 + factor * 20;
+                            var clusterBg = isDarkMode
+                                ? 'linear-gradient(135deg,rgba(102,178,255,0.95),rgba(102,178,255,0.75))'
+                                : 'linear-gradient(135deg,rgba(22,119,255,0.9),rgba(22,119,255,0.75))';
+                            var clusterBorder = isDarkMode ? '#ffd700' : '#ffffff';
+                            return new AMap.Marker({
+                                position: context.center,
+                                content: '<div style="background:' + clusterBg + ';border:2px solid ' + clusterBorder + ';color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.35);cursor:pointer;display:flex;align-items:center;justify-content:center;">' + count + '</div>',
+                                offset: new AMap.Pixel(-size / 2, -size / 2)
+                            });
+                        }
+                    });
+
+                    // 7. 调整地图视口
+                    try {
+                        setTimeout(function() {
+                            if (map) {
+                                map.setFitView(markers, false, [60, 60, 60, 60]);
+                                var radiusZoom = getZoomForRadius(searchRadius);
+                                if (markers.length <= 2) {
+                                    var z = map.getZoom();
+                                    if (z < radiusZoom) map.setZoom(radiusZoom);
+                                }
+                            }
+                        }, 50);
+                    } catch(e) { console.warn('[renderMapMarkers] 视口调整失败:', e); }
+                } catch(e) {
+                    // 聚合失败回退
+                    console.warn('[renderMapMarkers] 聚合器失败，回退到直接显示:', e);
+                    markers.forEach(function(m) { m.setMap(map); });
+                    try { map.setFitView(markers, false, [60, 60, 60, 60]); } catch(e2) {}
+                }
+            } else {
+                console.log('[renderMapMarkers] 无有效点位，仅显示底图');
             }
         }
+
+
 
         // P0-02: 根据检索半径计算合适的缩放级别
         function getZoomForRadius(radius) {
@@ -4508,78 +4644,150 @@
         }
 
         // 在地图上渲染标记点（指定中心点）
+        // 在地图上渲染标记点（指定中心点 + 批量独立标记 + 聚合）
         function renderMapMarkersAt(pois, kw, centerPos) {
-            map.clearMap();
-
-            // P1-03: 深色模式检测
-            var isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-            // 中心点标记（橙色）
-            if (destMarker) map.remove(destMarker);
-            destMarker = new AMap.Marker({
-                position: centerPos, map: map,
-                icon: new AMap.Icon({ size: new AMap.Size(22, 22), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMiIgaGVpZ2h0PSIyMiIgdmlld0JveD0iMCAwIDIyIDIyIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBmaWxsPSIjZmY2YjAwIi8+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iMyIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(22, 22) }),
-                offset: new AMap.Pixel(-11, -11)
-            });
-
-            // POI标记（聚合渲染）
-            var markers = [];
-            pois.forEach(function(p, idx) {
-                // P1-03: 深色模式使用高对比度配色
-                var iconColor = kw === '停车场' 
-                    ? (isDarkMode ? '#66b2ff' : '#1677ff')   // 深色模式用亮蓝
-                    : (isDarkMode ? '#8ce98c' : '#52c41a');  // 深色模式用亮绿
-                var iconUrl = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="' + iconColor + '"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">' + (idx + 1) + '</text></svg>');
-
-                var marker = new AMap.Marker({
-                    position: p.lngLat,
-                    icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: iconUrl, imageSize: new AMap.Size(24, 24) }),
-                    offset: new AMap.Pixel(-12, -12),
-                    title: p.name,
-                    extData: { name: p.name, address: p.address, lngLat: p.lngLat, kw: kw, extra: p.extra }
-                });
-
-                marker.on('click', function() {
-                    var data = marker.getExtData();
-                    showDetail(data.name, data.address, data.lngLat, data.kw, data.extra);
-                });
-
-                markers.push(marker);
-            });
-
-            // 使用聚合器渲染 - P0-01优化：减小gridSize增强密集区域聚合
-            if (markers.length > 0) {
-                // P0-01: 先清除旧聚合实例
-                if (markerClusterer) {
-                    markerClusterer.setMap(null);
-                    markerClusterer = null;
-                }
-                markerClusterer = new AMap.MarkerClusterer(map, markers, {
-                    gridSize: 40,  // P0-01: 减小gridSize增强聚合效果
-                    maxZoom: 16,   // P0-01: 超过此缩放级别则拆分聚合点
-                    minClusterSize: 3,  // P0-01: 少于此数量不聚合
-                    renderClusterMarker: function(context) {
-                        var count = context.count;
-                        var factor = Math.min(count / 20, 1);
-                        var size = 30 + factor * 20;
-                        // P1-03: 深色模式适配
-                        var clusterBg = isDarkMode 
-                            ? 'linear-gradient(135deg,rgba(102,178,255,0.9),rgba(102,178,255,0.75))' 
-                            : 'linear-gradient(135deg,rgba(22,119,255,0.9),rgba(22,119,255,0.75))';
-                        var clusterBorder = isDarkMode ? '#ffd700' : '#fff';
-                        return new AMap.Marker({
-                            position: context.center,
-                            content: '<div style="background:' + clusterBg + ';border:2px solid ' + clusterBorder + ';color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:12px;font-weight:600;box-shadow:0 3px 10px rgba(0,0,0,0.35);cursor:pointer;">' + count + '</div>',
-                            offset: new AMap.Pixel(-size / 2, -size / 2)
+            // 1. 参数与地图校验
+            if (!map) {
+                console.warn('[renderMapMarkersAt] map未初始化');
+                return;
+            }
+            if (!pois || !(pois instanceof Array) || pois.length === 0) {
+                console.warn('[renderMapMarkersAt] pois为空');
+                try { map.clearMap(); } catch(e) {}
+                try {
+                    if (centerPos) {
+                        if (destMarker) map.remove(destMarker);
+                        destMarker = new AMap.Marker({
+                            position: centerPos, map: map,
+                            icon: new AMap.Icon({ size: new AMap.Size(28, 28), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMiIgaGVpZ2h0PSIyMiIgdmlld0JveD0iMCAwIDIyIDIyIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBmaWxsPSIjZmY2YjAwIi8+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iMyIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(28, 28) }),
+                            offset: new AMap.Pixel(-14, -14), zIndex: 300
                         });
                     }
-                });
-                // P0-02: 根据检索半径计算合适的缩放级别
-                var radiusZoom = getZoomForRadius(searchRadius);
-                map.setZoom(radiusZoom, false);
-                map.setFitView(markers, false, [50, 50, 50, 50]);
+                } catch(e) {}
+                return;
+            }
+            console.log('[renderMapMarkersAt] 开始渲染，共' + pois.length + '个POI, 类型=' + kw);
+
+            // 2. 清理旧聚合器与标记
+            if (markerClusterer) {
+                try { markerClusterer.setMap(null); } catch(e) {}
+                markerClusterer = null;
+            }
+            try { map.clearMap(); } catch(e) {}
+
+            // 3. 深色模式
+            var isDarkMode = false;
+            try {
+                isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } catch(e) {}
+
+            // 4. 绘制橙色目的地中心点
+            try {
+                if (centerPos) {
+                    if (destMarker) map.remove(destMarker);
+                    destMarker = new AMap.Marker({
+                        position: centerPos, map: map,
+                        icon: new AMap.Icon({ size: new AMap.Size(28, 28), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMiIgaGVpZ2h0PSIyMiIgdmlld0JveD0iMCAwIDIyIDIyIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBmaWxsPSIjZmY2YjAwIi8+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iMyIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(28, 28) }),
+                        offset: new AMap.Pixel(-14, -14), zIndex: 300
+                    });
+                }
+            } catch(e) { console.warn('[renderMapMarkersAt] 中心点标记绘制失败:', e); }
+
+            // 5. 批量生成每个POI的独立marker
+            var markers = [];
+            var validCount = 0;
+            var iconColor = kw === '停车场'
+                ? (isDarkMode ? '#66b2ff' : '#1677ff')
+                : (isDarkMode ? '#8ce98c' : '#52c41a');
+
+            for (var idx = 0; idx < pois.length; idx++) {
+                var p = pois[idx];
+                if (!p || !p.lngLat || !p.lngLat[0] || !p.lngLat[1]) {
+                    console.warn('[renderMapMarkersAt] 跳过无效POI: idx=' + idx);
+                    continue;
+                }
+
+                try {
+                    var iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="32" viewBox="0 0 26 32">' +
+                        '<path d="M13 0C5.8 0 0 5.8 0 13c0 9.8 13 19 13 19s13-9.2 13-19C26 5.8 20.2 0 13 0z" fill="' + iconColor + '" stroke="#ffffff" stroke-width="2"/>' +
+                        '<circle cx="13" cy="13" r="5.5" fill="#ffffff"/>' +
+                        '<text x="13" y="17" text-anchor="middle" fill="' + iconColor + '" font-size="11" font-weight="700">' + (idx + 1) + '</text></svg>';
+                    var iconUrl = 'data:image/svg+xml;charset=utf-8;base64,' + btoa(unescape(encodeURIComponent(iconSvg)));
+
+                    var marker = new AMap.Marker({
+                        position: p.lngLat,
+                        icon: new AMap.Icon({ size: new AMap.Size(26, 32), image: iconUrl, imageSize: new AMap.Size(26, 32) }),
+                        offset: new AMap.Pixel(-13, -32),
+                        title: p.name || '',
+                        extData: { name: p.name, address: p.address, lngLat: p.lngLat, kw: kw, extra: p.extra, index: idx },
+                        zIndex: 100 + idx
+                    });
+
+                    marker.on('click', function(ev) {
+                        var data = this.getExtData();
+                        if (!data) return;
+                        showDetail(data.name, data.address, data.lngLat, data.kw, data.extra);
+                        if (map && data.lngLat) map.setCenter(data.lngLat);
+                    });
+
+                    markers.push(marker);
+                    validCount++;
+                } catch(e) {
+                    console.warn('[renderMapMarkersAt] POI ' + idx + '标记创建失败:', e);
+                    continue;
+                }
+            }
+
+            console.log('[renderMapMarkersAt] 有效标记数量: ' + validCount + '/' + pois.length);
+
+            // 6. 使用MarkerClusterer聚合渲染
+            if (markers.length > 0) {
+                try {
+                    markerClusterer = new AMap.MarkerClusterer(map, markers, {
+                        gridSize: 60,
+                        maxZoom: 17,
+                        minClusterSize: 3,
+                        renderClusterMarker: function(context) {
+                            var count = context.count;
+                            var factor = Math.min(count / 30, 1);
+                            var size = 36 + factor * 20;
+                            var clusterBg = isDarkMode
+                                ? 'linear-gradient(135deg,rgba(102,178,255,0.95),rgba(102,178,255,0.75))'
+                                : 'linear-gradient(135deg,rgba(22,119,255,0.9),rgba(22,119,255,0.75))';
+                            var clusterBorder = isDarkMode ? '#ffd700' : '#ffffff';
+                            return new AMap.Marker({
+                                position: context.center,
+                                content: '<div style="background:' + clusterBg + ';border:2px solid ' + clusterBorder + ';color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.35);cursor:pointer;display:flex;align-items:center;justify-content:center;">' + count + '</div>',
+                                offset: new AMap.Pixel(-size / 2, -size / 2)
+                            });
+                        }
+                    });
+
+                    // 7. 调整地图视口
+                    try {
+                        setTimeout(function() {
+                            if (map) {
+                                map.setFitView(markers, false, [60, 60, 60, 60]);
+                                var radiusZoom = getZoomForRadius(searchRadius);
+                                if (markers.length <= 2) {
+                                    var z = map.getZoom();
+                                    if (z < radiusZoom) map.setZoom(radiusZoom);
+                                }
+                            }
+                        }, 50);
+                    } catch(e) { console.warn('[renderMapMarkersAt] 视口调整失败:', e); }
+                } catch(e) {
+                    // 聚合失败回退
+                    console.warn('[renderMapMarkersAt] 聚合器失败，回退到直接显示:', e);
+                    markers.forEach(function(m) { m.setMap(map); });
+                    try { map.setFitView(markers, false, [60, 60, 60, 60]); } catch(e2) {}
+                }
+            } else {
+                console.log('[renderMapMarkersAt] 无有效点位，仅显示底图');
             }
         }
+
+
 
         // 构建充电站详情页 - 仿照蔚来加电风格
         function buildChargingDetailPage(name, address, extra, lngLat) {
