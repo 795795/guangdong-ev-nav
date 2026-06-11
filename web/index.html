@@ -80,9 +80,76 @@
         
         /* P3-4: 加载更多按钮样式 */
         .load-more-container { text-align: center; padding: 16px; }
-        .load-more-btn { padding: 10px 24px; background: #f5f7fa; border: 1px solid #e8e8e8; border-radius: 20px; color: #666; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .load-more-btn { 
+            padding: 10px 24px; 
+            background: #f5f7fa; 
+            border: 1px solid #e8e8e8; 
+            border-radius: 20px; 
+            color: #666; 
+            font-size: 13px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-weight: 500;
+            line-height: 1.5;
+        }
         .load-more-btn:hover { background: #e6f0ff; border-color: #1677ff; color: #1677ff; }
-        .load-more-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .load-more-btn:disabled { 
+            opacity: 0.6; 
+            cursor: not-allowed; 
+            background: #f5f7fa; 
+            border-color: #e8e8e8; 
+            color: #999;
+        }
+        .load-more-btn.loading::after {
+            content: '';
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-left: 8px;
+            border: 2px solid #1677ff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+        }
+
+        /* P2-3: 深色模式适配 */
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #1a1a1a; }
+            .mode-switch { background: rgba(40,40,40,0.98); }
+            .mode-option { color: #ccc; }
+            .mode-option:hover { background: rgba(22,119,255,0.2); }
+            .mode-option.active { background: #1677ff; color: #fff; }
+            .dest-search-container { background: rgba(40,40,40,0.98); }
+            .dest-search-bar input { background: #333; color: #fff; border-color: #444; }
+            .dest-search-bar input::placeholder { color: #666; }
+            .dest-suggestions { background: #2a2a2a; }
+            .dest-suggestion-item { color: #fff; border-bottom-color: #444; }
+            .dest-suggestion-item:hover { background: #3a3a3a; }
+            .dest-suggestion-empty { color: #666; }
+            .bottom-nav { background: #2a2a2a; }
+            .nav-item .label { color: #999; }
+            .nav-item.active .label { color: #4da6ff; }
+            .main-panel { background: #2a2a2a; }
+            .panel-title { color: #fff; }
+            .panel-count { color: #999; }
+            .poi-card { background: #333; border-color: #444; }
+            .poi-name { color: #fff; }
+            .poi-addr { color: #999; }
+            .poi-dist { color: #999; }
+            .poi-tag { background: rgba(22,119,255,0.2); color: #4da6ff; }
+            .poi-nav-btn { background: #1677ff; color: #fff; }
+            .poi-nav-btn:hover { background: #0958d9; }
+            select { background: #333; color: #fff; border-color: #444; }
+            .load-more-btn { background: #333; border-color: #444; color: #ccc; }
+            .load-more-btn:hover { background: rgba(22,119,255,0.2); border-color: #1677ff; color: #4da6ff; }
+            .empty-state .empty-text { color: #ccc; }
+            .empty-state .empty-hint { color: #666; }
+            .quick-action-bar { background: #2a2a2a; border-color: #444; }
+            .quick-action-btn { background: #333; color: #ccc; }
+            .quick-action-btn:hover { background: #444; }
+            .quick-action-btn.active { background: rgba(22,119,255,0.2); color: #4da6ff; }
+        }
 
         .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; z-index: 100; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); padding-bottom: env(safe-area-inset-bottom); }
         .nav-items { display: flex; justify-content: space-around; padding: 10px 0; }
@@ -603,9 +670,19 @@
 
         // P3: 网络状态检测
         var networkStatus = 'online';
+        var pendingSearchParams = null; // P1-1: 存储失败的搜索参数
+        
         window.addEventListener('online', function() {
             networkStatus = 'online';
             toast('网络已恢复');
+            
+            // P1-1: 网络恢复后自动重试失败的查询
+            if (pendingSearchParams) {
+                var params = pendingSearchParams;
+                pendingSearchParams = null;
+                toast('正在重试查询...');
+                searchParkingOrCharging(params.keyword);
+            }
         });
         window.addEventListener('offline', function() {
             networkStatus = 'offline';
@@ -673,6 +750,9 @@
             console.log('[amapRequest] -> Proxy:', url);
 
             var controller = new AbortController();
+            // P0-1: 注册请求以便切换模式时取消
+            registerRequest(controller);
+            
             var timeoutId = setTimeout(function() {
                 console.warn('[amapRequest] timeout after 15s:', url);
                 controller.abort();
@@ -987,11 +1067,14 @@
 
             AMap.plugin('AMap.Geolocation', function() {
                 var geolocation = new AMap.Geolocation({
-                    enableHighAccuracy: true,
-                    timeout: 10000,
+                    enableHighAccuracy: true,  // P1-4: 强制使用高精度定位
+                    timeout: 15000,           // P1-4: 增加超时时间
                     buttonPosition: 'RB',
                     needAddress: false,
-                    convert: true
+                    convert: true,            // P1-4: 自动转换为高德坐标系
+                    showButton: false,        // 使用自定义按钮
+                    showMarker: false,        // 使用自定义marker
+                    showCircle: false         // 不显示精度圈
                 });
 
                 geolocation.getCurrentPosition(function(status, result) {
@@ -1207,10 +1290,34 @@
             myLocation: { filter: 'all', sort: 'distance' },
             destination: { filter: 'all', sort: 'distance' }
         };
+        
+        // P0-1: 追踪正在进行的请求，用于切换模式时取消
+        var activeRequests = [];
+        
+        // 注册请求以便取消
+        function registerRequest(controller) {
+            activeRequests.push(controller);
+        }
+        
+        // 取消所有正在进行的请求
+        function cancelAllRequests() {
+            activeRequests.forEach(function(controller) {
+                try {
+                    controller.abort();
+                } catch(e) {}
+            });
+            activeRequests = [];
+        }
 
-        // P1-2: 切换搜索模式不影响导航状态
+        // P0-1: 切换搜索模式时取消所有请求
         function switchSearchMode(mode) {
             if (currentSearchMode === mode) return;
+            
+            // P0-1: 取消所有正在进行的请求，防止页面卡死
+            cancelAllRequests();
+            
+            // P1-2: 切换模式时关闭路线面板，防止数据错乱
+            closePanel();
             
             currentSearchMode = mode;
             
@@ -1317,6 +1424,21 @@
         var selectedSuggestionIndex = -1;
         var currentSuggestions = [];
         
+        // P2-4: 点击空白区域关闭联想弹窗
+        document.addEventListener('click', function(e) {
+            var suggestionsEl = document.getElementById('destSuggestions');
+            var destContainer = document.getElementById('destSearchContainer');
+            var destInput = document.getElementById('destInput');
+            
+            // 检查点击是否在目的地搜索区域内
+            var isInDestArea = destContainer && destContainer.contains(e.target);
+            
+            if (suggestionsEl && suggestionsEl.style.display === 'block' && !isInDestArea) {
+                suggestionsEl.style.display = 'none';
+                selectedSuggestionIndex = -1;
+            }
+        });
+        
         document.getElementById('destInput').addEventListener('keydown', function(e) {
             var suggestionsEl = document.getElementById('destSuggestions');
             var items = suggestionsEl.querySelectorAll('.dest-suggestion-item');
@@ -1379,8 +1501,14 @@
                 
                 if (data.status === '1' && data.tips && data.tips.length > 0) {
                     var html = '';
+                    var seenNames = {}; // P1-3: 用于去重
+                    
                     data.tips.forEach(function(tip) {
-                        if (tip.location) {
+                        if (tip.location && tip.name) {
+                            // P1-3: 去重 - 相同名称的地点只显示第一个
+                            if (seenNames[tip.name]) return;
+                            seenNames[tip.name] = true;
+                            
                             var loc = tip.location.split(',');
                             // P3-2: 保存建议数据
                             currentSuggestions.push({ name: tip.name, lng: loc[0], lat: loc[1], address: tip.address });
@@ -1402,22 +1530,28 @@
             });
         }
 
-        // 选择目的地建议
+        // P0-2: 选择目的地建议（确保选中后一定触发查询）
         function selectDestSuggestion(name, lng, lat) {
             document.getElementById('destInput').value = name;
             document.getElementById('destSuggestions').style.display = 'none';
             destSearchPos = [lng, lat];
             destSearchName = name;
+            selectedSuggestionIndex = -1; // 重置键盘选中状态
             
             // P3: 保存搜索历史
             saveSearchHistory(name, lng, lat);
             
-            // 自动触发搜索
-            var activeNav = document.querySelector('.nav-item.active');
-            if (activeNav) {
-                var kw = activeNav.querySelector('.label').textContent === '停车场' ? '停车场' : '充电站';
-                searchParkingOrCharging(kw);
-            }
+            // P0-2: 确保选中地点后一定触发搜索，使用定时器确保DOM更新完成
+            setTimeout(function() {
+                var activeNav = document.querySelector('.nav-item.active');
+                if (activeNav) {
+                    var kw = activeNav.querySelector('.label').textContent === '停车场' ? '停车场' : '充电站';
+                    searchParkingOrCharging(kw);
+                } else {
+                    // 如果没有选中的导航按钮，默认搜索停车场
+                    searchParkingOrCharging('停车场');
+                }
+            }, 50);
         }
 
         // P3: 搜索历史管理
@@ -1581,6 +1715,9 @@
                 return;
             }
             
+            // P1-1: 保存搜索参数，用于网络恢复后重试
+            pendingSearchParams = { keyword: kw, mode: currentSearchMode };
+            
             var keyword = kw === '停车场' ? '停车场' : '充电桩|充电站';
             
             // 设置加载状态
@@ -1589,16 +1726,27 @@
             if (navItem) navItem.classList.add('loading');
             isSearching = true;
             
-            var onSearchComplete = function() {
+            var onSearchComplete = function(success) {
                 isSearching = false;
                 if (navItem) navItem.classList.remove('loading');
+                // P1-1: 如果搜索成功，清除待重试的参数
+                if (success) {
+                    pendingSearchParams = null;
+                }
             };
+            
+            // P1-1: 检查网络状态
+            if (networkStatus === 'offline') {
+                toast('网络异常，请检查网络连接');
+                onSearchComplete(false);
+                return;
+            }
             
             if (currentSearchMode === 'destination') {
                 // 目的地模式
                 if (!destSearchPos || !destSearchName) {
                     toast('请输入有效目的地');
-                    onSearchComplete();
+                    onSearchComplete(false);
                     return;
                 }
                 console.log('[searchParkingOrCharging] 目的地模式:', destSearchName, destSearchPos);
@@ -1615,7 +1763,7 @@
                     // 需求3.1：沿用原有提示
                     toast('请先开启定位权限');
                     triggerLocation();
-                    onSearchComplete();
+                    onSearchComplete(false);
                 }
             }
         }
@@ -1933,7 +2081,7 @@
             });
             html += '</div>';
             
-            // P3-4: 加载更多按钮
+            // 加载更多按钮
             var hasMore = end < totalPOIs.length;
             if (hasMore) {
                 html += '<div class="load-more-container">' +
@@ -1994,12 +2142,12 @@
             return div;
         }
         
-        // P3-4: 加载更多POI
+        // 加载更多POI
         function loadMorePOIs(kw) {
             renderPOIListWithPagination(totalPOIs, kw, true);
         }
         
-        // P3-4: 设置滚动加载
+        // 设置滚动加载
         function setupLoadMoreScroll() {
             var panelContent = document.getElementById('panelContent');
             if (!panelContent) return;
