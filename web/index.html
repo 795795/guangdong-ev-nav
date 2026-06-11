@@ -29,8 +29,15 @@
         /* 模式切换控件 */
         .mode-switch-container { position: absolute; top: 72px; left: 12px; right: 12px; z-index: 199; margin-bottom: 8px; }
         .mode-switch { display: flex; background: rgba(255,255,255,0.98); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); padding: 4px; }
-        .mode-option { flex: 1; padding: 10px 12px; border-radius: 10px; text-align: center; font-size: 14px; color: #666; cursor: pointer; transition: all 0.2s; font-weight: 500; border: 2px solid transparent; }
+        .mode-option { flex: 1; padding: 10px 16px; border-radius: 10px; text-align: center; font-size: 14px; color: #666; cursor: pointer; transition: all 0.2s; font-weight: 500; border: 2px solid transparent; white-space: nowrap; min-width: max-content; }
         .mode-option.active { background: #1677ff; color: #fff; font-weight: 600; border-color: #0958d9; box-shadow: 0 2px 8px rgba(22,119,255,0.3); }
+        
+        /* P2-1: 横屏适配 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .mode-switch-container { top: 8px; }
+            .dest-search-container { top: 52px; }
+            .mode-option { padding: 8px 12px; font-size: 13px; }
+        }
 
         /* 目的地搜索框 */
         .dest-search-container { position: absolute; top: 120px; left: 12px; right: 12px; z-index: 198; display: none; }
@@ -50,19 +57,44 @@
         /* 快捷入口按钮 */
         .quick-action-bar { display: flex; gap: 12px; padding: 12px 16px; border-top: 1px solid #f0f0f0; }
         .quick-action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: #f8f9fa; border-radius: 10px; cursor: pointer; font-size: 13px; color: #666; transition: all 0.2s; }
-        .quick-action-btn:hover { background: #e8eaed; }
+        .quick-action-btn:hover { background: #e8eaed; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .quick-action-btn.active { background: #e6f0ff; color: #1677ff; }
         .quick-action-btn .icon { font-size: 16px; }
+        
+        /* P2-4: POI卡片hover效果 */
+        .poi-card { transition: all 0.2s; cursor: pointer; }
+        .poi-card:hover { background: #f8f9fa; transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .poi-nav-btn { transition: all 0.2s; }
+        .poi-nav-btn:hover { background: #0958d9; transform: scale(1.02); }
+        
+        /* P2-4: 目的地建议项hover效果 */
+        .dest-suggestion-item { transition: background 0.2s; }
+        .dest-suggestion-item:hover { background: #f0f7ff; }
+        
+        /* P2-4: 目的地清除按钮hover */
+        .dest-clear { transition: all 0.2s; display: inline-block; cursor: pointer; }
+        .dest-clear:hover { color: #666; transform: scale(1.1); }
+        
+        /* P2-4: 筛选/排序控件hover */
+        select:hover { border-color: #1677ff; }
+        
+        /* P3-4: 加载更多按钮样式 */
+        .load-more-container { text-align: center; padding: 16px; }
+        .load-more-btn { padding: 10px 24px; background: #f5f7fa; border: 1px solid #e8e8e8; border-radius: 20px; color: #666; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .load-more-btn:hover { background: #e6f0ff; border-color: #1677ff; color: #1677ff; }
+        .load-more-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; z-index: 100; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); padding-bottom: env(safe-area-inset-bottom); }
         .nav-items { display: flex; justify-content: space-around; padding: 10px 0; }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 4px; cursor: pointer; min-width: 60px; position: relative; }
-        .nav-item .icon { font-size: 26px; margin-bottom: 4px; }
-        .nav-item .label { font-size: 11px; color: #999; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 4px; cursor: pointer; min-width: 60px; position: relative; transition: transform 0.2s, opacity 0.2s; }
+        .nav-item:hover { transform: scale(1.05); }
+        .nav-item:active { transform: scale(0.95); }
+        .nav-item .icon { font-size: 26px; margin-bottom: 4px; position: relative; }
+        .nav-item .label { font-size: 11px; color: #999; transition: color 0.2s; }
+        .nav-item:hover .label { color: #666; }
         .nav-item.active .label { color: #1677ff; }
         .nav-item.loading { opacity: 0.7; pointer-events: none; }
-        .nav-item.loading .icon::after { content: '⏳'; position: absolute; animation: spin 1s linear infinite; }
-        .nav-item.loading .icon { animation: none; }
+        .nav-item.loading .icon::before { content: ''; position: absolute; top: 50%; left: 50%; width: 24px; height: 24px; margin: -12px 0 0 -12px; border: 3px solid #e8e8e8; border-top-color: #1677ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
         .drag-panel { position: absolute; bottom: 65px; left: 0; right: 0; background: #fff; z-index: 99; max-height: 65vh; border-radius: 24px 24px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.1); display: none; transition: max-height 0.3s ease; }
         .drag-panel.show { display: block; }
@@ -92,6 +124,12 @@
         .panel-content { padding: 0 16px 16px; overflow-y: auto; max-height: calc(65vh - 44px); }
         .panel-title { font-size: 17px; font-weight: 600; color: #333; margin-bottom: 12px; }
         .panel-count { font-size: 13px; color: #999; margin-bottom: 16px; }
+        
+        /* P2-3: 空状态样式 */
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.8; }
+        .empty-state .empty-text { font-size: 15px; color: #666; margin-bottom: 8px; }
+        .empty-state .empty-hint { font-size: 13px; color: #999; }
 
         .mode-selector { display: flex; gap: 10px; padding: 0 0 16px; border-bottom: 1px solid #f0f0f0; margin-bottom: 16px; overflow-x: auto; }
         .mode-selector::-webkit-scrollbar { display: none; }
@@ -900,12 +938,27 @@
             );
         }
 
+        // P1-1: 定位权限状态追踪
+        var locationPermissionDenied = false;
+        
         // 定位按钮点击入口（唯一入口，优先高德Geolocation定位）
         function locateMe() {
             console.log('[locateMe] 定位按钮被点击, isLocating:', isLocating);
             if (isLocating) {
                 toast('正在定位中，请稍候...');
                 return;
+            }
+
+            // P1-1: 权限被拒绝后的处理
+            if (locationPermissionDenied) {
+                // 临时拒绝可以重试，永久拒绝需要引导
+                if (confirm('定位权限被拒绝，需要您手动开启。\n\n请在浏览器地址栏左侧点击🔒图标，允许获取位置信息。\n\n是否尝试重新获取定位？')) {
+                    locationPermissionDenied = false;
+                    // 继续执行定位
+                } else {
+                    toast('可随时点击定位按钮重试，或前往浏览器设置开启权限');
+                    return;
+                }
             }
 
             // 非HTTPS环境提示
@@ -948,6 +1001,7 @@
                     if (status === 'complete' && result && result.position) {
                         userPos = [result.position.lng, result.position.lat];
                         isLocating = false;
+                        locationPermissionDenied = false;
                         if (btn) btn.classList.remove('locating');
                         updateMarker(userPos[0], userPos[1]);
                         map.setCenter(userPos);
@@ -962,6 +1016,7 @@
                                     clearTimeout(totalTimeout);
                                     userPos = [pos.coords.longitude, pos.coords.latitude];
                                     isLocating = false;
+                                    locationPermissionDenied = false;
                                     if (btn) btn.classList.remove('locating');
                                     updateMarker(userPos[0], userPos[1]);
                                     map.setCenter(userPos);
@@ -974,17 +1029,31 @@
                                     console.log('[locateMe] 浏览器定位失败:', err.code);
                                     isLocating = false;
                                     if (btn) btn.classList.remove('locating');
+                                    userPos = [113.2644, 23.1291];
+                                    updateMarker(userPos[0], userPos[1]);
+                                    
                                     if (err.code === 1) {
-                                        toast('定位权限已关闭，请在浏览器/系统设置中开启权限');
+                                        // P1-1: 权限被拒绝
+                                        locationPermissionDenied = true;
+                                        // 根据是否为临时拒绝给出不同提示
+                                        if (err.message && err.message.indexOf('denied') !== -1) {
+                                            // 可能是临时拒绝，给出重试选项
+                                            toast('定位权限已拒绝，点击确定重新尝试授权', 4000);
+                                            if (confirm('定位权限被拒绝。\n\n点击"确定"重新尝试，或前往浏览器设置手动开启定位权限。')) {
+                                                locationPermissionDenied = false;
+                                                locateMe();
+                                            }
+                                        } else {
+                                            toast('定位权限已关闭，请前往浏览器设置开启');
+                                        }
                                     } else if (err.code === 2) {
                                         toast('位置服务不可用，已使用默认位置');
                                     } else if (err.code === 3) {
-                                        toast('浏览器定位超时，已使用默认位置');
+                                        // P1-1: 超时可以重试
+                                        toast('定位超时，可再次点击重新定位');
                                     } else {
                                         toast('定位失败，已使用默认位置');
                                     }
-                                    userPos = [113.2644, 23.1291];
-                                    updateMarker(userPos[0], userPos[1]);
                                 },
                                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
                             );
@@ -1132,8 +1201,14 @@
         var currentSearchMode = 'myLocation'; // 'myLocation' | 'destination'
         var destSearchPos = null;  // 目的地坐标 [lng, lat]
         var destSearchName = '';   // 目的地名称
+        
+        // P1-3: 筛选/排序状态隔离（每个模式独立存储）
+        var filterState = {
+            myLocation: { filter: 'all', sort: 'distance' },
+            destination: { filter: 'all', sort: 'distance' }
+        };
 
-        // 切换搜索模式
+        // P1-2: 切换搜索模式不影响导航状态
         function switchSearchMode(mode) {
             if (currentSearchMode === mode) return;
             
@@ -1160,16 +1235,37 @@
                 }, 100);
             }
             
-            // 切换模式时清空目的地输入
-            if (mode === 'myLocation') {
+            // P1-2: 切换模式时不清空目的地输入，只在切换到"我的位置"且需要时才清空
+            // 保持导航状态不变
+            if (mode === 'myLocation' && !isNavigating) {
                 clearDestInput();
             }
             
-            // 如果当前选中了停车场/充电站按钮，刷新搜索
-            var activeNav = document.querySelector('.nav-item.active');
-            if (activeNav && mode === 'myLocation') {
-                var kw = activeNav.querySelector('.label').textContent === '停车场' ? '停车场' : '充电站';
-                searchParkingOrCharging(kw);
+            // P1-2: 如果正在导航，不中断导航状态，只在非导航状态下刷新搜索
+            if (!isNavigating) {
+                // 如果当前选中了停车场/充电站按钮，刷新搜索
+                var activeNav = document.querySelector('.nav-item.active');
+                if (activeNav && mode === 'myLocation') {
+                    var kw = activeNav.querySelector('.label').textContent === '停车场' ? '停车场' : '充电站';
+                    searchParkingOrCharging(kw);
+                }
+                
+                // P1-3: 恢复当前模式的筛选/排序状态
+                restoreFilterState();
+            }
+        }
+        
+        // P1-3: 恢复当前模式的筛选/排序状态
+        function restoreFilterState() {
+            var filterSelect = document.getElementById('parkingFilter');
+            var chargingFilterSelect = document.getElementById('chargingFilter');
+            var sortSelect = document.getElementById('sortOrder');
+            
+            var state = filterState[currentSearchMode];
+            if (state) {
+                if (filterSelect) filterSelect.value = state.filter || 'all';
+                if (chargingFilterSelect) chargingFilterSelect.value = state.filter || 'all';
+                if (sortSelect) sortSelect.value = state.sort || 'distance';
             }
         }
 
@@ -1216,19 +1312,78 @@
                 }
             }
         });
+        
+        // P3-1: 回车快捷查询 & P3-2: 键盘上下键选择
+        var selectedSuggestionIndex = -1;
+        var currentSuggestions = [];
+        
+        document.getElementById('destInput').addEventListener('keydown', function(e) {
+            var suggestionsEl = document.getElementById('destSuggestions');
+            var items = suggestionsEl.querySelectorAll('.dest-suggestion-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                // P3-2: 向下键选择
+                if (items.length > 0) {
+                    if (selectedSuggestionIndex >= 0) {
+                        items[selectedSuggestionIndex].style.background = '';
+                    }
+                    selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
+                    items[selectedSuggestionIndex].style.background = '#e6f0ff';
+                    items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                // P3-2: 向上键选择
+                if (items.length > 0) {
+                    if (selectedSuggestionIndex >= 0) {
+                        items[selectedSuggestionIndex].style.background = '';
+                    }
+                    selectedSuggestionIndex = selectedSuggestionIndex <= 0 ? items.length - 1 : selectedSuggestionIndex - 1;
+                    items[selectedSuggestionIndex].style.background = '#e6f0ff';
+                    items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'Enter') {
+                // P3-1: 回车选中
+                if (selectedSuggestionIndex >= 0 && items[selectedSuggestionIndex]) {
+                    e.preventDefault();
+                    items[selectedSuggestionIndex].click();
+                }
+            } else if (e.key === 'Escape') {
+                suggestionsEl.style.display = 'none';
+                selectedSuggestionIndex = -1;
+            }
+        });
 
+        // P1-4: 特殊字符校验正则
+        var invalidCharRegex = /[@#$%^&*+=<>{}[\]|\\:;"'`,~!]/;
+        
         // 搜索目的地建议
         function searchDestSuggestions(keyword) {
+            // P1-4: 特殊字符校验
+            if (invalidCharRegex.test(keyword)) {
+                toast('请输入合法的地点名称');
+                document.getElementById('destSuggestions').innerHTML = '<div class="dest-suggestion-empty">请输入合法的地点名称</div>';
+                document.getElementById('destSuggestions').style.display = 'block';
+                return;
+            }
+            
             amapRequest('/v3/assistant/inputtips', {
                 keywords: keyword,
                 city: '广州',
                 type: ''
             }, function(data) {
+                // P3-2: 重置键盘选中状态
+                selectedSuggestionIndex = -1;
+                currentSuggestions = [];
+                
                 if (data.status === '1' && data.tips && data.tips.length > 0) {
                     var html = '';
                     data.tips.forEach(function(tip) {
                         if (tip.location) {
                             var loc = tip.location.split(',');
+                            // P3-2: 保存建议数据
+                            currentSuggestions.push({ name: tip.name, lng: loc[0], lat: loc[1], address: tip.address });
                             html += '<div class="dest-suggestion-item" onclick="selectDestSuggestion(\'' + 
                                 tip.name.replace(/'/g, "\\'") + '\', ' + loc[0] + ', ' + loc[1] + ')">' +
                                 '<span class="name">' + tip.name + '</span>' +
@@ -1389,8 +1544,10 @@
                         var isNoResult = data.status === '1' && (!data.pois || data.pois.length === 0);
                         var tipText = isNoResult ? '该目的地周边暂无相关设施' : '搜索失败：' + errInfo;
                         var titleText = isNoResult ? (poiName ? poiName + ' 周边' : '周边') : '';
-                        var html = '<div style="padding:40px 20px;text-align:center;color:#d9534f;font-size:14px;">' + tipText + '<br/>' + 
-                            (isNoResult ? '请尝试扩大搜索范围或更换地点' : '请检查高德Key权限配置') + '</div>';
+                        // P2-3: 空状态提示居中
+                        var html = '<div class="empty-state"><div class="empty-icon">' + (isNoResult ? '📍' : '⚠️') + '</div>' +
+                            '<div class="empty-text">' + tipText + '</div>' +
+                            '<div class="empty-hint">' + (isNoResult ? '请尝试扩大搜索范围或更换地点' : '请检查高德Key权限配置') + '</div></div>';
                         if (titleText) {
                             html = '<div class="result-tag" style="background:#fff7e6;border-left:3px solid #fa8c16;padding:10px 14px;font-size:13px;color:#333;margin-bottom:8px;">📍 ' + titleText + '</div>' + html;
                         }
@@ -1679,13 +1836,17 @@
             searchNearby(kw);
         }
 
-        // P3: 筛选POI
+        // P1-3: 筛选POI（保存状态）
         var originalPOIs = [];
         function filterPOIs(kw) {
             var filterSelect = document.getElementById(kw === '停车场' ? 'parkingFilter' : 'chargingFilter');
             if (!filterSelect) return;
             
             var filterValue = filterSelect.value;
+            
+            // P1-3: 保存筛选状态
+            filterState[currentSearchMode].filter = filterValue;
+            
             var filteredPOIs = originalPOIs.slice();
             
             if (filterValue !== 'all') {
@@ -1709,12 +1870,16 @@
             renderFilteredPOIs(filteredPOIs, kw);
         }
 
-        // P3: 排序POI
+        // P1-3: 排序POI（保存状态）
         function sortPOIs(kw) {
             var sortSelect = document.getElementById('sortOrder');
             if (!sortSelect) return;
             
             var sortValue = sortSelect.value;
+            
+            // P1-3: 保存排序状态
+            filterState[currentSearchMode].sort = sortValue;
+            
             var sortedPOIs = currentPOIs.slice();
             
             if (sortValue === 'distance') {
@@ -1727,10 +1892,29 @@
             renderFilteredPOIs(sortedPOIs, kw);
         }
 
-        // 渲染筛选后的POI列表
-        function renderFilteredPOIs(pois, kw) {
-            var html = '<div class="poi-list">';
-            pois.forEach(function(p, idx) {
+        // P3-4: 分页加载变量
+        var currentPage = 1;
+        var pageSize = 10;
+        var totalPOIs = [];
+        
+        // 渲染POI列表（带分页）
+        function renderPOIListWithPagination(pois, kw, append) {
+            if (!append) {
+                // 首次加载，保存所有POI并显示第一页
+                totalPOIs = pois;
+                currentPage = 1;
+                pageSize = 10;
+            } else {
+                // 加载更多
+                currentPage++;
+            }
+            
+            var start = 0;
+            var end = currentPage * pageSize;
+            var displayPOIs = totalPOIs.slice(start, end);
+            
+            var html = '<div class="poi-list" id="poiListContainer">';
+            displayPOIs.forEach(function(p, idx) {
                 var dist = p.distance ? (p.distance < 1000 ? p.distance + 'm' : (p.distance/1000).toFixed(1) + 'km') : '';
                 var tags = getRealTimeTags(p, kw);
 
@@ -1749,11 +1933,97 @@
             });
             html += '</div>';
             
+            // P3-4: 加载更多按钮
+            var hasMore = end < totalPOIs.length;
+            if (hasMore) {
+                html += '<div class="load-more-container">' +
+                    '<button class="load-more-btn" onclick="loadMorePOIs(\'' + kw + '\')">加载更多 (' + end + '/' + totalPOIs.length + ')</button>' +
+                    '</div>';
+            }
+            
+            if (append) {
+                // 追加模式
+                var container = document.getElementById('poiListContainer');
+                if (container) {
+                    var loadMoreBtn = document.querySelector('.load-more-container');
+                    if (loadMoreBtn) loadMoreBtn.remove();
+                    
+                    displayPOIs.slice((currentPage - 1) * pageSize).forEach(function(p) {
+                        container.appendChild(createPOICardElement(p, kw));
+                    });
+                    
+                    if (hasMore) {
+                        container.insertAdjacentHTML('afterend', '<div class="load-more-container"><button class="load-more-btn" onclick="loadMorePOIs(\'' + kw + '\')">加载更多 (' + end + '/' + totalPOIs.length + ')</button></div>');
+                    }
+                }
+            } else {
+                // 首次加载
+                var existingList = document.querySelector('.poi-list');
+                if (existingList) {
+                    existingList.outerHTML = html;
+                }
+                setupLoadMoreScroll();
+            }
+            
             // 更新计数
             var countEl = document.querySelector('.panel-count');
-            if (countEl) countEl.textContent = '共 ' + pois.length + ' 个结果';
+            if (countEl) countEl.textContent = '共 ' + totalPOIs.length + ' 个结果';
+        }
+        
+        // 创建POI卡片DOM元素
+        function createPOICardElement(p, kw) {
+            var div = document.createElement('div');
+            div.className = 'poi-card';
+            div.onclick = function() { showDetail(p.name, p.address, p.lngLat, kw, p.extra || {}); };
             
-            document.querySelector('.poi-list').outerHTML = html;
+            var dist = p.distance ? (p.distance < 1000 ? p.distance + 'm' : (p.distance/1000).toFixed(1) + 'km') : '';
+            var tags = getRealTimeTags(p, kw);
+            
+            var html = '<div class="poi-main"><div class="poi-name">' + p.name + '</div>' + (dist ? '<div class="poi-dist">📍 ' + dist + '</div>' : '') + '</div>' +
+                '<div class="poi-addr">' + p.address + '</div>';
+            
+            if (tags.length > 0) {
+                html += '<div class="poi-tags">';
+                tags.forEach(function(t) { html += '<span class="poi-tag ' + t.type + '">' + t.text + '</span>'; });
+                html += '</div>';
+            }
+            
+            html += '<div class="poi-action"><button class="poi-nav-btn" onclick="event.stopPropagation(); planRouteTo(\'' + p.name.replace(/'/g, "\\'") + '\',' + p.lngLat[0] + ',' + p.lngLat[1] + ')">🚗 导航到这里</button></div>';
+            
+            div.innerHTML = html;
+            return div;
+        }
+        
+        // P3-4: 加载更多POI
+        function loadMorePOIs(kw) {
+            renderPOIListWithPagination(totalPOIs, kw, true);
+        }
+        
+        // P3-4: 设置滚动加载
+        function setupLoadMoreScroll() {
+            var panelContent = document.getElementById('panelContent');
+            if (!panelContent) return;
+            
+            panelContent.onscroll = function() {
+                var scrollTop = panelContent.scrollTop;
+                var scrollHeight = panelContent.scrollHeight;
+                var clientHeight = panelContent.clientHeight;
+                
+                // 当滚动到底部附近时自动加载更多
+                if (scrollHeight - scrollTop - clientHeight < 100) {
+                    var loadMoreBtn = document.querySelector('.load-more-btn');
+                    if (loadMoreBtn && !loadMoreBtn.disabled) {
+                        loadMoreBtn.click();
+                        loadMoreBtn.disabled = true;
+                        loadMoreBtn.textContent = '加载中...';
+                    }
+                }
+            };
+        }
+        
+        // 渲染筛选后的POI列表
+        function renderFilteredPOIs(pois, kw) {
+            renderPOIListWithPagination(pois, kw, false);
         }
 
         // 获取实时标签
