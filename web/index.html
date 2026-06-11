@@ -38,7 +38,47 @@
             user-select: text;
             -webkit-touch-callout: text;
         }
-        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #map { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            /* P1-04: Firefox地图性能优化 - 启用GPU加速 */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            will-change: transform;
+            /* P1-04: Firefox减少重绘 */
+            backface-visibility: hidden;
+            /* P1-07: 超高缩放(200%)适配 - 防止右侧截断 */
+            max-width: none;
+            overflow: visible;
+            /* P2-07: 防止地图容器被页面滚动影响 */
+            touch-action: pan-y pinch-zoom;
+        }
+        
+        /* P1-07: 超高缩放时body也需要适配 */
+        @media screen and (min-resolution: 150dpi) {
+            #map {
+                width: 100vw;
+                height: 100vh;
+                height: 100dvh;
+            }
+        }
+        
+        /* P1-08: 横屏模式适配 - 防止地图拉伸变形 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            #map {
+                height: 100vh !important;
+                /* P2-08: iOS横屏状态栏避让 */
+                padding-top: env(safe-area-inset-top);
+            }
+        }
+        
+        /* P2-08: iOS横屏状态栏适配 - 针对顶部搜索容器 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .search-container {
+                padding-top: max(12px, env(safe-area-inset-top));
+            }
+        }
 
         /* ===== 统一滚动条样式 (P2-4) ===== */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -148,6 +188,28 @@
         .locate-btn.locating { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { box-shadow: 0 4px 20px rgba(22,119,255,0.3); } 50% { box-shadow: 0 4px 30px rgba(22,119,255,0.5); } }
 
+        /* ===== P2-02: 地图收起/展开按钮 ===== */
+        .map-toggle-btn { 
+            position: absolute; 
+            right: 150px;  /* P2-02: 定位按钮左侧 */
+            top: 100px; 
+            width: 52px; 
+            height: 52px; 
+            background: #fff; 
+            border-radius: 50%; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 22px; 
+            cursor: pointer; 
+            z-index: 202; 
+            transition: all 0.2s;
+        }
+        .map-toggle-btn:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(0,0,0,0.15); }
+        .map-toggle-btn:active { transform: scale(0.95); }
+        .map-toggle-btn.collapsed { background: #1677ff; color: #fff; }
+        
         /* ===== 模式切换控件 (P0-1 缩放自适应) ===== */
         .mode-switch-container { 
             position: absolute; 
@@ -1878,6 +1940,8 @@
 
     <div class="suggestions" id="suggestions"></div>
     <div class="locate-btn" onclick="locateMe()" id="locateBtn">📍</div>
+    <!-- P2-02: 地图收起/展开按钮 -->
+    <div class="map-toggle-btn" onclick="toggleMapView()" id="mapToggleBtn" title="收起地图">⬇️</div>
 
     <div class="drag-panel" id="mainPanel">
         <div class="drag-handle" onclick="togglePanel()">
@@ -2306,7 +2370,38 @@
 
         function initMap() {
             console.log('[initMap] 初始化地图...');
-            map = new AMap.Map('map', { zoom: 14, center: userPos, viewMode: '2D' });
+            
+            // P1-10: Safari双指缩放优化 - 检测是否为Safari
+            var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            map = new AMap.Map('map', { 
+                zoom: 14, 
+                center: userPos, 
+                viewMode: '2D',
+                // P1-10: Safari启用手势处理，提升双指缩放灵敏度
+                gesturesEnabled: true,
+                showLabel: false  // P1-10: 隐藏地图标签减少渲染负担
+            });
+            
+            // P1-04: Firefox地图性能优化 - 关闭地图动画减少卡顿
+            // P1-10: Safari下保持动画以保证手势流畅
+            try {
+                map.setConfig({
+                    animateEnable: isSafari ? true : false  // Safari保持动画，其他浏览器禁用
+                });
+            } catch(e) {
+                console.log('[initMap] setConfig not supported:', e);
+            }
+            
+            // P1-10: Safari手势优化 - 确保touch事件正确处理
+            if (isSafari) {
+                var mapDom = document.getElementById('map');
+                if (mapDom) {
+                    mapDom.style.touchAction = 'none';  // 允许所有手势
+                    mapDom.style.webkitTouchCallout = 'none';
+                }
+            }
+            
             map.on('complete', function() {
                 console.log('[initMap] 地图加载完成，等待手动定位');
                 
@@ -2319,6 +2414,80 @@
             map.on('error', function(err) {
                 console.error('[initMap] 地图加载错误:', err);
                 toast('地图加载失败，请检查网络或API Key');
+            });
+
+            // P0-03: 监听visualViewport变化（安卓微信软键盘弹出/收起）
+            // 软键盘弹出时visualViewport.height变小，收起时恢复
+            if (window.visualViewport) {
+                var viewportResizeTimer = null;
+                window.visualViewport.addEventListener('resize', function() {
+                    // 防抖处理，避免频繁触发
+                    if (viewportResizeTimer) clearTimeout(viewportResizeTimer);
+                    viewportResizeTimer = setTimeout(function() {
+                        console.log('[visualViewport] 视口变化:', window.visualViewport.width + 'x' + window.visualViewport.height);
+                        // P0-03: 触发地图resize重新计算布局
+                        if (map) {
+                            map.resize();
+                        }
+                    }, 100);
+                });
+                window.visualViewport.addEventListener('scroll', function() {
+                    // P0-03: 同步地图容器位置，防止点位偏移
+                    if (map) {
+                        var offsetX = window.visualViewport.offsetLeft;
+                        var offsetY = window.visualViewport.offsetTop;
+                        var mapContainer = document.getElementById('map');
+                        if (mapContainer) {
+                            mapContainer.style.transform = 'translate(' + (-offsetX) + 'px,' + (-offsetY) + 'px)';
+                        }
+                    }
+                });
+            }
+
+            // 兜底：传统window.resize事件（兼容不支持visualViewport的浏览器）
+            var windowResizeTimer = null;
+            window.addEventListener('resize', function() {
+                if (windowResizeTimer) clearTimeout(windowResizeTimer);
+                windowResizeTimer = setTimeout(function() {
+                    console.log('[window.resize] 触发地图resize');
+                    if (map) map.resize();
+                }, 150);
+            });
+
+            // P1-06: 监听页面可见性变化，防止后台驻留后地图点位消失
+            var mapStateOnHide = null;
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    // 页面隐藏时保存当前地图状态
+                    console.log('[visibilitychange] 页面隐藏，保存地图状态');
+                    if (map && currentPOIs && currentPOIs.length > 0) {
+                        mapStateOnHide = {
+                            pois: currentPOIs,
+                            center: map.getCenter(),
+                            zoom: map.getZoom(),
+                            mode: currentSearchMode,
+                            kw: currentKW
+                        };
+                    }
+                } else {
+                    // 页面恢复时恢复地图状态
+                    console.log('[visibilitychange] 页面恢复，恢复地图状态');
+                    if (map && mapStateOnHide) {
+                        // 触发地图resize重新计算布局
+                        map.resize();
+                        // 如果有保存的点位数据，重新渲染
+                        if (mapStateOnHide.pois && mapStateOnHide.pois.length > 0) {
+                            // 延迟一点确保地图已经完全恢复
+                            setTimeout(function() {
+                                if (currentPOIs.length === 0 && mapStateOnHide) {
+                                    console.log('[visibilitychange] 恢复保存的点位数据');
+                                    renderMapMarkers(mapStateOnHide.pois, mapStateOnHide.kw || '停车场');
+                                }
+                                mapStateOnHide = null;
+                            }, 100);
+                        }
+                    }
+                }
             });
 
             // HTTP环境提示：非HTTPS且非localhost时，浏览器原生定位不可用
@@ -3511,17 +3680,27 @@
         function renderMapMarkers(pois, kw) {
             map.clearMap();
 
-            // 中心点标记
+            // P1-03: 深色模式检测
+            var isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            // 中心点标记 - P1-03: 深色模式使用亮色图标
+            var centerIconColor = isDarkMode ? '#ffffff' : '#1677ff';
+            var centerIconBase64 = isDarkMode 
+                ? 'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjZmZmZiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjQiIGZpbGw9IiMxNjc3ZmYiLz48L3N2Zz4='
+                : 'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjMTY3N2ZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==';
             myMarker = new AMap.Marker({
                 position: userPos, map: map,
-                icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjMTY3N2ZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(24, 24) }),
+                icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: 'data:image/svg+xml;base64,' + centerIconBase64, imageSize: new AMap.Size(24, 24) }),
                 offset: new AMap.Pixel(-12, -12)
             });
 
             // POI标记（聚合渲染）
             var markers = [];
             pois.forEach(function(p, idx) {
-                var iconColor = kw === '停车场' ? '#1677ff' : '#52c41a';
+                // P1-03: 深色模式使用高对比度配色
+                var iconColor = kw === '停车场' 
+                    ? (isDarkMode ? '#66b2ff' : '#1677ff')   // 深色模式用亮蓝
+                    : (isDarkMode ? '#8ce98c' : '#52c41a');  // 深色模式用亮绿
                 var iconUrl = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="' + iconColor + '"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">' + (idx + 1) + '</text></svg>');
 
                 var marker = new AMap.Marker({
@@ -3540,23 +3719,51 @@
                 markers.push(marker);
             });
 
-            // 使用聚合器渲染
+            // 使用聚合器渲染 - P0-01优化：减小gridSize增强密集区域聚合
             if (markers.length > 0) {
+                // P0-01: 先清除旧聚合实例，避免内存泄漏
+                if (markerClusterer) {
+                    markerClusterer.setMap(null);
+                    markerClusterer = null;
+                }
                 markerClusterer = new AMap.MarkerClusterer(map, markers, {
-                    gridSize: 60,
+                    gridSize: 40,  // P0-01: 减小gridSize增强聚合效果（60->40）
+                    maxZoom: 16,   // P0-01: 超过此缩放级别则拆分聚合点
+                    minClusterSize: 3,  // P0-01: 少于此数量不聚合
                     renderClusterMarker: function(context) {
                         var count = context.count;
                         var factor = Math.min(count / 20, 1);
                         var size = 30 + factor * 20;
+                        // P0-01: 聚合标记使用渐变蓝底白字，视觉更突出
+                        // P1-03: 深色模式适配 - 使用亮色边框确保可见
+                        var clusterBg = isDarkMode 
+                            ? 'linear-gradient(135deg,rgba(102,178,255,0.9),rgba(102,178,255,0.75))' 
+                            : 'linear-gradient(135deg,rgba(22,119,255,0.9),rgba(22,119,255,0.75))';
+                        var clusterBorder = isDarkMode ? '#ffd700' : '#fff';  // 深色模式用金色边框更醒目
                         return new AMap.Marker({
                             position: context.center,
-                            content: '<div style="background:rgba(22,119,255,0.85);border:2px solid #fff;color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:12px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.3);">' + count + '</div>',
+                            content: '<div style="background:' + clusterBg + ';border:2px solid ' + clusterBorder + ';color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:12px;font-weight:600;box-shadow:0 3px 10px rgba(0,0,0,0.35);cursor:pointer;">' + count + '</div>',
                             offset: new AMap.Pixel(-size / 2, -size / 2)
                         });
                     }
                 });
-                map.setFitView(markers);
+                // P0-02: 根据检索半径计算合适的缩放级别并调整视口
+                var radiusZoom = getZoomForRadius(searchRadius);
+                map.setZoom(radiusZoom, false);
+                map.setFitView(markers, false, [50, 50, 50, 50]);  // P0-02: 设置边距避免marker被遮挡
             }
+        }
+
+        // P0-02: 根据检索半径计算合适的缩放级别
+        function getZoomForRadius(radius) {
+            // 高德地图缩放级别与实际距离对应关系
+            // zoom 10 ≈ 2km, zoom 12 ≈ 500m, zoom 14 ≈ 200m, zoom 16 ≈ 50m
+            if (radius <= 500) return 15;
+            if (radius <= 1000) return 14;
+            if (radius <= 2000) return 13;
+            if (radius <= 3000) return 12;
+            if (radius <= 5000) return 11;
+            return 10;
         }
 
         // 显示实时POI列表 - 带搜索半径切换
@@ -3670,7 +3877,16 @@
 
         // P1-3: 筛选POI（保存状态）
         var originalPOIs = [];
+        var filterDebounceTimer = null;  // P2-05: 防抖定时器
         function filterPOIs(kw) {
+            // P2-05: 防抖处理，避免频繁筛选导致闪烁
+            if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+            filterDebounceTimer = setTimeout(function() {
+                doFilterPOIs(kw);
+            }, 150);
+        }
+        
+        function doFilterPOIs(kw) {
             var filterSelect = document.getElementById(kw === '停车场' ? 'parkingFilter' : 'chargingFilter');
             if (!filterSelect) return;
             
@@ -3703,7 +3919,16 @@
         }
 
         // P1-3: 排序POI（保存状态）
+        var sortDebounceTimer = null;  // P2-05: 防抖定时器
         function sortPOIs(kw) {
+            // P2-05: 防抖处理，避免频繁排序导致闪烁
+            if (sortDebounceTimer) clearTimeout(sortDebounceTimer);
+            sortDebounceTimer = setTimeout(function() {
+                doSortPOIs(kw);
+            }, 150);
+        }
+        
+        function doSortPOIs(kw) {
             var sortSelect = document.getElementById('sortOrder');
             if (!sortSelect) return;
             
@@ -4150,6 +4375,14 @@
             extra = extra || {};
             selectedPOI = { name, address, lngLat, kw, extra };
             
+            // P1-02: 关闭联想列表和筛选面板，避免遮挡详情弹窗
+            var sugEl = document.getElementById('suggestions');
+            if (sugEl) sugEl.style.display = 'none';
+            var destSugEl = document.getElementById('dest-suggestions');
+            if (destSugEl) destSugEl.style.display = 'none';
+            var filterEl = document.querySelector('.filter-panel');
+            if (filterEl) filterEl.style.display = 'none';
+            
             if (destMarker) map.remove(destMarker);
             destMarker = new AMap.Marker({
                 position: lngLat, map: map,
@@ -4278,6 +4511,9 @@
         function renderMapMarkersAt(pois, kw, centerPos) {
             map.clearMap();
 
+            // P1-03: 深色模式检测
+            var isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
             // 中心点标记（橙色）
             if (destMarker) map.remove(destMarker);
             destMarker = new AMap.Marker({
@@ -4289,7 +4525,10 @@
             // POI标记（聚合渲染）
             var markers = [];
             pois.forEach(function(p, idx) {
-                var iconColor = kw === '停车场' ? '#1677ff' : '#52c41a';
+                // P1-03: 深色模式使用高对比度配色
+                var iconColor = kw === '停车场' 
+                    ? (isDarkMode ? '#66b2ff' : '#1677ff')   // 深色模式用亮蓝
+                    : (isDarkMode ? '#8ce98c' : '#52c41a');  // 深色模式用亮绿
                 var iconUrl = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="' + iconColor + '"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">' + (idx + 1) + '</text></svg>');
 
                 var marker = new AMap.Marker({
@@ -4308,22 +4547,37 @@
                 markers.push(marker);
             });
 
-            // 使用聚合器渲染
+            // 使用聚合器渲染 - P0-01优化：减小gridSize增强密集区域聚合
             if (markers.length > 0) {
+                // P0-01: 先清除旧聚合实例
+                if (markerClusterer) {
+                    markerClusterer.setMap(null);
+                    markerClusterer = null;
+                }
                 markerClusterer = new AMap.MarkerClusterer(map, markers, {
-                    gridSize: 60,
+                    gridSize: 40,  // P0-01: 减小gridSize增强聚合效果
+                    maxZoom: 16,   // P0-01: 超过此缩放级别则拆分聚合点
+                    minClusterSize: 3,  // P0-01: 少于此数量不聚合
                     renderClusterMarker: function(context) {
                         var count = context.count;
                         var factor = Math.min(count / 20, 1);
                         var size = 30 + factor * 20;
+                        // P1-03: 深色模式适配
+                        var clusterBg = isDarkMode 
+                            ? 'linear-gradient(135deg,rgba(102,178,255,0.9),rgba(102,178,255,0.75))' 
+                            : 'linear-gradient(135deg,rgba(22,119,255,0.9),rgba(22,119,255,0.75))';
+                        var clusterBorder = isDarkMode ? '#ffd700' : '#fff';
                         return new AMap.Marker({
                             position: context.center,
-                            content: '<div style="background:rgba(22,119,255,0.85);border:2px solid #fff;color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:12px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.3);">' + count + '</div>',
+                            content: '<div style="background:' + clusterBg + ';border:2px solid ' + clusterBorder + ';color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:12px;font-weight:600;box-shadow:0 3px 10px rgba(0,0,0,0.35);cursor:pointer;">' + count + '</div>',
                             offset: new AMap.Pixel(-size / 2, -size / 2)
                         });
                     }
                 });
-                map.setFitView(markers);
+                // P0-02: 根据检索半径计算合适的缩放级别
+                var radiusZoom = getZoomForRadius(searchRadius);
+                map.setZoom(radiusZoom, false);
+                map.setFitView(markers, false, [50, 50, 50, 50]);
             }
         }
 
@@ -5251,6 +5505,41 @@
                 // 折叠面板
                 panel.classList.add('collapsed');
                 panel.style.maxHeight = '120px';
+            }
+        }
+
+        // P2-02: 地图收起/展开功能
+        var isMapCollapsed = false;
+        function toggleMapView() {
+            var mapEl = document.getElementById('map');
+            var toggleBtn = document.getElementById('mapToggleBtn');
+            
+            if (!mapEl || !toggleBtn) return;
+            
+            isMapCollapsed = !isMapCollapsed;
+            
+            if (isMapCollapsed) {
+                // 收起地图 - 只显示很小区域
+                mapEl.style.height = '35vh';
+                mapEl.style.width = '100%';
+                toggleBtn.innerHTML = '⬆️';
+                toggleBtn.title = '展开地图';
+                toggleBtn.classList.add('collapsed');
+            } else {
+                // 展开地图
+                mapEl.style.height = '100%';
+                mapEl.style.width = '100%';
+                toggleBtn.innerHTML = '⬇️';
+                toggleBtn.title = '收起地图';
+                toggleBtn.classList.remove('collapsed');
+            }
+            
+            // 触发地图resize重新计算布局
+            if (map) {
+                setTimeout(function() {
+                    map.resize();
+                    map.setFitView();
+                }, 50);
             }
         }
 
