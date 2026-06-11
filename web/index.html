@@ -128,7 +128,7 @@
         /* ===== 定位按钮 ===== */
         .locate-btn { 
             position: absolute; 
-            right: 16px; 
+            right: 90px; /* P2: 调整右侧位置，避免与搜索按钮重叠 */
             top: 100px; 
             width: 52px; 
             height: 52px; 
@@ -140,7 +140,7 @@
             justify-content: center; 
             font-size: 24px; 
             cursor: pointer; 
-            z-index: 100;
+            z-index: 202; /* P2: 提高层级，确保在搜索按钮之上 */
             transition: all 0.2s;
         }
         .locate-btn:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(0,0,0,0.15); }
@@ -1647,6 +1647,132 @@
             }
         }
 
+        /* ==================== P0-05: 小屏机型筛选面板不遮挡顶部标签 ==================== */
+        .filter-panel {
+            max-height: 55vh;
+            margin-top: 80px;
+            overflow-y: auto;
+            z-index: 150;
+            position: absolute;
+            top: 0;
+            left: 12px;
+            right: 12px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            padding: 16px;
+            display: none;
+        }
+        .filter-panel.show { display: block; }
+
+        @media (max-width: 768px) and (orientation: portrait) {
+            .filter-panel {
+                margin-top: 120px;
+                max-height: 50vh;
+            }
+        }
+        @media (max-width: 1024px) and (orientation: landscape) {
+            .filter-panel { margin-top: 60px; max-height: 60vh; }
+        }
+
+        /* ==================== P1-06: 200%缩放筛选面板右侧不截断 ==================== */
+        @media (max-width: 600px) {
+            .filter-panel {
+                left: 8px;
+                right: 8px;
+                padding: 12px;
+            }
+            .filter-panel .filter-option { flex-wrap: wrap; }
+        }
+
+        /* ==================== P1-08: 联想列表滑动锁定底层页面 ==================== */
+        .dest-suggestions, .suggestions {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            max-height: 45vh;
+            overflow-y: auto;
+            position: absolute;
+            z-index: 201;
+        }
+
+        /* ==================== P1-10: Safari模式切换动画卡顿优化 ==================== */
+        @media not all and (min-resolution:.001dpcm) {
+            @supports (-webkit-appearance:none) {
+                .mode-option {
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+                    -webkit-transform: translateZ(0);
+                    transform: translateZ(0);
+                    will-change: background-color, color;
+                }
+                .search-container, .dest-search-container, .mode-switch-container {
+                    -webkit-transform: translateZ(0);
+                    -webkit-backface-visibility: hidden;
+                    will-change: transform, opacity;
+                }
+            }
+        }
+
+        /* ==================== P1-11: iOS横屏底部按钮触控热区对齐 ==================== */
+        @media (max-width: 1024px) and (orientation: landscape) {
+            .bottom-nav { padding-bottom: 8px; padding-top: 8px; }
+            .nav-item {
+                padding: 8px 4px;
+                min-height: 44px;
+                min-width: 44px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+            .nav-item .icon {
+                width: 24px; height: 24px; font-size: 20px;
+                display: flex; align-items: center; justify-content: center;
+                margin-bottom: 4px;
+            }
+        }
+
+        /* ==================== P2: 全局UI样式统一优化 ==================== */
+        .search-bar, .dest-search-bar, .poi-card, .mini-card,
+        .filter-panel, .suggestions, .dest-suggestions, .locate-btn,
+        .mode-option, .nav-item, .poi-nav-btn, .mini-btn, .quick-action-btn,
+        .toast, .load-more-btn { border-radius: 16px; }
+
+        .poi-card, .mini-card, .filter-panel, .suggestions, .dest-suggestions,
+        .locate-btn, .toast, .drag-panel { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+
+        .poi-card + .poi-card { margin-top: 12px; }
+        .suggestion-item + .suggestion-item { border-top: 1px solid #f0f0f0; }
+
+        .navi-instruction, .poi-name, .poi-addr, .panel-title, .mini-title,
+        .poi-tag, .suggestion-item .name, .suggestion-item .addr { line-height: 1.5; }
+
+        @media (min-resolution: 2dppx) {
+            .icon, .search-icon, .locate-btn, .poi-icon, .nav-item .icon {
+                text-rendering: optimizeLegibility;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+        }
+
+        /* P2: 全局提示弹窗层级 */
+        .toast { z-index: 180 !important; }
+
+        /* P2: 防止连续重复点击的视觉反馈 */
+        button:active, .mode-option:active, .nav-item:active,
+        .poi-card:active, .suggestion-item:active { opacity: 0.85; }
+
+        /* P2-05: UC浏览器输入框清除按钮点击区域扩大 */
+        .dest-clear, .search-clear {
+            min-width: 36px;
+            min-height: 36px;
+            padding: 0 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
     </style>
 </head>
 <body>
@@ -2730,8 +2856,8 @@
             // P0-01: 重置坐标就绪标志，等待新坐标更新
             isCoordinateReady[mode] = false;
 
-            // P0-1: 取消所有正在进行的请求，防止页面卡死
-            cancelAllRequests();
+            // P0-03: 切换模式时强制重置搜索状态 + 取消所有请求，防止Firefox冻结
+            resetSearchState();
 
             // P1-6: 保存当前列表滚动位置
             var panelContent = document.getElementById('panelContent');
@@ -2741,18 +2867,24 @@
             // P1-2: 切换模式时关闭路线面板，防止数据错乱
             closePanel();
 
-            // P0-02: 切换到「我的位置」时清空目的地坐标缓存，防止历史坐标残留
-            // 切换到「指定目的地」时重置坐标就绪状态
+            // P1-03: 切换模式强制清空导航弹窗缓存数据
+            clearNaviCache();
+
+            // P0-01/P0-02: 切换模式时清空目的地坐标缓存，防止历史坐标残留
             if (mode === 'myLocation') {
-                // 清空但不立即重置isCoordinateReady，等待定位完成
-                console.log('[switchSearchMode] 切换到我的位置模式，清空历史坐标缓存');
-            } else {
-                // 目的地模式等待用户输入新坐标
+                destSearchPos = null;
+                destSearchName = '';
                 isCoordinateReady.destination = false;
-                console.log('[switchSearchMode] 切换到目的地模式，等待新坐标');
+                console.log('[switchSearchMode] 切换到我的位置模式，清空目的地坐标缓存');
+            } else {
+                // P0-01: **清空上一次的目的地坐标**，强制等待新的用户输入
+                destSearchPos = null;
+                destSearchName = '';
+                isCoordinateReady.destination = false;
+                console.log('[switchSearchMode] 切换到目的地模式，已清空历史坐标缓存，等待新坐标');
             }
 
-            // P0-03: 切换模式时应用对应模式的检索半径
+            // P0-02: 切换模式时应用对应模式的检索半径
             searchRadius = searchRadiusConfig[mode];
             console.log('[switchSearchMode] 模式切换，半径更新为:', searchRadius);
 
@@ -2780,8 +2912,8 @@
                 // P1-04: 切换到目的地时清空空状态提示
                 clearEmptyState();
 
-                // P0-05: 移除自动聚焦，防止微信浏览器自动唤起软键盘
-                // 用户需要手动点击输入框才会唤起键盘
+                // P0-04: 移除自动聚焦，防止微信浏览器自动唤起软键盘
+                // 不做任何focus操作，用户需要手动点击输入框
             }
 
             // P1-2: 切换模式时不清空目的地输入，只在切换到"我的位置"且需要时才清空
@@ -2789,6 +2921,9 @@
             if (mode === 'myLocation' && !isNavigating) {
                 clearDestInput();
             }
+
+            // P1-05: 清除可能残留的筛选面板关闭状态，持久化保持用户筛选
+            // （注意：这里不主动关闭筛选面板，保持用户操作状态）
 
             // P1-2: 如果正在导航，不中断导航状态，只在非导航状态下刷新搜索
             if (!isNavigating) {
@@ -3009,14 +3144,20 @@
                             // P1-3: 去重 - 相同名称的地点只显示第一个
                             if (seenNames[tip.name]) return;
                             seenNames[tip.name] = true;
-                            
+
                             var loc = tip.location.split(',');
                             // P3-2: 保存建议数据
                             currentSuggestions.push({ name: tip.name, lng: loc[0], lat: loc[1], address: tip.address });
-                            html += '<div class="dest-suggestion-item" onclick="selectDestSuggestion(\'' + 
-                                tip.name.replace(/'/g, "\\'") + '\', ' + loc[0] + ', ' + loc[1] + ')">' +
-                                '<span class="name">' + tip.name + '</span>' +
-                                (tip.address ? '<span class="addr">' + tip.address + '</span>' : '') +
+
+                            // P2安全: XSS防护 - 转义HTML特殊字符
+                            var safeName = escapeHtml(tip.name);
+                            var safeAddr = tip.address ? escapeHtml(tip.address) : '';
+                            var safeNameForOnclick = tip.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+
+                            html += '<div class="dest-suggestion-item" onclick="selectDestSuggestion(\'' +
+                                safeNameForOnclick + '\', ' + loc[0] + ', ' + loc[1] + ')">' +
+                                '<span class="name">' + safeName + '</span>' +
+                                (safeAddr ? '<span class="addr">' + safeAddr + '</span>' : '') +
                                 '</div>';
                         }
                     });
@@ -3099,9 +3240,12 @@
                 '</div>';
             
             history.forEach(function(h) {
-                html += '<div class="dest-suggestion-item" onclick="selectDestSuggestion(\'' + 
-                    h.name.replace(/'/g, "\\'") + '\', ' + h.lng + ', ' + h.lat + ')">' +
-                    '<span class="name">🕐 ' + h.name + '</span>' +
+                // P2安全: XSS防护 - 转义HTML特殊字符
+                var safeName = escapeHtml(h.name);
+                var safeNameForOnclick = h.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                html += '<div class="dest-suggestion-item" onclick="selectDestSuggestion(\'' +
+                    safeNameForOnclick + '\', ' + h.lng + ', ' + h.lat + ')">' +
+                    '<span class="name">🕐 ' + safeName + '</span>' +
                     '</div>';
             });
             
