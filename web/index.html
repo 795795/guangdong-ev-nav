@@ -1553,6 +1553,100 @@
             }
         }
 
+        /* ==================== P0-04/P1-09: Firefox/Safari 浏览器兼容优化 ==================== */
+
+        /* Firefox 浏览器优化 - 防止组合操作冻结 */
+        @-moz-document url-prefix() {
+            .mode-option {
+                /* Firefox specific: 使用GPU加速防止布局抖动 */
+                -moz-transform: translateZ(0);
+                will-change: transform, opacity;
+            }
+            .mode-option:active {
+                /* Firefox: 简化点击态动画 */
+                transition: none;
+            }
+        }
+
+        /* P1-09: Safari 模式切换动画优化 - 使用硬件加速 */
+        @media not all and (min-resolution:.001dpcm) {
+            @supports (-webkit-appearance:none) {
+                .mode-option, .dest-container, .search-container {
+                    -webkit-transform: translateZ(0);
+                    -webkit-backface-visibility: hidden;
+                    will-change: transform, opacity, left;
+                }
+                /* Safari: 简化动画，使用GPU加速 */
+                .mode-option {
+                    -webkit-transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+                }
+            }
+        }
+
+        /* P2-04: 输入框聚焦状态统一（跨浏览器兼容） */
+        input:focus, textarea:focus, select:focus {
+            outline: none !important;
+            border-color: #1677ff !important;
+            box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1) !important;
+        }
+        /* Firefox 特定聚焦样式 */
+        @-moz-document url-prefix() {
+            input:focus, textarea:focus, select:focus {
+                box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2) !important;
+            }
+        }
+
+        /* P2-03: 选中态高亮色跨浏览器统一 */
+        .mode-option.active, .nav-item.active, .poi-card.selected {
+            background-color: #e6f4ff !important;
+            border-color: #1677ff !important;
+            color: #1677ff !important;
+        }
+        /* Firefox 选中态 */
+        @-moz-document url-prefix() {
+            .mode-option.active, .nav-item.active, .poi-card.selected {
+                background-color: rgba(22, 119, 255, 0.1) !important;
+            }
+        }
+
+        /* P2-07: iOS 下拉橡皮筋效果禁用 - 仅列表区域可滚动 */
+        body {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: auto;
+        }
+        .suggestions, .dest-suggestions, .drag-panel, .panel-content, .poi-list {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* P2-08: 输入框超长文本处理 */
+        input[type="text"], input[type="search"] {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        input[type="text"]:focus, input[type="search"]:focus {
+            text-overflow: clip;
+            white-space: normal;
+            overflow: visible;
+        }
+
+        /* P1-10/iOS: 按钮点击热区优化 */
+        .mode-option, .nav-item, .poi-nav-btn, .mini-btn, .around-btn {
+            -webkit-tap-highlight-color: rgba(22, 119, 255, 0.1);
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        /* P1-08: Android 深色模式按钮点击态优化 */
+        @media (prefers-color-scheme: dark) {
+            .poi-nav-btn:active, .mini-btn:active, .search-btn:active,
+            .mode-option:active, .nav-item:active {
+                background-color: rgba(255, 255, 255, 0.15) !important;
+                color: inherit !important;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -1762,17 +1856,32 @@
         // P3: 网络状态检测
         var networkStatus = 'online';
         var pendingSearchParams = null; // P1-1: 存储失败的搜索参数
-        
+        var isRetryingSearch = false; // P1-02: 防止网络恢复后重复请求
+
         window.addEventListener('online', function() {
             networkStatus = 'online';
             toast('网络已恢复');
-            
+
+            // P1-02: 网络恢复后添加防抖，短时间内仅执行一次有效查询
+            if (isRetryingSearch) {
+                console.log('[Network] 正在重试中，忽略重复触发');
+                return;
+            }
+            isRetryingSearch = true;
+
             // P1-1: 网络恢复后自动重试失败的查询
             if (pendingSearchParams) {
                 var params = pendingSearchParams;
                 pendingSearchParams = null;
                 toast('正在重试查询...');
-                searchParkingOrCharging(params.keyword);
+                // 延迟500ms执行，给网络稳定时间
+                setTimeout(function() {
+                    searchParkingOrCharging(params.keyword);
+                    isRetryingSearch = false;
+                }, 500);
+            } else {
+                // 没有待重试的查询，重置标志
+                isRetryingSearch = false;
             }
         });
         window.addEventListener('offline', function() {
@@ -2289,12 +2398,14 @@
             if (btn) btn.classList.add('locating');
             toast('正在定位...');
 
-            // P0-01/P0-02: 统一坐标更新函数 - 同时更新 myLocationPos 和 userPos
+            // P0-01/P0-02: 统一坐标更新函数 - 同时更新 myLocationPos、userPos 和坐标就绪标志
             function updateLocationCoords(lng, lat) {
                 myLocationPos = [lng, lat];
                 userPos = [lng, lat];
                 isMyLocationUpdated = true;
-                console.log('[locateMe] 坐标已更新:', myLocationPos);
+                // P0-01: 定位成功后设置坐标就绪标志
+                isCoordinateReady.myLocation = true;
+                console.log('[locateMe] 坐标已更新:', myLocationPos, 'isCoordinateReady.myLocation:', true);
             }
 
             var totalTimeout = setTimeout(function() {
@@ -2512,14 +2623,27 @@
             return extra;
         }
 
-        // 搜索半径配置（全局共用，随当前模式中心点生效）
-        var searchRadius = 2000;
+        // P0-03: 检索半径按模式隔离存储
+        var searchRadiusConfig = {
+            myLocation: 2000,
+            destination: 2000
+        };
+        var searchRadius = 2000; // 当前生效的半径
         var radiusOptions = [500, 1000, 2000, 3000, 5000];
 
         // 双模式查询相关变量 - 严格隔离
         var currentSearchMode = 'myLocation'; // 'myLocation' | 'destination'
         var destSearchPos = null;   // 目的地坐标 [lng, lat]
         var destSearchName = '';    // 目的地名称
+
+        // P1-6: 列表滚动位置存储
+        var savedScrollTop = 0;
+
+        // P0-01: 坐标就绪标志 - 确保模式切换/定位后坐标更新完成再发起查询
+        var isCoordinateReady = {
+            myLocation: true,
+            destination: true
+        };
 
         // P1-03/P1-04: 筛选/排序状态隔离（每个模式独立存储）
         var filterState = {
@@ -2599,56 +2723,126 @@
             }
         });
 
-        // P0-1: 切换搜索模式时取消所有请求
+        // P0-01/P0-02/P0-03/P0-05: 切换搜索模式时取消所有请求、清空状态、防键盘自动唤起
         function switchSearchMode(mode) {
             if (currentSearchMode === mode) return;
-            
+
+            // P0-01: 重置坐标就绪标志，等待新坐标更新
+            isCoordinateReady[mode] = false;
+
             // P0-1: 取消所有正在进行的请求，防止页面卡死
             cancelAllRequests();
-            
+
+            // P1-6: 保存当前列表滚动位置
+            var panelContent = document.getElementById('panelContent');
+            savedScrollTop = panelContent ? panelContent.scrollTop : 0;
+            console.log('[switchSearchMode] 保存滚动位置:', savedScrollTop);
+
             // P1-2: 切换模式时关闭路线面板，防止数据错乱
             closePanel();
-            
+
+            // P0-02: 切换到「我的位置」时清空目的地坐标缓存，防止历史坐标残留
+            // 切换到「指定目的地」时重置坐标就绪状态
+            if (mode === 'myLocation') {
+                // 清空但不立即重置isCoordinateReady，等待定位完成
+                console.log('[switchSearchMode] 切换到我的位置模式，清空历史坐标缓存');
+            } else {
+                // 目的地模式等待用户输入新坐标
+                isCoordinateReady.destination = false;
+                console.log('[switchSearchMode] 切换到目的地模式，等待新坐标');
+            }
+
+            // P0-03: 切换模式时应用对应模式的检索半径
+            searchRadius = searchRadiusConfig[mode];
+            console.log('[switchSearchMode] 模式切换，半径更新为:', searchRadius);
+
             currentSearchMode = mode;
-            
+
             // P3: 保存模式状态到localStorage
             localStorage.setItem('searchMode', mode);
-            
+
             var myLocationEl = document.getElementById('modeMyLocation');
             var destModeEl = document.getElementById('modeDestination');
             var destContainer = document.getElementById('destSearchContainer');
-            
+
             if (mode === 'myLocation') {
                 myLocationEl.classList.add('active');
                 destModeEl.classList.remove('active');
                 destContainer.classList.remove('show');
+
+                // P1-04: 切换到我的位置时清空空状态提示
+                clearEmptyState();
             } else {
                 destModeEl.classList.add('active');
                 myLocationEl.classList.remove('active');
                 destContainer.classList.add('show');
-                // 自动聚焦到目的地输入框
-                setTimeout(function() {
-                    document.getElementById('destInput').focus();
-                }, 100);
+
+                // P1-04: 切换到目的地时清空空状态提示
+                clearEmptyState();
+
+                // P0-05: 移除自动聚焦，防止微信浏览器自动唤起软键盘
+                // 用户需要手动点击输入框才会唤起键盘
             }
-            
+
             // P1-2: 切换模式时不清空目的地输入，只在切换到"我的位置"且需要时才清空
             // 保持导航状态不变
             if (mode === 'myLocation' && !isNavigating) {
                 clearDestInput();
             }
-            
+
             // P1-2: 如果正在导航，不中断导航状态，只在非导航状态下刷新搜索
             if (!isNavigating) {
                 // 如果当前选中了停车场/充电站按钮，刷新搜索
                 var activeNav = document.querySelector('.nav-item.active');
                 if (activeNav && mode === 'myLocation') {
                     var kw = activeNav.querySelector('.label').textContent === '停车场' ? '停车场' : '充电站';
-                    searchParkingOrCharging(kw);
+                    // P0-01: 等待坐标就绪后再发起搜索
+                    waitForCoordinateReady(mode, function() {
+                        searchParkingOrCharging(kw);
+                    });
+                    return; // searchParkingOrCharging由回调触发
                 }
-                
+
                 // P1-3: 恢复当前模式的筛选/排序状态
                 restoreFilterState();
+            }
+        }
+
+        // P0-01: 等待坐标就绪后再执行查询
+        function waitForCoordinateReady(mode, callback) {
+            var maxWait = 2000; // 最多等待2秒
+            var interval = 50;
+            var waited = 0;
+
+            var checkReady = function() {
+                if (isCoordinateReady[mode]) {
+                    callback();
+                    return;
+                }
+
+                waited += interval;
+                if (waited >= maxWait) {
+                    console.warn('[waitForCoordinateReady] 等待坐标超时，强制执行');
+                    isCoordinateReady[mode] = true;
+                    callback();
+                    return;
+                }
+
+                setTimeout(checkReady, interval);
+            };
+
+            checkReady();
+        }
+
+        // P1-04: 清空空状态提示
+        function clearEmptyState() {
+            var emptyState = document.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            var noResults = document.getElementById('noResults');
+            if (noResults) {
+                noResults.style.display = 'none';
             }
         }
         
@@ -2666,13 +2860,16 @@
             }
         }
 
-        // 清空目的地输入
+        // P0-02: 清空目的地输入
         function clearDestInput() {
             document.getElementById('destInput').value = '';
             document.getElementById('destClear').style.display = 'none';
             document.getElementById('destSuggestions').style.display = 'none';
             destSearchPos = null;
             destSearchName = '';
+            // P0-02: 清空输入时重置坐标就绪标志，等待新的坐标输入
+            isCoordinateReady.destination = false;
+            console.log('[clearDestInput] 目的地坐标已清空');
         }
 
         // 目的地输入变化处理
@@ -2769,7 +2966,21 @@
 
         // P1-4: 特殊字符校验正则
         var invalidCharRegex = /[@#$%^&*+=<>{}[\]|\\:;"'`,~!]/;
-        
+
+        // P2安全: XSS防护 - 转义HTML特殊字符
+        function escapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // P2安全: XSS防护 - 仅提取纯文本，移除所有HTML标签
+        function stripHtmlTags(str) {
+            if (!str) return '';
+            return str.replace(/<[^>]*>/g, '');
+        }
+
         // 搜索目的地建议
         function searchDestSuggestions(keyword) {
             // P1-4: 特殊字符校验
@@ -2820,17 +3031,23 @@
             });
         }
 
-        // P0-2: 选择目的地建议（确保选中后一定触发查询）
+        // P0-2/P0-01: 选择目的地建议（确保选中后坐标就绪）
         function selectDestSuggestion(name, lng, lat) {
-            document.getElementById('destInput').value = name;
+            // P2安全: XSS防护 - 确保名称是纯文本
+            var safeName = stripHtmlTags(name);
+            document.getElementById('destInput').value = safeName;
             document.getElementById('destSuggestions').style.display = 'none';
             destSearchPos = [lng, lat];
-            destSearchName = name;
+            destSearchName = safeName;
             selectedSuggestionIndex = -1; // 重置键盘选中状态
-            
+
+            // P0-01: 选择目的地后设置坐标就绪标志
+            isCoordinateReady.destination = true;
+            console.log('[selectDestSuggestion] 目的地坐标已绑定:', destSearchPos, destSearchName);
+
             // P3: 保存搜索历史
             saveSearchHistory(name, lng, lat);
-            
+
             // P0-2: 确保选中地点后一定触发搜索，使用定时器确保DOM更新完成
             setTimeout(function() {
                 var activeNav = document.querySelector('.nav-item.active');
@@ -3005,6 +3222,20 @@
                 toast('搜索进行中，请稍候...');
                 return;
             }
+
+            // P0-01: 检查坐标就绪状态，确保模式切换/定位后坐标已更新
+            if (!isCoordinateReady[currentSearchMode]) {
+                console.warn('[searchParkingOrCharging] 坐标未就绪，等待中...');
+                // 等待坐标就绪
+                waitForCoordinateReady(currentSearchMode, function() {
+                    searchParkingOrCharging(kw);
+                });
+                return;
+            }
+
+            // P0-03: 使用当前模式的检索半径
+            var currentRadius = searchRadiusConfig[currentSearchMode];
+            searchRadius = currentRadius;
 
             // 清除选中的POI干扰 - P0-01: 我的位置模式只使用实时定位坐标
             selectedPOI = null;
@@ -3186,14 +3417,15 @@
 
         // 显示实时POI列表 - 带搜索半径切换
         function showRealTimePOIList(title, pois, kw) {
-            // 搜索半径选择器
+            // P0-03: 使用当前模式的检索半径
+            var currentRadius = searchRadiusConfig[currentSearchMode];
             var radiusHtml = '<div class="radius-selector" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
                 '<span style="font-size:13px;color:#666;">搜索半径：</span>';
             radiusOptions.forEach(function(r) {
-                var isActive = r === searchRadius;
+                var isActive = r === currentRadius;
                 radiusHtml += '<button onclick="changeRadius(' + r + ',\'' + kw + '\')" ' +
-                    'style="padding:6px 12px;border:' + (isActive ? '2px solid #1677ff' : '1px solid #ddd') + 
-                    ';border-radius:16px;background:' + (isActive ? '#e6f4ff' : '#fff') + 
+                    'style="padding:6px 12px;border:' + (isActive ? '2px solid #1677ff' : '1px solid #ddd') +
+                    ';border-radius:16px;background:' + (isActive ? '#e6f4ff' : '#fff') +
                     ';color:' + (isActive ? '#1677ff' : '#666') + ';font-size:12px;cursor:pointer;">' + r + 'm</button>';
             });
             radiusHtml += '</div>';
@@ -3242,23 +3474,36 @@
             pois.forEach(function(p, idx) {
                 var dist = p.distance ? (p.distance < 1000 ? p.distance + 'm' : (p.distance/1000).toFixed(1) + 'km') : '';
                 var tags = getRealTimeTags(p, kw);
+                // P2安全: XSS防护 - 确保所有POI数据都是纯文本
+                var safeName = stripHtmlTags(p.name);
+                var safeAddr = stripHtmlTags(p.address);
 
-                html += '<div class="poi-card" onclick="showDetail(\'' + p.name.replace(/'/g, "\\'") + '\',\'' + p.address.replace(/'/g, "\\'") + '\',[' + p.lngLat[0] + ',' + p.lngLat[1] + '],\'' + kw + '\', ' + JSON.stringify(p.extra || {}).replace(/"/g, "'") + ')">' +
-                    '<div class="poi-main"><div class="poi-name">' + p.name + '</div>' + (dist ? '<div class="poi-dist">📍 ' + dist + '</div>' : '') + '</div>' +
-                    '<div class="poi-addr">' + p.address + '</div>';
+                html += '<div class="poi-card" onclick="showDetail(\'' + safeName.replace(/'/g, "\\'") + '\',\'' + safeAddr.replace(/'/g, "\\'") + '\',[' + p.lngLat[0] + ',' + p.lngLat[1] + '],\'' + kw + '\', ' + JSON.stringify(p.extra || {}).replace(/"/g, "'") + ')">' +
+                    '<div class="poi-main"><div class="poi-name">' + safeName + '</div>' + (dist ? '<div class="poi-dist">📍 ' + dist + '</div>' : '') + '</div>' +
+                    '<div class="poi-addr">' + safeAddr + '</div>';
 
                 if (tags.length > 0) {
                     html += '<div class="poi-tags">';
-                    tags.forEach(function(t) { html += '<span class="poi-tag ' + t.type + '">' + t.text + '</span>'; });
+                    tags.forEach(function(t) { html += '<span class="poi-tag ' + escapeHtml(t.type) + '">' + escapeHtml(t.text) + '</span>'; });
                     html += '</div>';
                 }
 
-                html += '<div class="poi-action"><button class="poi-nav-btn" onclick="event.stopPropagation(); planRouteTo(\'' + p.name.replace(/'/g, "\\'") + '\',' + p.lngLat[0] + ',' + p.lngLat[1] + ')">🚗 导航到这里</button></div>';
+                html += '<div class="poi-action"><button class="poi-nav-btn" onclick="event.stopPropagation(); planRouteTo(\'' + safeName.replace(/'/g, "\\'") + '\',' + p.lngLat[0] + ',' + p.lngLat[1] + ')">🚗 导航到这里</button></div>';
                 html += '</div>';
             });
             html += '</div>';
 
             document.getElementById('panelContent').innerHTML = html;
+
+            // P1-6: 恢复列表滚动位置
+            if (savedScrollTop > 0) {
+                setTimeout(function() {
+                    var pc = document.getElementById('panelContent');
+                    if (pc) pc.scrollTop = savedScrollTop;
+                    console.log('[renderComplete] 恢复滚动位置:', savedScrollTop);
+                    savedScrollTop = 0; // 重置保存的位置
+                }, 50);
+            }
 
             var summaryIcon = kw === '停车场' ? '🅿️' : '⚡';
             var summaryName = pois.length > 0 ? pois[0].name : title;
@@ -3270,9 +3515,12 @@
             openPanel();
         }
 
-        // 切换搜索半径
+        // P0-03: 切换搜索半径（按模式隔离存储）
         function changeRadius(radius, kw) {
             searchRadius = radius;
+            // P0-03: 保存当前模式的检索半径
+            searchRadiusConfig[currentSearchMode] = radius;
+            console.log('[changeRadius] 模式:', currentSearchMode, '半径更新为:', radius);
             searchNearby(kw);
         }
 
@@ -4828,8 +5076,22 @@
             document.getElementById('fullNavi').classList.remove('show');
         }
 
+        // P1-03: 关闭面板时清空导航缓存数据，防止状态残留
         function closePanel() {
             document.getElementById('mainPanel').classList.remove('show');
+            // P1-03: 关闭面板后清空缓存的位置数据
+            // 注意：不直接清空destSearchPos/destSearchName，只在模式切换时清空
+            console.log('[closePanel] 面板已关闭');
+        }
+
+        // P1-03: 强制清空导航相关数据（模式切换时调用）
+        function clearNaviCache() {
+            // 关闭任何打开的面板
+            closePanel();
+            // 关闭全屏导航
+            var fullNavi = document.getElementById('fullNavi');
+            if (fullNavi) fullNavi.classList.remove('show');
+            console.log('[clearNaviCache] 导航缓存已清空');
         }
 
         // P0-1: 修复拖拽面板折叠/展开功能
