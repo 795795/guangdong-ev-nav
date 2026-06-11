@@ -94,7 +94,8 @@
             right: 0; 
             z-index: 200; 
             padding: 12px; 
-            padding-top: max(12px, env(safe-area-inset-top));
+            /* P2-3: 安卓微信浏览器状态栏避让 - 最小28px顶部padding */
+            padding-top: max(28px, env(safe-area-inset-top), 12px);
             padding-left: max(12px, env(safe-area-inset-left));
             padding-right: max(12px, env(safe-area-inset-right));
             background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 100%);
@@ -112,12 +113,15 @@
         .search-icon { font-size: 18px; color: #1677ff; flex-shrink: 0; }
         .search-bar input { 
             flex: 1; 
-            min-width: 0; /* 防止输入框被挤压 */
+            min-width: 0;
             border: none; 
             outline: none; 
             font-size: 15px; 
             color: #333; 
-            background: transparent; 
+            background: transparent;
+            height: 40px;
+            line-height: 40px;
+            padding: 0 4px;
             padding: 0 12px; 
         }
         .search-btn { 
@@ -365,10 +369,8 @@
             margin-bottom: 12px; 
             cursor: pointer; 
             transition: all 0.2s;
-            /* 自适应高度，防止内容被截断 */
             display: block;
             min-height: 60px;
-            /* 防截断：明确禁止内容溢出截断 */
             overflow: visible;
             box-sizing: border-box;
         }
@@ -434,10 +436,11 @@
             font-size: 12px; 
             padding: 4px 10px; 
             background: #f0f5ff; 
-            color: #597ef7; 
-            border-radius: 6px;
-            line-height: 1.4;
+            color: #1677ff; 
+            border-radius: 8px;
+            line-height: 1.5;
             white-space: nowrap;
+            font-weight: 500;
         }
         .poi-tag.orange { background: #fff7e6; color: #fa8c16; }
         .poi-tag.green { background: #f6ffed; color: #52c41a; }
@@ -460,22 +463,28 @@
             border: none; 
             border-radius: 10px; 
             font-size: 14px; 
-            font-weight: 500; 
+            font-weight: 600; 
             cursor: pointer;
             transition: all 0.2s;
             box-sizing: border-box;
-            line-height: 1.5;
+            line-height: 1.4;
             min-height: 44px;
-            /* 自适应按钮高度（多行文本支持） */
             height: auto;
-            display: inline-flex;
+            /* P2-2: 严格水平+垂直居中，图标与文字对齐 */
+            display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
             white-space: normal;
             word-break: break-word;
+            text-align: center;
         }
-        .poi-nav-btn:hover { background: #0958d9; transform: scale(1.01); }
-        .poi-nav-btn:active { transform: scale(0.98); }
+        .poi-nav-btn:hover {
+            background: linear-gradient(135deg, #0958d9, #003eb3);
+            box-shadow: 0 4px 12px rgba(22, 119, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .poi-nav-btn:active { transform: translateY(0) scale(0.99); }
 
         /* ===== 加载更多按钮 ===== */
         .load-more-container { text-align: center; padding: 16px; }
@@ -522,35 +531,47 @@
         .nav-items { 
             display: flex; 
             justify-content: space-around; 
-            padding: 10px 0;
+            padding: 10px 8px;
+            gap: 4px;
         }
         .nav-item { 
             flex: 1; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            padding: 8px 4px; 
+            justify-content: center;
+            padding: 6px 4px; 
             cursor: pointer; 
-            min-width: 0; /* 允许收缩 */
+            min-width: 0;
             position: relative; 
             transition: all 0.2s;
+            /* P2-5: 统一图标+文字排版 */
+            row-gap: 2px;
         }
         .nav-item:hover { transform: scale(1.05); }
         .nav-item:active { transform: scale(0.95); }
         .nav-item .icon { 
-            font-size: 26px; 
-            margin-bottom: 4px; 
+            font-size: 24px; 
+            margin-bottom: 2px; 
             position: relative;
             flex-shrink: 0;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
         }
         .nav-item .label { 
             font-size: 11px; 
             color: #999; 
             transition: color 0.2s;
             white-space: nowrap;
+            text-align: center;
+            line-height: 1.2;
         }
-        .nav-item:hover .label { color: #666; }
-        .nav-item.active .label { color: #1677ff; font-weight: 500; }
+        .nav-item:hover .label { color: #1677ff; }
+        .nav-item.active .label { color: #1677ff; font-weight: 600; }
         .nav-item.loading { opacity: 0.7; pointer-events: none; }
         .nav-item.loading .icon::before { 
             content: ''; 
@@ -579,6 +600,11 @@
             box-shadow: 0 -8px 32px rgba(0,0,0,0.1); 
             display: none; 
             transition: max-height 0.3s ease;
+            /* P1-2: 确保面板为浮层，不挤压主内容 */
+            overflow: hidden;
+            /* 防止面板影响文档流高度 */
+            max-width: 100%;
+            /* 圆角保持一致，与poi-card 16px协调 */
         }
         .drag-panel.show { display: block; }
         .drag-panel.collapsed { max-height: 120px; }
@@ -666,11 +692,12 @@
         .mini-btn:active { transform: scale(0.98); }
         
         .panel-content { 
-            padding: 16px 16px 24px; /* 底部加大内边距，防止最后一个卡片被截断 */
-            overflow-y: auto; 
-            /* 更合理的最大高度：减去 handle 高度 + 底部间距 */
+            padding: 16px 16px 24px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            /* P1-2: 明确最大高度，确保不挤压主内容 */
             max-height: calc(65vh - 44px);
-            -webkit-overflow-scrolling: touch; /* 移动端顺滑滚动 */
+            -webkit-overflow-scrolling: touch;
             scroll-behavior: smooth;
             box-sizing: border-box;
         }
@@ -683,7 +710,8 @@
         .panel-count { 
             font-size: 13px; 
             color: #999; 
-            margin-bottom: 16px; 
+            margin: 10px 0 14px 0;
+            line-height: 1.4;
         }
         /* POI 列表容器：确保每个卡片被完整显示 */
         .poi-list { 
@@ -725,15 +753,18 @@
 
         /* ===== 筛选/排序控件 ===== */
         select {
-            padding: 8px 12px;
+            padding: 8px 28px 8px 12px;
             border-radius: 8px;
             border: 1px solid #e8e8e8;
             font-size: 13px;
-            background: #fff;
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 8px center;
+            background-size: 14px;
             color: #333;
             cursor: pointer;
             transition: all 0.2s;
             min-width: 100px;
+            appearance: none;
+            -webkit-appearance: none;
         }
         select:hover { border-color: #1677ff; }
         select:active { transform: scale(0.98); }
@@ -795,7 +826,33 @@
             .poi-tag { background: rgba(22,119,255,0.2); color: #1677ff; }
             .poi-nav-btn { background: #1677ff; color: #fff; }
             .poi-nav-btn:hover { background: #0958d9; }
-            select { background: #333; color: #fff; border-color: #444; }
+            .filter-select {
+                background: #333 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+                background-size: 14px;
+                color: #fff;
+                border-color: #444;
+            }
+            .filter-select:hover {
+                border-color: #1677ff;
+                background-color: #3a3a3a;
+            }
+            .filter-select option { background: #2a2a2a; color: #fff; }
+            .radius-selector { border-bottom-color: #3a3a3a; }
+            .radius-selector > span:first-child { color: #ccc; }
+            .radius-btn {
+                background: #333;
+                color: #ccc;
+                border-color: #444;
+            }
+            .radius-btn:hover {
+                border-color: #1677ff;
+                color: #1677ff;
+            }
+            .radius-btn.active {
+                background: rgba(22, 119, 255, 0.2);
+                border-color: #1677ff;
+                color: #1677ff;
+            }
             .load-more-btn { background: #333; border-color: #444; color: #ccc; }
             .load-more-btn:hover { background: rgba(22,119,255,0.2); border-color: #1677ff; color: #1677ff; }
             .empty-state .empty-text { color: #ccc; }
@@ -1722,14 +1779,14 @@
         }
 
         /* P2-03: 选中态高亮色跨浏览器统一 */
-        .mode-option.active, .nav-item.active, .poi-card.selected {
+        .mode-option.active, .poi-card.selected {
             background-color: #e6f4ff !important;
             border-color: #1677ff !important;
             color: #1677ff !important;
         }
         /* Firefox 选中态 */
         @-moz-document url-prefix() {
-            .mode-option.active, .nav-item.active, .poi-card.selected {
+            .mode-option.active, .poi-card.selected {
                 background-color: rgba(22, 119, 255, 0.1) !important;
             }
         }
@@ -1991,8 +2048,51 @@
         .panel-count {
             font-size: 13px;
             color: #999;
-            margin: 8px 0 12px 0;
+            margin: 10px 0 14px 0;
             text-align: left;
+            line-height: 1.4;
+        }
+
+        /* P1-1: 筛选排序容器统一样式 */
+        .filter-sort-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* P1-1: 筛选下拉选择器统一样式 - 支持深色模式 */
+        .filter-select {
+            padding: 8px 32px 8px 12px;
+            border-radius: 10px;
+            border: 1.5px solid #d9d9d9;
+            font-size: 13px;
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+            background-size: 14px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 110px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            outline: none;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        .filter-select:hover {
+            border-color: #1677ff;
+            background-color: #f8fbff;
+        }
+        .filter-select:focus {
+            border-color: #1677ff;
+            box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1);
+        }
+        .filter-select option {
+            background: #fff;
+            color: #333;
+            padding: 6px;
         }
 
         /* P2-4: 导航按钮文字+图标严格居中 */
@@ -2039,7 +2139,6 @@
 
         /* ==================== 桌面端P2 ==================== */
         @media (min-width: 1024px) {
-            /* 桌面端面板宽度固定且居中，不出现两侧空白 */
             .drag-panel {
                 left: 50%;
                 right: auto;
@@ -2049,24 +2148,20 @@
                 border-radius: 24px 24px 24px 24px;
                 bottom: 80px;
             }
-
-            /* 桌面端定位按钮：与边缘增加边距，避免误触 */
             .locate-btn {
-                right: 20px;
-                top: 120px;
+                right: 24px;
+                top: 130px;
                 width: 52px;
                 height: 52px;
                 font-size: 22px;
                 box-shadow: 0 4px 16px rgba(0,0,0,0.15);
             }
-
-            /* 桌面端地图展开按钮：与定位按钮保持间距 */
             .map-toggle-btn {
-                right: 20px;
-                top: 185px;
+                right: 24px;
+                top: 195px;
+                width: 52px;
+                height: 52px;
             }
-
-            /* 桌面端底部导航：更紧凑 */
             .bottom-nav {
                 max-width: 720px;
                 left: 50%;
@@ -2074,8 +2169,6 @@
                 transform: translateX(-50%);
                 border-radius: 20px 20px 0 0;
             }
-
-            /* 桌面端结果卡片：更宽，标签更清晰 */
             .poi-card {
                 padding: 20px;
                 margin-bottom: 16px;
@@ -2088,6 +2181,30 @@
                 font-size: 13px;
                 padding: 6px 14px;
                 border-radius: 8px;
+            }
+        }
+
+        /* 中等屏幕平板适配 */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .drag-panel {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: 520px;
+                max-width: 85vw;
+            }
+            .locate-btn {
+                right: 24px;
+            }
+            .map-toggle-btn {
+                right: 24px;
+                top: 180px;
+            }
+            .bottom-nav {
+                max-width: 560px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
             }
         }
 
@@ -4143,17 +4260,17 @@
                 destTagHtml = '<div class="result-tag" style="background:linear-gradient(90deg,#fff7e6,#fff);border-left:3px solid #fa8c16;padding:10px 14px;font-size:13px;color:#333;margin-bottom:8px;border-radius:6px;"><strong>📍 目的地：' + destSearchName + ' 周边设施</strong></div>';
             }
 
-            // P3: 筛选/排序控件
-            var filterSortHtml = '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">';
+            // P3: 筛选/排序控件 - 使用CSS类名统一样式
+            var filterSortHtml = '<div class="filter-sort-container">';
             if (kw === '停车场') {
-                filterSortHtml += '<select id="parkingFilter" onchange="filterPOIs(\'停车场\')" style="padding:6px 10px;border-radius:8px;border:1px solid #ddd;font-size:12px;background:#fff;">' +
+                filterSortHtml += '<select id="parkingFilter" class="filter-select" onchange="filterPOIs(\'停车场\')">' +
                     '<option value="all">全部类型</option>' +
                     '<option value="地下">地下停车场</option>' +
                     '<option value="地面">地面停车场</option>' +
                     '<option value="路边">路边停车</option>' +
                     '</select>';
             } else {
-                filterSortHtml += '<select id="chargingFilter" onchange="filterPOIs(\'充电站\')" style="padding:6px 10px;border-radius:8px;border:1px solid #ddd;font-size:12px;background:#fff;">' +
+                filterSortHtml += '<select id="chargingFilter" class="filter-select" onchange="filterPOIs(\'充电站\')">' +
                     '<option value="all">全部类型</option>' +
                     '<option value="快充">快充桩</option>' +
                     '<option value="慢充">慢充桩</option>' +
@@ -4162,7 +4279,7 @@
                     '<option value="星星">星星充电</option>' +
                     '</select>';
             }
-            filterSortHtml += '<select id="sortOrder" onchange="sortPOIs(\'' + kw + '\')" style="padding:6px 10px;border-radius:8px;border:1px solid #ddd;font-size:12px;background:#fff;">' +
+            filterSortHtml += '<select id="sortOrder" class="filter-select" onchange="sortPOIs(\'' + kw + '\')">' +
                 '<option value="distance">按距离排序</option>' +
                 '<option value="name">按名称排序</option>' +
                 '</select>';
