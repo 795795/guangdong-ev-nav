@@ -1898,8 +1898,231 @@
             justify-content: center;
         }
 
+
+        /* ==================== P1 修复 ==================== */
+
+        /* P1-2: 顶部搜索栏/定位/模式切换保持最上层，不被面板遮挡 */
+        .search-container { z-index: 200 !important; }
+        .mode-switch-container { z-index: 199 !important; }
+        .dest-search-container { z-index: 198 !important; }
+        .locate-btn { z-index: 202 !important; }
+        .map-toggle-btn { z-index: 202 !important; }
+        .suggestions, .dest-suggestions { z-index: 201 !important; }
+
+        /* P1-3: 底部导航active状态统一高亮样式（顶部蓝色指示条） */
+        .nav-item { overflow: hidden; }
+        .nav-item.active {
+            color: #1677ff;
+        }
+        .nav-item.active .icon {
+            transform: translateY(-1px);
+            transition: transform 0.2s;
+        }
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 32px;
+            height: 3px;
+            background: linear-gradient(90deg, #1677ff, #0958d9);
+            border-radius: 0 0 3px 3px;
+        }
+        .nav-item.active .label { color: #1677ff; font-weight: 600; }
+
+        /* ==================== P2 修复 ==================== */
+
+        /* P2-1: 统一全局圆角（与其他卡片24px/16px一致） */
+        .filter-panel { border-radius: 24px 24px 0 0; }
+        .filter-panel .filter-option button,
+        .radius-btn {
+            padding: 8px 14px;
+            margin: 0;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            min-width: 56px;
+        }
+
+        /* P1-1: 搜索半径按钮统一样式（替代内联style） */
+        .radius-btn {
+            border: 1.5px solid #d9d9d9;
+            background: #fff;
+            color: #666;
+            transition: all 0.2s ease;
+            outline: none;
+            font-weight: 500;
+            line-height: 1.2;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .radius-btn:hover {
+            border-color: #1677ff;
+            color: #1677ff;
+        }
+        .radius-btn.active {
+            background: linear-gradient(135deg, #e6f4ff, #d6e8ff);
+            border-color: #1677ff;
+            color: #1677ff;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(22, 119, 255, 0.2);
+        }
+
+        /* 半径选择器容器规范化 */
+        .radius-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 12px 0 8px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 12px;
+        }
+        .radius-selector > span:first-child {
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        /* P2-2: 搜索结果数量文字位置规范化 */
+        .panel-count {
+            font-size: 13px;
+            color: #999;
+            margin: 8px 0 12px 0;
+            text-align: left;
+        }
+
+        /* P2-4: 导航按钮文字+图标严格居中 */
+        .poi-nav-btn {
+            width: 100%;
+            min-height: 44px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #1677ff, #0958d9);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            line-height: 1.4;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: normal;
+            word-break: break-word;
+            text-align: center;
+        }
+        .poi-nav-btn:hover {
+            background: linear-gradient(135deg, #0958d9, #003eb3);
+            box-shadow: 0 4px 12px rgba(22, 119, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .poi-nav-btn:active { transform: translateY(0) scale(0.99); }
+
+        /* P2-5: 安卓微信/状态栏避让 - 页面顶部容器安全区 */
+        .search-container {
+            margin-top: env(safe-area-inset-top);
+            padding-top: max(12px, env(safe-area-inset-top));
+        }
+
+        /* 确保搜索栏文字在所有机型显示完整 */
+        .search-bar input {
+            min-height: 36px;
+            line-height: 36px;
+        }
+
+        /* ==================== 桌面端P2 ==================== */
+        @media (min-width: 1024px) {
+            /* 桌面端面板宽度固定且居中，不出现两侧空白 */
+            .drag-panel {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: 680px;
+                max-width: 90vw;
+                border-radius: 24px 24px 24px 24px;
+                bottom: 80px;
+            }
+
+            /* 桌面端定位按钮：与边缘增加边距，避免误触 */
+            .locate-btn {
+                right: 20px;
+                top: 120px;
+                width: 52px;
+                height: 52px;
+                font-size: 22px;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            }
+
+            /* 桌面端地图展开按钮：与定位按钮保持间距 */
+            .map-toggle-btn {
+                right: 20px;
+                top: 185px;
+            }
+
+            /* 桌面端底部导航：更紧凑 */
+            .bottom-nav {
+                max-width: 720px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                border-radius: 20px 20px 0 0;
+            }
+
+            /* 桌面端结果卡片：更宽，标签更清晰 */
+            .poi-card {
+                padding: 20px;
+                margin-bottom: 16px;
+            }
+            .poi-tags {
+                gap: 10px;
+                margin-top: 14px;
+            }
+            .poi-tag {
+                font-size: 13px;
+                padding: 6px 14px;
+                border-radius: 8px;
+            }
+        }
+
+        /* 中等屏幕（平板） */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .drag-panel {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: 520px;
+                max-width: 85vw;
+                border-radius: 20px 20px 0 0;
+            }
+            .locate-btn { right: 20px; }
+            .map-toggle-btn { right: 20px; top: 180px; }
+            .bottom-nav {
+                max-width: 560px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ==================== 通用视觉优化 ==================== */
+        .poi-card { box-sizing: border-box; }
+        .poi-main { box-sizing: border-box; }
+        .poi-name { box-sizing: border-box; }
+        .poi-dist { box-sizing: border-box; }
+        .poi-addr { box-sizing: border-box; }
+        .poi-tags { box-sizing: border-box; }
+        .poi-action { box-sizing: border-box; }
+
     </style>
 </head>
+
 <body>
     <!-- P3-1: 骨架屏 -->
     <div class="skeleton-overlay" id="skeletonOverlay">
@@ -3906,14 +4129,11 @@
         function showRealTimePOIList(title, pois, kw) {
             // P0-03: 使用当前模式的检索半径
             var currentRadius = searchRadiusConfig[currentSearchMode];
-            var radiusHtml = '<div class="radius-selector" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
-                '<span style="font-size:13px;color:#666;">搜索半径：</span>';
+            var radiusHtml = '<div class="radius-selector">' +
+                '<span>搜索半径：</span>';
             radiusOptions.forEach(function(r) {
                 var isActive = r === currentRadius;
-                radiusHtml += '<button onclick="changeRadius(' + r + ',\'' + kw + '\')" ' +
-                    'style="padding:6px 12px;border:' + (isActive ? '2px solid #1677ff' : '1px solid #ddd') +
-                    ';border-radius:16px;background:' + (isActive ? '#e6f4ff' : '#fff') +
-                    ';color:' + (isActive ? '#1677ff' : '#666') + ';font-size:12px;cursor:pointer;">' + r + 'm</button>';
+                radiusHtml += '<button class="radius-btn' + (isActive ? ' active' : '') + '" onclick="changeRadius(' + r + ',\'' + kw + '\')">' + r + 'm</button>';
             });
             radiusHtml += '</div>';
 
