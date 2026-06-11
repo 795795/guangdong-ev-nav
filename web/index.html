@@ -3,82 +3,350 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
     <title>广东新能源导航</title>
     <style>
+        /* ===== 全局基础样式 ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif; overflow: hidden; background: #fff; height: 100vh; touch-action: manipulation; }
+        html { font-size: 16px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif; 
+            overflow: hidden; 
+            background: #fff; 
+            height: 100vh; 
+            height: 100dvh; /* 移动端动态视口高度 */
+            touch-action: manipulation;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
         #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        .search-container { position: absolute; top: 0; left: 0; right: 0; z-index: 200; padding: 12px; background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 100%); padding-top: max(12px, env(safe-area-inset-top)); }
-        .search-bar { background: rgba(255,255,255,0.95); border-radius: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; align-items: center; padding: 0 16px; height: 48px; }
-        .search-icon { font-size: 18px; color: #1677ff; }
-        .search-bar input { flex: 1; border: none; outline: none; font-size: 15px; color: #333; background: transparent; padding: 0 12px; }
-        .search-btn { background: #1677ff; color: white; padding: 8px 20px; border-radius: 20px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        /* ===== 统一滚动条样式 (P2-4) ===== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
 
-        .suggestions { position: absolute; top: 68px; left: 12px; right: 12px; background: #fff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); max-height: 45vh; overflow-y: auto; z-index: 201; display: none; }
-        .suggestion-item { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+        /* ===== 顶部搜索容器 (P0-1 缩放自适应) ===== */
+        .search-container { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            z-index: 200; 
+            padding: 12px; 
+            padding-top: max(12px, env(safe-area-inset-top));
+            padding-left: max(12px, env(safe-area-inset-left));
+            padding-right: max(12px, env(safe-area-inset-right));
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 100%);
+        }
+        .search-bar { 
+            background: rgba(255,255,255,0.95); 
+            border-radius: 30px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            display: flex; 
+            align-items: center; 
+            padding: 0 16px; 
+            height: 48px; 
+            max-width: 100%;
+        }
+        .search-icon { font-size: 18px; color: #1677ff; flex-shrink: 0; }
+        .search-bar input { 
+            flex: 1; 
+            min-width: 0; /* 防止输入框被挤压 */
+            border: none; 
+            outline: none; 
+            font-size: 15px; 
+            color: #333; 
+            background: transparent; 
+            padding: 0 12px; 
+        }
+        .search-btn { 
+            background: #1677ff; 
+            color: white; 
+            padding: 8px 20px; 
+            border-radius: 20px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: 500; 
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .search-btn:hover { background: #0958d9; transform: scale(1.02); }
+        .search-btn:active { transform: scale(0.98); }
+        .search-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+        .suggestions { 
+            position: absolute; 
+            top: 68px; 
+            left: 12px; 
+            right: 12px; 
+            background: #fff; 
+            border-radius: 16px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12); 
+            max-height: 45vh; 
+            overflow-y: auto; 
+            z-index: 201; 
+            display: none; 
+        }
+        .suggestion-item { 
+            padding: 12px 16px; 
+            border-bottom: 1px solid #f0f0f0; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
+            transition: background 0.2s;
+        }
+        .suggestion-item:active { background: #f5f5f5; }
         .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item .icon { font-size: 18px; }
-        .suggestion-item .name { font-size: 15px; color: #333; font-weight: 500; }
+        .suggestion-item .icon { font-size: 18px; flex-shrink: 0; }
+        .suggestion-item .info { flex: 1; min-width: 0; }
+        .suggestion-item .name { font-size: 15px; color: #333; font-weight: 500; word-break: break-all; }
         .suggestion-item .addr { font-size: 12px; color: #999; margin-top: 2px; }
 
-        .locate-btn { position: absolute; right: 16px; top: 100px; width: 52px; height: 52px; background: #fff; border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; z-index: 100; }
+        /* ===== 定位按钮 ===== */
+        .locate-btn { 
+            position: absolute; 
+            right: 16px; 
+            top: 100px; 
+            width: 52px; 
+            height: 52px; 
+            background: #fff; 
+            border-radius: 50%; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 24px; 
+            cursor: pointer; 
+            z-index: 100;
+            transition: all 0.2s;
+        }
+        .locate-btn:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(0,0,0,0.15); }
+        .locate-btn:active { transform: scale(0.95); }
         .locate-btn.locating { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { box-shadow: 0 4px 20px rgba(22,119,255,0.3); } 50% { box-shadow: 0 4px 30px rgba(22,119,255,0.5); } }
 
-        /* 模式切换控件 */
-        .mode-switch-container { position: absolute; top: 72px; left: 12px; right: 12px; z-index: 199; margin-bottom: 8px; }
-        .mode-switch { display: flex; background: rgba(255,255,255,0.98); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); padding: 4px; }
-        .mode-option { flex: 1; padding: 10px 16px; border-radius: 10px; text-align: center; font-size: 14px; color: #666; cursor: pointer; transition: all 0.2s; font-weight: 500; border: 2px solid transparent; white-space: nowrap; min-width: max-content; }
-        .mode-option.active { background: #1677ff; color: #fff; font-weight: 600; border-color: #0958d9; box-shadow: 0 2px 8px rgba(22,119,255,0.3); }
-        
-        /* P2-1: 横屏适配 */
-        @media (orientation: landscape) and (max-height: 500px) {
-            .mode-switch-container { top: 8px; }
-            .dest-search-container { top: 52px; }
-            .mode-option { padding: 8px 12px; font-size: 13px; }
+        /* ===== 模式切换控件 (P0-1 缩放自适应) ===== */
+        .mode-switch-container { 
+            position: absolute; 
+            top: 72px; 
+            left: 12px; 
+            right: 12px; 
+            z-index: 199; 
+            margin-bottom: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        .mode-switch { 
+            display: inline-flex; /* 使用inline-flex而非flex，防止挤压 */
+            min-width: min-content; /* 最小宽度为内容宽度 */
+            width: 100%;
+            background: rgba(255,255,255,0.98); 
+            border-radius: 12px; 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08); 
+            padding: 4px;
+        }
+        .mode-option { 
+            flex: 1 1 auto; /* 允许收缩但保持合理大小 */
+            min-width: max-content;
+            padding: 10px 20px; 
+            border-radius: 10px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #666; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-weight: 500; 
+            border: 2px solid transparent;
+        }
+        .mode-option:hover { background: rgba(22,119,255,0.1); }
+        .mode-option:active { transform: scale(0.98); }
+        .mode-option.active { 
+            background: #1677ff; 
+            color: #fff; 
+            font-weight: 600; 
+            border-color: #0958d9; 
+            box-shadow: 0 2px 8px rgba(22,119,255,0.3); 
         }
 
-        /* 目的地搜索框 */
-        .dest-search-container { position: absolute; top: 120px; left: 12px; right: 12px; z-index: 198; display: none; }
-        .dest-search-container.show { display: block; animation: slideDown 0.2s ease; }
+        /* ===== 目的地搜索框 (P0-2 联想下拉框宽度匹配) ===== */
+        .dest-search-container { 
+            position: absolute; 
+            top: 120px; 
+            left: 12px; 
+            right: 12px; 
+            z-index: 198; 
+            display: none;
+        }
+        .dest-search-container.show { 
+            display: block; 
+            animation: slideDown 0.2s ease; 
+        }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .dest-search-bar { background: rgba(255,255,255,0.98); border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); display: flex; align-items: center; padding: 0 16px; height: 44px; border: 2px solid #1677ff; }
-        .dest-search-bar input { flex: 1; border: none; outline: none; font-size: 14px; color: #333; background: transparent; padding: 0 12px; }
-        .dest-search-bar .dest-icon { font-size: 16px; color: #999; }
-        .dest-search-bar .dest-clear { font-size: 14px; color: #999; cursor: pointer; padding: 4px; }
-        .dest-suggestions { position: absolute; top: 52px; left: 0; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); max-height: 30vh; overflow-y: auto; z-index: 199; display: none; }
-        .dest-suggestion-item { padding: 10px 14px; border-bottom: 1px solid #f5f5f5; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .dest-search-bar { 
+            background: rgba(255,255,255,0.98); 
+            border-radius: 16px; 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1); 
+            display: flex; 
+            align-items: center; 
+            padding: 0 16px; 
+            height: 44px; 
+            border: 2px solid #1677ff;
+        }
+        .dest-search-bar input { 
+            flex: 1; 
+            min-width: 0;
+            border: none; 
+            outline: none; 
+            font-size: 14px; 
+            color: #333; 
+            background: transparent; 
+            padding: 0 12px; 
+        }
+        .dest-search-bar .dest-icon { font-size: 16px; color: #1677ff; flex-shrink: 0; }
+        .dest-search-bar .dest-clear { 
+            font-size: 14px; 
+            color: #999; 
+            cursor: pointer; 
+            padding: 4px 8px;
+            transition: all 0.2s;
+        }
+        .dest-search-bar .dest-clear:hover { color: #666; transform: scale(1.1); }
+        
+        /* P0-2: 联想下拉框宽度与输入框完全对齐 */
+        .dest-suggestions { 
+            position: relative; /* 相对于父容器 */
+            top: 8px;
+            left: 0; 
+            right: 0; 
+            background: #fff; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border: 1px solid #f0f0f0;
+            max-height: 30vh; 
+            overflow-y: auto; 
+            z-index: 199; 
+            display: none;
+        }
+        .dest-suggestion-item { 
+            padding: 12px 14px; 
+            border-bottom: 1px solid #f5f5f5; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: flex-start; 
+            gap: 10px; 
+            font-size: 14px;
+            transition: background 0.2s;
+            min-height: 44px; /* 触摸友好的点击区域 */
+        }
+        .dest-suggestion-item:active { background: #f0f7ff; }
         .dest-suggestion-item:last-child { border-bottom: none; }
-        .dest-suggestion-item .name { color: #333; font-weight: 500; }
-        .dest-suggestion-item .addr { font-size: 12px; color: #999; margin-top: 2px; }
+        .dest-suggestion-item .name { color: #333; font-weight: 500; flex: 1; word-break: break-all; }
+        .dest-suggestion-item .addr { font-size: 12px; color: #999; margin-top: 4px; flex: 1; }
         .dest-suggestion-empty { padding: 20px 14px; text-align: center; color: #999; font-size: 13px; }
 
-        /* 快捷入口按钮 */
-        .quick-action-bar { display: flex; gap: 12px; padding: 12px 16px; border-top: 1px solid #f0f0f0; }
-        .quick-action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: #f8f9fa; border-radius: 10px; cursor: pointer; font-size: 13px; color: #666; transition: all 0.2s; }
+        /* ===== 快捷入口按钮 ===== */
+        .quick-action-bar { 
+            display: flex; 
+            gap: 12px; 
+            padding: 12px 16px; 
+            border-top: 1px solid #f0f0f0;
+        }
+        .quick-action-btn { 
+            flex: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; /* 统一图标与文字间距 */
+            padding: 10px; 
+            background: #f8f9fa; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            color: #666; 
+            transition: all 0.2s;
+            border: none;
+        }
         .quick-action-btn:hover { background: #e8eaed; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .quick-action-btn:active { transform: translateY(0) scale(0.98); }
         .quick-action-btn.active { background: #e6f0ff; color: #1677ff; }
-        .quick-action-btn .icon { font-size: 16px; }
-        
-        /* P2-4: POI卡片hover效果 */
-        .poi-card { transition: all 0.2s; cursor: pointer; }
-        .poi-card:hover { background: #f8f9fa; transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .poi-nav-btn { transition: all 0.2s; }
+        .quick-action-btn .icon { font-size: 16px; flex-shrink: 0; }
+
+        /* ===== POI卡片 ===== */
+        .poi-card { 
+            background: #fff; 
+            border: 1px solid #f0f0f0; 
+            border-radius: 16px; 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .poi-card:hover { 
+            background: #f8f9fa; 
+            transform: translateX(2px); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+        }
+        .poi-card:active { transform: scale(0.99); }
+        .poi-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .poi-name { 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: #333; 
+            flex: 1; 
+            word-break: break-all;
+        }
+        /* P2-3: 数据数值颜色区分 */
+        .poi-dist { 
+            font-size: 14px; 
+            color: #1677ff; 
+            font-weight: 600; /* 核心数据加粗 */
+            flex-shrink: 0;
+        }
+        .poi-addr { 
+            font-size: 13px; 
+            color: #666; /* 辅助说明用浅灰色 */
+            margin-top: 8px; 
+            line-height: 1.5;
+            word-break: break-all;
+        }
+        .poi-tags { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .poi-tag { 
+            font-size: 12px; 
+            padding: 4px 10px; 
+            background: #f0f5ff; 
+            color: #597ef7; 
+            border-radius: 6px;
+        }
+        .poi-tag.orange { background: #fff7e6; color: #fa8c16; }
+        .poi-tag.green { background: #f6ffed; color: #52c41a; }
+        .poi-tag.red { background: #fff1f0; color: #ff4d4f; }
+        .poi-tag.bold { font-weight: 600; }
+        .poi-tag .green, .poi-tag.green { background: #f6ffed; color: #52c41a; }
+        .poi-tag .red, .poi-tag.red { background: #fff1f0; color: #ff4d4f; }
+        .poi-tag .orange, .poi-tag.orange { background: #fff7e6; color: #fa8c16; }
+        .poi-tag .yellow { background: #fffbe6; color: #faad14; }
+        .poi-action { margin-top: 12px; }
+        .poi-nav-btn { 
+            width: 100%; 
+            padding: 12px; 
+            background: linear-gradient(135deg, #1677ff, #0958d9); 
+            color: #fff; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
         .poi-nav-btn:hover { background: #0958d9; transform: scale(1.02); }
-        
-        /* P2-4: 目的地建议项hover效果 */
-        .dest-suggestion-item { transition: background 0.2s; }
-        .dest-suggestion-item:hover { background: #f0f7ff; }
-        
-        /* P2-4: 目的地清除按钮hover */
-        .dest-clear { transition: all 0.2s; display: inline-block; cursor: pointer; }
-        .dest-clear:hover { color: #666; transform: scale(1.1); }
-        
-        /* P2-4: 筛选/排序控件hover */
-        select:hover { border-color: #1677ff; }
-        
-        /* P3-4: 加载更多按钮样式 */
+        .poi-nav-btn:active { transform: scale(0.98); }
+
+        /* ===== 加载更多按钮 ===== */
         .load-more-container { text-align: center; padding: 16px; }
         .load-more-btn { 
             padding: 10px 24px; 
@@ -93,13 +361,8 @@
             line-height: 1.5;
         }
         .load-more-btn:hover { background: #e6f0ff; border-color: #1677ff; color: #1677ff; }
-        .load-more-btn:disabled { 
-            opacity: 0.6; 
-            cursor: not-allowed; 
-            background: #f5f7fa; 
-            border-color: #e8e8e8; 
-            color: #999;
-        }
+        .load-more-btn:active { transform: scale(0.98); }
+        .load-more-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .load-more-btn.loading::after {
             content: '';
             display: inline-block;
@@ -113,57 +376,79 @@
             vertical-align: middle;
         }
 
-        /* P2-3: 深色模式适配 */
-        @media (prefers-color-scheme: dark) {
-            body { background-color: #1a1a1a; }
-            .mode-switch { background: rgba(40,40,40,0.98); }
-            .mode-option { color: #ccc; }
-            .mode-option:hover { background: rgba(22,119,255,0.2); }
-            .mode-option.active { background: #1677ff; color: #fff; }
-            .dest-search-container { background: rgba(40,40,40,0.98); }
-            .dest-search-bar input { background: #333; color: #fff; border-color: #444; }
-            .dest-search-bar input::placeholder { color: #666; }
-            .dest-suggestions { background: #2a2a2a; }
-            .dest-suggestion-item { color: #fff; border-bottom-color: #444; }
-            .dest-suggestion-item:hover { background: #3a3a3a; }
-            .dest-suggestion-empty { color: #666; }
-            .bottom-nav { background: #2a2a2a; }
-            .nav-item .label { color: #999; }
-            .nav-item.active .label { color: #4da6ff; }
-            .main-panel { background: #2a2a2a; }
-            .panel-title { color: #fff; }
-            .panel-count { color: #999; }
-            .poi-card { background: #333; border-color: #444; }
-            .poi-name { color: #fff; }
-            .poi-addr { color: #999; }
-            .poi-dist { color: #999; }
-            .poi-tag { background: rgba(22,119,255,0.2); color: #4da6ff; }
-            .poi-nav-btn { background: #1677ff; color: #fff; }
-            .poi-nav-btn:hover { background: #0958d9; }
-            select { background: #333; color: #fff; border-color: #444; }
-            .load-more-btn { background: #333; border-color: #444; color: #ccc; }
-            .load-more-btn:hover { background: rgba(22,119,255,0.2); border-color: #1677ff; color: #4da6ff; }
-            .empty-state .empty-text { color: #ccc; }
-            .empty-state .empty-hint { color: #666; }
-            .quick-action-bar { background: #2a2a2a; border-color: #444; }
-            .quick-action-btn { background: #333; color: #ccc; }
-            .quick-action-btn:hover { background: #444; }
-            .quick-action-btn.active { background: rgba(22,119,255,0.2); color: #4da6ff; }
+        /* ===== 底部导航 (P0-1 缩放自适应) ===== */
+        .bottom-nav { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: #fff; 
+            z-index: 100; 
+            border-radius: 20px 20px 0 0; 
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08); 
+            padding-bottom: env(safe-area-inset-bottom);
         }
-
-        .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; z-index: 100; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); padding-bottom: env(safe-area-inset-bottom); }
-        .nav-items { display: flex; justify-content: space-around; padding: 10px 0; }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 4px; cursor: pointer; min-width: 60px; position: relative; transition: transform 0.2s, opacity 0.2s; }
+        .nav-items { 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 10px 0;
+        }
+        .nav-item { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 8px 4px; 
+            cursor: pointer; 
+            min-width: 0; /* 允许收缩 */
+            position: relative; 
+            transition: all 0.2s;
+        }
         .nav-item:hover { transform: scale(1.05); }
         .nav-item:active { transform: scale(0.95); }
-        .nav-item .icon { font-size: 26px; margin-bottom: 4px; position: relative; }
-        .nav-item .label { font-size: 11px; color: #999; transition: color 0.2s; }
+        .nav-item .icon { 
+            font-size: 26px; 
+            margin-bottom: 4px; 
+            position: relative;
+            flex-shrink: 0;
+        }
+        .nav-item .label { 
+            font-size: 11px; 
+            color: #999; 
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
         .nav-item:hover .label { color: #666; }
-        .nav-item.active .label { color: #1677ff; }
+        .nav-item.active .label { color: #1677ff; font-weight: 500; }
         .nav-item.loading { opacity: 0.7; pointer-events: none; }
-        .nav-item.loading .icon::before { content: ''; position: absolute; top: 50%; left: 50%; width: 24px; height: 24px; margin: -12px 0 0 -12px; border: 3px solid #e8e8e8; border-top-color: #1677ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .nav-item.loading .icon::before { 
+            content: ''; 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            width: 24px; 
+            height: 24px; 
+            margin: -12px 0 0 -12px; 
+            border: 3px solid #e8e8e8; 
+            border-top-color: #1677ff; 
+            border-radius: 50%; 
+            animation: spin 0.8s linear infinite; 
+        }
 
-        .drag-panel { position: absolute; bottom: 65px; left: 0; right: 0; background: #fff; z-index: 99; max-height: 65vh; border-radius: 24px 24px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.1); display: none; transition: max-height 0.3s ease; }
+        /* ===== 拖拽面板 ===== */
+        .drag-panel { 
+            position: absolute; 
+            bottom: 65px; 
+            left: 0; 
+            right: 0; 
+            background: #fff; 
+            z-index: 99; 
+            max-height: 65vh; 
+            border-radius: 24px 24px 0 0; 
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.1); 
+            display: none; 
+            transition: max-height 0.3s ease;
+        }
         .drag-panel.show { display: block; }
         .drag-panel.collapsed { max-height: 120px; }
         .drag-panel.collapsed .panel-content { display: none; }
@@ -174,29 +459,349 @@
             to { transform: rotate(360deg); }
         }
 
-        .search-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-        
-        .drag-handle { height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .drag-handle { 
+            height: 28px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer;
+        }
         .drag-bar { width: 44px; height: 6px; background: #d0d0d0; border-radius: 3px; }
         
-        .panel-summary { display: none; padding: 0 16px 16px; }
-        .mini-card { display: flex; align-items: center; gap: 12px; background: #f8f9fa; border-radius: 14px; padding: 14px; cursor: pointer; }
-        .mini-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #1677ff, #0958d9); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; flex-shrink: 0; }
+        .panel-summary { 
+            display: none; 
+            padding: 0 16px 16px; 
+        }
+        .mini-card { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            background: #f8f9fa; 
+            border-radius: 14px; 
+            padding: 14px; 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mini-card:hover { background: #f0f2f5; }
+        .mini-icon { 
+            width: 44px; 
+            height: 44px; 
+            background: linear-gradient(135deg, #1677ff, #0958d9); 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 22px; 
+            color: #fff; 
+            flex-shrink: 0; 
+        }
         .mini-info { flex: 1; min-width: 0; }
-        .mini-name { font-size: 15px; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .mini-addr { font-size: 12px; color: #999; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .mini-extra { font-size: 12px; color: #1677ff; margin-top: 6px; font-weight: 500; }
-        .mini-btn { padding: 10px 18px; background: linear-gradient(135deg, #1677ff, #0958d9); color: #fff; border: none; border-radius: 22px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .mini-name { 
+            font-size: 15px; 
+            font-weight: 600; 
+            color: #333; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        .mini-addr { 
+            font-size: 12px; 
+            color: #666; /* 辅助说明文字用浅灰色 */
+            margin-top: 6px; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        .mini-extra { 
+            font-size: 12px; 
+            color: #1677ff; /* 核心数据用强调色 */
+            margin-top: 6px; 
+            font-weight: 500; 
+        }
+        .mini-btn { 
+            padding: 10px 18px; 
+            background: linear-gradient(135deg, #1677ff, #0958d9); 
+            color: #fff; 
+            border: none; 
+            border-radius: 22px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .mini-btn:hover { transform: scale(1.02); }
+        .mini-btn:active { transform: scale(0.98); }
         
-        .panel-content { padding: 0 16px 16px; overflow-y: auto; max-height: calc(65vh - 44px); }
-        .panel-title { font-size: 17px; font-weight: 600; color: #333; margin-bottom: 12px; }
-        .panel-count { font-size: 13px; color: #999; margin-bottom: 16px; }
+        .panel-content { 
+            padding: 0 16px 16px; 
+            overflow-y: auto; 
+            max-height: calc(65vh - 44px); 
+        }
+        .panel-title { 
+            font-size: 17px; 
+            font-weight: 600; 
+            color: #333; 
+            margin-bottom: 12px; 
+        }
+        .panel-count { 
+            font-size: 13px; 
+            color: #999; 
+            margin-bottom: 16px; 
+        }
+
+        /* ===== 空状态样式 ===== */
+        .empty-state { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 60px 20px; 
+            text-align: center; 
+        }
+        .empty-state .empty-icon { 
+            font-size: 48px; 
+            margin-bottom: 16px; 
+            opacity: 0.8;
+            /* P2-3: 防止图标拉伸变形 */
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        .empty-state .empty-text { 
+            font-size: 15px; 
+            color: #666; 
+            margin-bottom: 8px; 
+        }
+        .empty-state .empty-hint { 
+            font-size: 13px; 
+            color: #999; 
+        }
+
+        /* ===== 筛选/排序控件 ===== */
+        select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #e8e8e8;
+            font-size: 13px;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 100px;
+        }
+        select:hover { border-color: #1677ff; }
+        select:active { transform: scale(0.98); }
+
+        /* ===== 统一边框和阴影变量 ===== */
+        :root {
+            --border-color: #e8e8e8;
+            --border-light: #f0f0f0;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+            --primary-color: #1677ff;
+            --primary-dark: #0958d9;
+        }
+
+        /* 统一按钮边框 */
+        .search-btn, .poi-nav-btn, .navi-btn, .navi-action-btn, .detail-btn,
+        .navi-close, .navi-share, .mini-btn, .load-more-btn, .around-btn {
+            border: none;
+            outline: none;
+        }
+
+        /* 统一卡片边框 */
+        .poi-card, .route-card {
+            border: 1px solid var(--border-light);
+        }
+
+        /* 统一输入框边框 */
+        input[type="text"], input[type="search"] {
+            border: none;
+            outline: none;
+        }
+
+        /* ===== 深色模式适配 ===== */
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #1a1a1a; }
+            .search-bar, .dest-search-bar { background: rgba(40,40,40,0.98); }
+            .search-bar input, .dest-search-bar input { color: #fff; }
+            .mode-switch { background: rgba(40,40,40,0.98); }
+            .mode-option { color: #ccc; }
+            .mode-option:hover { background: rgba(22,119,255,0.2); }
+            .mode-option.active { background: #1677ff; color: #fff; }
+            .dest-search-container { background: transparent; }
+            .dest-suggestions { background: #2a2a2a; border-color: #444; }
+            .dest-suggestion-item { border-bottom-color: #444; }
+            .dest-suggestion-item:hover { background: #3a3a3a; }
+            .dest-suggestion-item .name { color: #fff; }
+            .dest-suggestion-empty { color: #666; }
+            .bottom-nav { background: #2a2a2a; }
+            .nav-item .label { color: #999; }
+            .nav-item.active .label { color: #1677ff; }
+            .drag-panel, .main-panel { background: #2a2a2a; }
+            .panel-title { color: #fff; }
+            .panel-count { color: #999; }
+            .poi-card { background: #333; border-color: #444; }
+            .poi-name { color: #fff; }
+            .poi-addr { color: #999; }
+            .poi-dist { color: #1677ff; }
+            .poi-tag { background: rgba(22,119,255,0.2); color: #1677ff; }
+            .poi-nav-btn { background: #1677ff; color: #fff; }
+            .poi-nav-btn:hover { background: #0958d9; }
+            select { background: #333; color: #fff; border-color: #444; }
+            .load-more-btn { background: #333; border-color: #444; color: #ccc; }
+            .load-more-btn:hover { background: rgba(22,119,255,0.2); border-color: #1677ff; color: #1677ff; }
+            .empty-state .empty-text { color: #ccc; }
+            .empty-state .empty-hint { color: #666; }
+            .quick-action-bar { background: #2a2a2a; border-color: #444; }
+            .quick-action-btn { background: #333; color: #ccc; }
+            .quick-action-btn:hover { background: #444; }
+            .quick-action-btn.active { background: rgba(22,119,255,0.2); color: #1677ff; }
+            .mini-card { background: #333; }
+            .mini-name { color: #fff; }
+            .mini-addr { color: #999; }
+            .mini-extra { color: #1677ff; }
+            ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+        }
+
+        /* ===== 微信内置浏览器兼容样式 ===== */
+        /* 解决微信内核下文字颜色偏浅、发虚的问题 */
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+            /* 针对微信X5内核的兼容样式 */
+            .poi-name, .panel-title, .mini-name, .route-name, .navi-instruction {
+                -webkit-text-fill-color: #333;
+                -webkit-text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            }
+            .poi-addr, .mini-addr, .route-detail, .panel-count, .navi-road {
+                -webkit-text-fill-color: #555;
+            }
+        }
+
+        /* ===== 移动端响应式适配 ===== */
         
-        /* P2-3: 空状态样式 */
-        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
-        .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.8; }
-        .empty-state .empty-text { font-size: 15px; color: #666; margin-bottom: 8px; }
-        .empty-state .empty-hint { font-size: 13px; color: #999; }
+        /* 移动端竖屏 (m-P0-1 防止横向溢出) */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .search-container { padding: 8px; }
+            .mode-switch-container { 
+                top: 64px; 
+                left: 8px; 
+                right: 8px; 
+            }
+            .mode-option { 
+                padding: 8px 12px; 
+                font-size: 13px; 
+            }
+            .dest-search-container { 
+                top: 108px; 
+                left: 8px; 
+                right: 8px; 
+            }
+            .bottom-nav { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+            .nav-item .icon { font-size: 24px; }
+            .nav-item .label { font-size: 10px; }
+            .mini-card { padding: 10px; }
+            .mini-icon { width: 40px; height: 40px; font-size: 18px; }
+            .mini-btn { padding: 8px 14px; font-size: 12px; }
+        }
+        
+        /* 移动端横屏 (m-P0-2 横屏布局自适应) */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .search-container { padding: 6px 12px; }
+            .mode-switch-container { 
+                top: 6px; 
+                left: 12px; 
+                right: auto;
+                max-width: 60%;
+            }
+            .dest-search-container { 
+                top: 48px; 
+                left: 12px; 
+                right: 12px; 
+            }
+            .dest-search-bar { height: 40px; }
+            .mode-option { 
+                padding: 6px 10px; 
+                font-size: 12px; 
+            }
+            .bottom-nav { padding-bottom: 6px; }
+            .nav-items { padding: 6px 0; }
+            .nav-item { padding: 4px 2px; }
+            .nav-item .icon { font-size: 20px; margin-bottom: 2px; }
+            .nav-item .label { font-size: 10px; }
+            .drag-panel { bottom: 50px; }
+            .mini-card { padding: 8px; gap: 8px; }
+            .mini-icon { width: 36px; height: 36px; font-size: 16px; }
+            .mini-btn { padding: 6px 12px; font-size: 11px; }
+        }
+        
+        /* m-P0-3: 软键盘弹出时页面适配 - 使用viewport动态调整 */
+        @media (max-height: 500px) {
+            .search-container { padding: 4px 8px; }
+            .mode-switch-container { top: 48px; }
+            .dest-search-container { top: 88px; }
+            .locate-btn { top: 70px; width: 44px; height: 44px; font-size: 20px; }
+            .drag-panel { bottom: 55px; max-height: 55vh; }
+            .bottom-nav { border-radius: 12px 12px 0 0; }
+        }
+        
+        /* 极小屏幕适配 (P3 极简布局) */
+        @media (max-width: 360px) {
+            .search-bar { height: 40px; }
+            .search-icon { font-size: 16px; }
+            .search-bar input { font-size: 13px; padding: 0 8px; }
+            .search-btn { padding: 6px 14px; font-size: 12px; }
+            .mode-option { padding: 6px 8px; font-size: 12px; }
+            .poi-card { padding: 12px; }
+            .poi-name { font-size: 14px; }
+            .panel-title { font-size: 15px; }
+        }
+
+        /* 浏览器缩放适配 (P0-1) */
+        @media (min-resolution: 1.25dppx) {
+            /* 125%缩放 */
+        }
+        @media (min-resolution: 1.5dppx) {
+            /* 150%缩放 */
+            .search-bar, .dest-search-bar { padding: 0 12px; height: 44px; }
+            .mode-option { padding: 8px 14px; font-size: 13px; }
+            .nav-item .icon { font-size: 24px; }
+        }
+        @media (min-resolution: 2dppx) {
+            /* 200%缩放 */
+            .search-bar, .dest-search-bar { padding: 0 10px; height: 40px; }
+            .mode-option { padding: 6px 12px; font-size: 12px; }
+            .nav-item .icon { font-size: 22px; }
+            .nav-item .label { font-size: 10px; }
+        }
+
+        /* ===== 统一动画时长 (P3) ===== */
+        .search-btn, .mode-option, .nav-item, .poi-card, .poi-nav-btn, 
+        .quick-action-btn, .mini-card, .mini-btn, .dest-clear,
+        .load-more-btn, select {
+            transition-duration: 0.2s;
+            transition-timing-function: ease;
+        }
+
+        /* ===== 导航指引长文案换行 (P1-3) ===== */
+        .navi-instruction {
+            word-wrap: break-word;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+            line-height: 1.6;
+            text-align: justify;
+        }
+        
+        /* P1-3: 防止单词/单字孤立成行 */
+        .navi-instruction::after {
+            content: '';
+            display: block;
+            min-height: 1.6em;
+        }
+    </style>
 
         .mode-selector { display: flex; gap: 10px; padding: 0 0 16px; border-bottom: 1px solid #f0f0f0; margin-bottom: 16px; overflow-x: auto; }
         .mode-selector::-webkit-scrollbar { display: none; }
@@ -540,9 +1145,284 @@
 
         /* toast 队列过渡 */
         #toast { transition: opacity 0.2s, transform 0.2s; }
+
+        /* ===== P3-1: 骨架屏样式 ===== */
+        .skeleton-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            padding-top: max(20px, env(safe-area-inset-top));
+        }
+        .skeleton-overlay.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .skeleton-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .skeleton-header-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 50%;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-header-content {
+            flex: 1;
+        }
+        .skeleton-line {
+            height: 12px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-line.short { width: 60%; }
+        .skeleton-line.medium { width: 80%; }
+        .skeleton-line.full { width: 100%; }
+        .skeleton-mode-switch {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .skeleton-chip {
+            width: 100px;
+            height: 36px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 10px;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-chip.active {
+            background: linear-gradient(90deg, #d6e4ff 25%, #c4d7f2 50%, #d6e4ff 75%);
+            background-size: 200% 100%;
+        }
+        .skeleton-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #f0f0f0;
+        }
+        .skeleton-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .skeleton-card-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 10px;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-card-content {
+            flex: 1;
+            margin-left: 12px;
+        }
+        .skeleton-card-title {
+            height: 16px;
+            width: 70%;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-card-desc {
+            height: 12px;
+            width: 90%;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-card-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .skeleton-tag {
+            height: 24px;
+            width: 60px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 6px;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65px;
+            background: #fff;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #f0f0f0;
+        }
+        .skeleton-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .skeleton-nav-icon {
+            width: 26px;
+            height: 26px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 50%;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-nav-label {
+            height: 10px;
+            width: 40px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            animation: shimmer 1.5s infinite;
+        }
+
+        /* ===== P3-3: 导航关键提示高亮动效 ===== */
+        .navi-instruction-highlight {
+            animation: highlightPulse 2s ease-in-out;
+        }
+        @keyframes highlightPulse {
+            0% { background: transparent; }
+            15% { background: rgba(22, 119, 255, 0.15); border-radius: 4px; }
+            30% { background: transparent; }
+            45% { background: rgba(22, 119, 255, 0.15); border-radius: 4px; }
+            60% { background: transparent; }
+            100% { background: transparent; }
+        }
+        .navi-stat-value-highlight {
+            animation: valueHighlight 1.5s ease-in-out;
+        }
+        @keyframes valueHighlight {
+            0% { color: #1677ff; transform: scale(1); }
+            20% { color: #ff6b00; transform: scale(1.08); }
+            40% { color: #1677ff; transform: scale(1); }
+            60% { color: #ff6b00; transform: scale(1.08); }
+            80% { color: #1677ff; transform: scale(1); }
+            100% { color: #1677ff; transform: scale(1); }
+        }
+        .navi-next-highlight {
+            animation: nextHighlight 1.5s ease-in-out;
+        }
+        @keyframes nextHighlight {
+            0% { opacity: 1; }
+            25% { opacity: 0.5; }
+            50% { opacity: 1; }
+            75% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .maneuver-distance-highlight {
+            animation: maneuverHighlight 1.5s ease-in-out;
+        }
+        @keyframes maneuverHighlight {
+            0% { color: #333; }
+            30% { color: #ff6b00; transform: scale(1.05); }
+            60% { color: #333; transform: scale(1); }
+            100% { color: #333; transform: scale(1); }
+        }
     </style>
 </head>
 <body>
+    <!-- P3-1: 骨架屏 -->
+    <div class="skeleton-overlay" id="skeletonOverlay">
+        <div class="skeleton-header">
+            <div class="skeleton-header-icon"></div>
+            <div class="skeleton-header-content">
+                <div class="skeleton-line full"></div>
+                <div class="skeleton-line medium"></div>
+            </div>
+        </div>
+        <div class="skeleton-mode-switch">
+            <div class="skeleton-chip active"></div>
+            <div class="skeleton-chip"></div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-card-header">
+                <div class="skeleton-card-icon"></div>
+                <div class="skeleton-card-content">
+                    <div class="skeleton-card-title"></div>
+                    <div class="skeleton-card-desc"></div>
+                </div>
+            </div>
+            <div class="skeleton-card-tags">
+                <div class="skeleton-tag"></div>
+                <div class="skeleton-tag"></div>
+            </div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-card-header">
+                <div class="skeleton-card-icon"></div>
+                <div class="skeleton-card-content">
+                    <div class="skeleton-card-title"></div>
+                    <div class="skeleton-card-desc"></div>
+                </div>
+            </div>
+            <div class="skeleton-card-tags">
+                <div class="skeleton-tag"></div>
+                <div class="skeleton-tag"></div>
+            </div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-card-header">
+                <div class="skeleton-card-icon"></div>
+                <div class="skeleton-card-content">
+                    <div class="skeleton-card-title"></div>
+                    <div class="skeleton-card-desc"></div>
+                </div>
+            </div>
+            <div class="skeleton-card-tags">
+                <div class="skeleton-tag"></div>
+                <div class="skeleton-tag"></div>
+            </div>
+        </div>
+        <div class="skeleton-bottom-nav">
+            <div class="skeleton-nav-item">
+                <div class="skeleton-nav-icon"></div>
+                <div class="skeleton-nav-label"></div>
+            </div>
+            <div class="skeleton-nav-item">
+                <div class="skeleton-nav-icon"></div>
+                <div class="skeleton-nav-label"></div>
+            </div>
+            <div class="skeleton-nav-item">
+                <div class="skeleton-nav-icon"></div>
+                <div class="skeleton-nav-label"></div>
+            </div>
+            <div class="skeleton-nav-item">
+                <div class="skeleton-nav-icon"></div>
+                <div class="skeleton-nav-label"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="map"></div>
 
     <div class="search-container">
@@ -837,6 +1717,74 @@
                 t.classList.remove('show');
                 setTimeout(_processToastQueue, 200);
             }, 2200);
+        }
+
+        // P3-1: 骨架屏控制
+        var _skeletonShowing = false;
+        function showSkeleton() {
+            if (_skeletonShowing) return;
+            _skeletonShowing = true;
+            var skeleton = document.getElementById('skeletonOverlay');
+            if (skeleton) {
+                skeleton.classList.add('show');
+            }
+        }
+        function hideSkeleton() {
+            if (!_skeletonShowing) return;
+            _skeletonShowing = false;
+            var skeleton = document.getElementById('skeletonOverlay');
+            if (skeleton) {
+                skeleton.classList.remove('show');
+            }
+        }
+
+        // P3-3: 导航关键提示高亮动效
+        function highlightNaviInstruction() {
+            var elem = document.getElementById('naviInstruction');
+            if (!elem) return;
+            elem.classList.remove('navi-instruction-highlight');
+            void elem.offsetWidth; // 强制重绘
+            elem.classList.add('navi-instruction-highlight');
+            setTimeout(function() {
+                elem.classList.remove('navi-instruction-highlight');
+            }, 2000);
+        }
+        function highlightNaviStats() {
+            var elems = document.querySelectorAll('.navi-stat-value');
+            elems.forEach(function(elem) {
+                elem.classList.remove('navi-stat-value-highlight');
+                void elem.offsetWidth;
+                elem.classList.add('navi-stat-value-highlight');
+                setTimeout(function() {
+                    elem.classList.remove('navi-stat-value-highlight');
+                }, 1500);
+            });
+        }
+        function highlightNaviNext() {
+            var elem = document.getElementById('naviNext');
+            if (!elem) return;
+            elem.classList.remove('navi-next-highlight');
+            void elem.offsetWidth;
+            elem.classList.add('navi-next-highlight');
+            setTimeout(function() {
+                elem.classList.remove('navi-next-highlight');
+            }, 1500);
+        }
+        function highlightManeuverDist() {
+            var elem = document.getElementById('maneuverDist');
+            if (!elem) return;
+            elem.classList.remove('maneuver-distance-highlight');
+            void elem.offsetWidth;
+            elem.classList.add('maneuver-distance-highlight');
+            setTimeout(function() {
+                elem.classList.remove('maneuver-distance-highlight');
+            }, 1500);
+        }
+        function highlightNaviKeyInfo() {
+            highlightNaviInstruction();
+            highlightNaviStats();
+            highlightNaviNext();
+            highlightManeuverDist();
         }
 
         function initMap() {
@@ -3589,7 +4537,7 @@
             var searchBtn = document.querySelector('.search-btn');
             if (searchBtn) {
                 searchBtn.disabled = true;
-                searchBtn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span>';
+                searchBtn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-top:-2px"></span>';
             }
 
             var sugBox = document.getElementById('suggestions');
