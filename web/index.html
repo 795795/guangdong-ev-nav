@@ -1079,6 +1079,55 @@
         .detail-tag.orange { background: #fff7e6; color: #fa8c16; }
         .detail-tag.green { background: #f6ffed; color: #52c41a; }
 
+        /* 详情面板布局修复 */
+        .parking-detail, .charging-detail {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .parking-header, .charging-header {
+            display: block;
+            width: calc(100% + 32px);
+            margin-left: -16px;
+            margin-right: -16px;
+            margin-top: -16px;
+            margin-bottom: 16px;
+            padding: 20px 16px 24px;
+            border-radius: 20px 20px 0 0;
+            box-sizing: border-box;
+        }
+        .parking-station-info, .charging-station-info {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 10px !important;
+            padding: 0 4px !important;
+            margin-bottom: 16px !important;
+        }
+        .parking-info-item, .charging-info-item {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: #f8f9fa !important;
+            border-radius: 16px !important;
+            padding: 16px 8px !important;
+            text-align: center !important;
+        }
+        .parking-info-icon, .charging-info-icon {
+            font-size: 24px !important;
+            margin-bottom: 8px !important;
+        }
+        .parking-info-value, .charging-info-value {
+            font-size: 18px !important;
+            font-weight: 700 !important;
+            color: #333 !important;
+            margin-bottom: 4px !important;
+        }
+        .parking-info-label, .charging-info-label {
+            font-size: 12px !important;
+            color: #666 !important;
+        }
+
         .price-table { background: #fafafa; border-radius: 12px; padding: 16px; margin-top: 16px; }
         .price-table-title { font-size: 14px; color: #666; margin-bottom: 12px; font-weight: 500; }
         .price-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px solid #eee; }
