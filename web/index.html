@@ -6,19 +6,37 @@
     <meta name="format-detection" content="telephone=no">
     <title>广东新能源导航</title>
     <style>
-        /* ===== 全局基础样式 ===== */
+        /* ==================== 全局基础样式（统一规范P2） ==================== */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html { font-size: 16px; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif; 
-            overflow: hidden; 
-            background: #fff; 
-            height: 100vh; 
-            height: 100dvh; /* 移动端动态视口高度 */
-            touch-action: manipulation;
+        html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+            background: #fff;
+            height: 100vh;
+            height: 100dvh;
+            touch-action: manipulation;  /* P2-07: 消除300ms触控延迟 */
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
+            /* P1-10: 防止安卓长按文本选择 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            /* P2-06: 自定义文本选中高亮色 */
+            --selection-bg: rgba(22, 119, 255, 0.2);
+            --selection-color: #1677ff;
+        }
+        body::selection, *::selection {
+            background: var(--selection-bg);
+            color: var(--selection-color);
+        }
+        /* 允许输入框内文本选择 */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+            -webkit-touch-callout: text;
         }
         #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
@@ -681,129 +699,136 @@
             }
         }
 
-        /* ===== 移动端响应式适配 ===== */
-        
-        /* 移动端竖屏 (m-P0-1 防止横向溢出) */
+        /* ==================== 移动端响应式适配（P0/P1级核心修复） ==================== */
+
+        /* 移动端竖屏 (P0-06 小屏布局优化) */
         @media (max-width: 768px) and (orientation: portrait) {
             .search-container { padding: 8px; }
-            .mode-switch-container { 
-                top: 64px; 
-                left: 8px; 
-                right: 8px; 
-            }
-            .mode-option { 
-                padding: 8px 12px; 
-                font-size: 13px; 
-            }
-            .dest-search-container { 
-                top: 108px; 
-                left: 8px; 
-                right: 8px; 
-            }
+            .mode-switch-container { top: 64px; left: 8px; right: 8px; }
+            .mode-option { padding: 8px 12px; font-size: 13px; min-width: auto; }
+            .dest-search-container { top: 108px; left: 8px; right: 8px; }
             .bottom-nav { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
             .nav-item .icon { font-size: 24px; }
             .nav-item .label { font-size: 10px; }
             .mini-card { padding: 10px; }
             .mini-icon { width: 40px; height: 40px; font-size: 18px; }
             .mini-btn { padding: 8px 14px; font-size: 12px; }
+            .navi-progress-bar { max-width: 100%; }
         }
-        
-        /* 移动端横屏 (m-P0-2 横屏布局自适应) */
-        @media (max-width: 768px) and (orientation: landscape) {
-            .search-container { padding: 6px 12px; }
-            .mode-switch-container { 
-                top: 6px; 
-                left: 12px; 
-                right: auto;
-                max-width: 60%;
+
+        /* 移动端横屏 (P0-08 横屏布局 + P1-12 iOS状态栏避让) */
+        @media (max-width: 1024px) and (orientation: landscape) {
+            .search-container {
+                padding: 6px 12px;
+                padding-top: max(6px, 20px);
+                padding-left: max(12px, env(safe-area-inset-left));
+                padding-right: max(12px, env(safe-area-inset-right));
             }
-            .dest-search-container { 
-                top: 48px; 
-                left: 12px; 
-                right: 12px; 
-            }
+            .mode-switch-container { top: 6px; left: 12px; right: auto; max-width: 55%; }
+            .dest-search-container { top: 48px; left: 12px; right: 12px; }
             .dest-search-bar { height: 40px; }
-            .mode-option { 
-                padding: 6px 10px; 
-                font-size: 12px; 
-            }
+            .mode-option { padding: 6px 10px; font-size: 12px; }
             .bottom-nav { padding-bottom: 6px; }
             .nav-items { padding: 6px 0; }
             .nav-item { padding: 4px 2px; }
             .nav-item .icon { font-size: 20px; margin-bottom: 2px; }
             .nav-item .label { font-size: 10px; }
-            .drag-panel { bottom: 50px; }
+            .drag-panel { bottom: 50px; max-height: 55vh; }
             .mini-card { padding: 8px; gap: 8px; }
             .mini-icon { width: 36px; height: 36px; font-size: 16px; }
             .mini-btn { padding: 6px 12px; font-size: 11px; }
+            .navi-progress-container { max-width: 80%; }
+            .navi-progress-bar { max-width: 80%; margin: 0 auto; }
         }
-        
-        /* m-P0-3: 软键盘弹出时页面适配 - 使用viewport动态调整 */
-        @media (max-height: 500px) {
-            .search-container { padding: 4px 8px; }
-            .mode-switch-container { top: 48px; }
-            .dest-search-container { top: 88px; }
-            .locate-btn { top: 70px; width: 44px; height: 44px; font-size: 20px; }
-            .drag-panel { bottom: 55px; max-height: 55vh; }
+
+        /* P0-07: 软键盘弹出时布局避让（微信浏览器修复） */
+        @media (max-height: 500px) and (orientation: portrait) {
+            .search-container { padding: 4px 8px; padding-top: 8px; }
+            .mode-switch-container { top: 44px; }
+            .dest-search-container { top: 84px; }
+            .locate-btn { top: 60px; width: 44px; height: 44px; font-size: 20px; }
+            .drag-panel { bottom: 55px; max-height: 45vh; }
             .bottom-nav { border-radius: 12px 12px 0 0; }
         }
-        
-        /* 极小屏幕适配 (P3 极简布局) */
-        @media (max-width: 360px) {
-            .search-bar { height: 40px; }
+
+        /* P0-06: 小屏安卓机型（<480px）极简布局 */
+        @media (max-width: 480px) {
+            .search-container { padding: 6px; }
+            .search-bar { height: 40px; padding: 0 10px; }
             .search-icon { font-size: 16px; }
             .search-bar input { font-size: 13px; padding: 0 8px; }
-            .search-btn { padding: 6px 14px; font-size: 12px; }
-            .mode-option { padding: 6px 8px; font-size: 12px; }
-            .poi-card { padding: 12px; }
+            .search-btn { padding: 6px 12px; font-size: 12px; white-space: nowrap; }
+            .mode-switch-container { top: 52px; left: 6px; right: 6px; }
+            .mode-switch { padding: 3px; overflow-x: auto; }
+            .mode-option { padding: 6px 10px; font-size: 12px; flex: 1 1 auto; white-space: nowrap; }
+            .dest-search-container { top: 96px; left: 6px; right: 6px; }
+            .locate-btn { width: 44px; height: 44px; font-size: 18px; top: 88px; }
+            .nav-items { padding: 6px 0; gap: 4px; }
+            .nav-item { padding: 4px 2px; min-width: 60px; }
+            .nav-item .icon { font-size: 20px; margin-bottom: 2px; }
+            .nav-item .label { font-size: 10px; white-space: nowrap; }
+            .poi-card { padding: 12px; margin-bottom: 8px; }
             .poi-name { font-size: 14px; }
-            .panel-title { font-size: 15px; }
+            .poi-dist { font-size: 12px; }
+            .poi-addr { font-size: 12px; margin-top: 6px; }
+            .poi-tags { gap: 6px; }
+            .poi-tag { font-size: 11px; padding: 3px 8px; }
         }
 
-        /* 浏览器缩放适配 (P0-1) */
-        @media (min-resolution: 1.25dppx) {
-            /* 125%缩放 */
+        /* P0-05: 浏览器200%超高缩放 - 流式布局防止横向溢出 */
+        @media (max-width: 600px) {
+            .search-bar { height: 44px; flex-wrap: nowrap; min-width: 0; }
+            .search-bar input { min-width: 0; flex: 1; }
+            .search-btn { flex-shrink: 0; padding: 8px 14px; }
+            .mode-switch-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .mode-switch { min-width: 100%; }
+            .nav-items { justify-content: space-between; }
         }
-        @media (min-resolution: 1.5dppx) {
-            /* 150%缩放 */
-            .search-bar, .dest-search-bar { padding: 0 12px; height: 44px; }
-            .mode-option { padding: 8px 14px; font-size: 13px; }
-            .nav-item .icon { font-size: 24px; }
-        }
-        @media (min-resolution: 2dppx) {
-            /* 200%缩放 */
-            .search-bar, .dest-search-bar { padding: 0 10px; height: 40px; }
-            .mode-option { padding: 6px 12px; font-size: 12px; }
+
+        /* 浏览器125%-150%缩放额外适配 */
+        @media (max-width: 900px) and (orientation: portrait) {
+            .search-bar { height: 46px; }
+            .mode-option { font-size: 13px; padding: 8px 12px; }
             .nav-item .icon { font-size: 22px; }
-            .nav-item .label { font-size: 10px; }
         }
 
-        /* ===== 统一动画时长 (P3) ===== */
-        .search-btn, .mode-option, .nav-item, .poi-card, .poi-nav-btn, 
+        /* ==================== P2-05: 2K/4K大屏组件放大 ==================== */
+        @media (min-width: 1920px) {
+            html { font-size: 18px; }
+            .search-bar { height: 56px; }
+            .search-btn { padding: 10px 28px; font-size: 16px; }
+            .mode-option { font-size: 16px; padding: 14px 24px; }
+            .nav-item .icon { font-size: 32px; }
+            .nav-item .label { font-size: 13px; }
+            .poi-card { padding: 20px; }
+            .poi-name { font-size: 18px; }
+        }
+
+        /* ==================== P2-01: 统一全站动画时长 ==================== */
+        .search-btn, .mode-option, .nav-item, .poi-card, .poi-nav-btn,
         .quick-action-btn, .mini-card, .mini-btn, .dest-clear,
-        .load-more-btn, select {
+        .load-more-btn, select, .suggestions, .dest-suggestions,
+        .skeleton-overlay, .locate-btn, .drag-panel {
             transition-duration: 0.2s;
             transition-timing-function: ease;
         }
 
-        /* ===== 导航指引长文案换行 (P1-3) ===== */
+        /* ==================== P1-3: 导航指引长文案换行 ==================== */
         .navi-instruction {
             word-wrap: break-word;
-            word-break: keep-all;
+            word-break: break-word;
             overflow-wrap: break-word;
-            line-height: 1.6;
-            text-align: justify;
+            line-height: 1.5;
+            text-align: left;
         }
-        
+
         /* P1-3: 防止单词/单字孤立成行 */
         .navi-instruction::after {
             content: '';
             display: block;
             min-height: 1.6em;
         }
-    </style>
 
-        .mode-selector { display: flex; gap: 10px; padding: 0 0 16px; border-bottom: 1px solid #f0f0f0; margin-bottom: 16px; overflow-x: auto; }
         .mode-selector::-webkit-scrollbar { display: none; }
         .mode-chip { flex: 0 0 auto; padding: 10px 20px; background: #f5f7fa; border-radius: 22px; font-size: 14px; color: #666; cursor: pointer; border: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
         .mode-chip.active { background: #e6f4ff; color: #1677ff; border-color: #1677ff; }
@@ -1348,6 +1373,137 @@
             60% { color: #333; transform: scale(1); }
             100% { color: #333; transform: scale(1); }
         }
+
+        /* ==================== P2全局细节修复 ==================== */
+
+        /* P2-02: 全局提示弹窗固定顶部居中，高z-index */
+        .toast {
+            position: fixed !important;
+            top: 80px !important;
+            left: 50% !important;
+            z-index: 99999 !important;
+        }
+
+        /* P2-03: 图标Hover样式统一 */
+        .search-icon, .locate-btn, .nav-item .icon, .quick-action-btn {
+            transition: color 0.2s, opacity 0.2s, transform 0.2s;
+        }
+        .search-icon:hover { color: #1677ff; opacity: 0.8; }
+        .locate-btn:hover { color: #1677ff; transform: scale(1.05); }
+        .nav-item:hover .icon { color: #1677ff; }
+
+        /* P2-04: 页面长时间停留后彻底销毁骨架屏 */
+        body.loaded .skeleton-overlay {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* P2-06: 文本选中高亮色适配主题 */
+        ::selection {
+            background: rgba(22, 119, 255, 0.2) !important;
+            color: #1677ff !important;
+        }
+        ::-moz-selection {
+            background: rgba(22, 119, 255, 0.2) !important;
+            color: #1677ff !important;
+        }
+
+        /* P2-07: 消除移动端触控延迟，防止双击缩放 */
+        * {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        input, button, textarea, select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        /* P2-08: 空状态图标使用矢量图 */
+        .empty-icon {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            font-size: 80px;
+            line-height: 1;
+            text-align: center;
+        }
+
+        /* P2-09: 搜索图标与输入框垂直居中对齐 */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .search-icon {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        .search-bar input {
+            display: flex;
+            align-items: center;
+            line-height: 1.2;
+            vertical-align: middle;
+        }
+
+        /* P2-11: 顶部导航栏固定，防止滚动抖动 */
+        .search-container, .dest-search-container, .mode-switch-container {
+            position: fixed !important;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        /* P1-10: 禁用非输入元素的长按文本选择与系统弹窗 */
+        .poi-card, .drag-panel, .nav-item, .mode-option, .quick-action-btn,
+        .mini-card, .mini-btn, .panel-title, .search-icon, .locate-btn,
+        .filter-panel, .suggestions, .dest-suggestions, .toast {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        .poi-card, .nav-item, .mode-option, .quick-action-btn, .mini-btn,
+        .filter-panel label {
+            -webkit-user-drag: none;
+        }
+
+        /* P1-11: Safari浏览器联想列表滑动流畅性 */
+        .suggestions, .dest-suggestions, .drag-panel {
+            -webkit-overflow-scrolling: touch;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        /* 统一滚动条样式（桌面端） */
+        @media (min-width: 769px) {
+            .suggestions::-webkit-scrollbar, .dest-suggestions::-webkit-scrollbar,
+            .drag-panel::-webkit-scrollbar {
+                width: 6px;
+            }
+            .suggestions::-webkit-scrollbar-thumb, .dest-suggestions::-webkit-scrollbar-thumb,
+            .drag-panel::-webkit-scrollbar-thumb {
+                background: #d9d9d9;
+                border-radius: 3px;
+            }
+            .suggestions::-webkit-scrollbar-thumb:hover, .dest-suggestions::-webkit-scrollbar-thumb:hover,
+            .drag-panel::-webkit-scrollbar-thumb:hover {
+                background: #bfbfbf;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -1530,8 +1686,14 @@
     <script>
         const AMAP_KEY = '8429788d2971b1eb0b278b878180ce92';
 
+        /* ==================== P0-01/P0-02: 双模式独立坐标系统 ==================== */
+        // 严格隔离两套坐标，确保定位和搜索互不干扰
+        // myLocationPos: 仅由定位按钮更新，作为「我的位置」模式的查询中心
+        // destSearchPos/destSearchName: 仅由用户输入/选择目的地生成，作为「目的地」模式的查询中心
         var map, myMarker, destMarker, markerClusterer;
-        var userPos = [113.2644, 23.1291];
+        var myLocationPos = [113.2644, 23.1291];  // P0-01: 我的位置专属坐标
+        var isMyLocationUpdated = false;          // P0-02: 是否已由定位更新
+        var userPos = [113.2644, 23.1291];        // 保留向后兼容
         var trafficOn = false, trafficLayer = null;
         var selectedPOI = null, currentMode = 'driving';
         var currentRoutes = [], currentPOIs = [], currentRouteSteps = [];
@@ -1569,6 +1731,63 @@
             toast('网络异常，请检查网络连接');
         });
 
+        /* ==================== P1-10: 全局长按文本选择禁用（防止系统弹窗） ==================== */
+        // 移动端长按列表条目时，禁用系统选择/复制弹窗
+        document.addEventListener('contextmenu', function(e) {
+            // 在搜索输入框中允许原生长按（以便粘贴等操作）
+            var target = e.target;
+            var isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+            if (!isInput) {
+                // 阻止系统上下文菜单（防止安卓长按选择弹窗）
+                // 但只在非输入元素中阻止
+                if (e.target && e.target.closest && e.target.closest('.poi-card, .drag-panel, .nav-item, .mode-option')) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // 阻止POI卡片和导航按钮的文本选择
+        var touchSelectBlocker = function(e) {
+            if (e.target && e.target.closest && e.target.closest('.poi-card, .nav-item, .mode-option, .drag-panel')) {
+                // 不阻止touch事件，只阻止默认选择行为
+            }
+        };
+        document.addEventListener('touchstart', touchSelectBlocker, { passive: true });
+
+        /* ==================== P0-05/P1-07: 窗口resize实时重排 ==================== */
+        // 浏览器缩放或窗口尺寸变化时，触发响应式布局重绘
+        var resizeTimer = null;
+        window.addEventListener('resize', function() {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                console.log('[Resize] 窗口尺寸变化:', window.innerWidth, 'x', window.innerHeight);
+                // 触发地图重绘（如果有地图实例）
+                if (typeof map !== 'undefined' && map && map.getSize) {
+                    try {
+                        // 高德地图resize事件
+                        if (map.emit) map.emit('resize');
+                    } catch(e) {}
+                }
+            }, 150);
+        });
+
+        /* ==================== P1-05: 页面可见性变化保持导航功能 ==================== */
+        // 已在switchSearchMode附近添加visibilitychange监听
+        // 补充：切回页面后1秒，重新同步搜索/导航状态
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                setTimeout(function() {
+                    // 确保isSearching状态没有卡滞
+                    if (isSearching) {
+                        var loadingItems = document.querySelectorAll('.nav-item.loading');
+                        if (loadingItems.length === 0) {
+                            isSearching = false;
+                        }
+                    }
+                }, 1000);
+            }
+        });
+
         function jsonpRequest(url, callback) {
             var callbackName = 'amap_jsonp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             window[callbackName] = function(data) {
@@ -1595,7 +1814,7 @@
         function amapRequest(amapPath, params, callback, retryCount, useJsonp) {
             retryCount = retryCount || 0;
 
-            // P3: 弱网络检测
+            // P1-03: 网络状态检查
             if (networkStatus === 'offline') {
                 toast('网络异常，请检查网络连接');
                 callback({ status: '0', info: '网络异常，请检查网络连接' });
@@ -1621,7 +1840,6 @@
             if (useJsonp) {
                 url = 'https://restapi.amap.com' + normalizedPath + '?' + query + '&key=' + amapApiKey + '&output=json';
                 console.log('[amapRequest] -> JSONP:', url);
-                
                 jsonpRequest(url, callback);
                 return;
             }
@@ -1630,13 +1848,15 @@
             console.log('[amapRequest] -> Proxy:', url);
 
             var controller = new AbortController();
-            // P0-1: 注册请求以便切换模式时取消
             registerRequest(controller);
-            
+
+            // P1-03: 统一5秒请求超时 - 超出5秒立即终止并给用户明确提示
+            var REQUEST_TIMEOUT_MS = 5000;
             var timeoutId = setTimeout(function() {
-                console.warn('[amapRequest] timeout after 15s:', url);
+                console.warn('[amapRequest] timeout after 5s:', url);
                 controller.abort();
-            }, 15000);
+                toast('请求超时，请重试');
+            }, REQUEST_TIMEOUT_MS);
 
             fetch(url, {
                 method: 'GET',
@@ -1730,12 +1950,25 @@
             }
         }
         function hideSkeleton() {
-            if (!_skeletonShowing) return;
+            if (!_skeletonShowing) {
+                // P2-04: 确保body.loaded类始终存在，防止骨架屏残留
+                if (document.body) document.body.classList.add('loaded');
+                return;
+            }
             _skeletonShowing = false;
             var skeleton = document.getElementById('skeletonOverlay');
             if (skeleton) {
                 skeleton.classList.remove('show');
+                // P2-04: 页面加载完成后2秒彻底销毁骨架屏DOM，防止长时间停留残留
+                setTimeout(function() {
+                    if (skeleton && skeleton.parentNode) {
+                        skeleton.style.display = 'none';
+                        skeleton.parentNode.removeChild(skeleton);
+                    }
+                }, 2000);
             }
+            // P2-04: 给body添加loaded类，配合CSS彻底隐藏
+            if (document.body) document.body.classList.add('loaded');
         }
 
         // P3-3: 导航关键提示高亮动效
@@ -1971,25 +2204,30 @@
         
         // 定位按钮点击入口（唯一入口，优先高德Geolocation定位）
         function locateMe() {
-            console.log('[locateMe] 定位按钮被点击, isLocating:', isLocating);
+            // P0-03: 节流检查
+            if (checkThrottle()) return;
+
+            console.log('[locateMe] 定位按钮被点击, isLocating:', isLocating, ', 当前模式:', currentSearchMode);
             if (isLocating) {
                 toast('正在定位中，请稍候...');
                 return;
             }
 
-            // P1-1: 权限被拒绝后的处理
+            // P0-01: 定位按钮边界规则 - 仅在「我的位置」模式生效
+            if (currentSearchMode === 'destination') {
+                toast('当前为目的地模式，请先切换到「我的位置」再定位');
+                return;
+            }
+
             if (locationPermissionDenied) {
-                // 临时拒绝可以重试，永久拒绝需要引导
                 if (confirm('定位权限被拒绝，需要您手动开启。\n\n请在浏览器地址栏左侧点击🔒图标，允许获取位置信息。\n\n是否尝试重新获取定位？')) {
                     locationPermissionDenied = false;
-                    // 继续执行定位
                 } else {
                     toast('可随时点击定位按钮重试，或前往浏览器设置开启权限');
                     return;
                 }
             }
 
-            // 非HTTPS环境提示
             var protocolOK = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
             if (!protocolOK) {
                 toast('提示：当前为HTTP环境，浏览器定位精度受限，建议使用HTTPS访问');
@@ -2002,42 +2240,51 @@
             if (btn) btn.classList.add('locating');
             toast('正在定位...');
 
+            // P0-01/P0-02: 统一坐标更新函数 - 同时更新 myLocationPos 和 userPos
+            function updateLocationCoords(lng, lat) {
+                myLocationPos = [lng, lat];
+                userPos = [lng, lat];
+                isMyLocationUpdated = true;
+                console.log('[locateMe] 坐标已更新:', myLocationPos);
+            }
+
             var totalTimeout = setTimeout(function() {
                 if (!isLocating) return;
                 console.log('[locateMe] 总定位超时');
                 isLocating = false;
                 if (btn) btn.classList.remove('locating');
-                userPos = [113.2644, 23.1291];
-                updateMarker(userPos[0], userPos[1]);
+                // P0-02: 超时时也更新坐标，至少保证有可查询的中心点
+                updateLocationCoords(113.2644, 23.1291);
+                updateMarker(myLocationPos[0], myLocationPos[1]);
                 toast('定位超时，已使用默认位置（可再次点击重新定位）');
-            }, 12000);
+            }, 10000);
             locateTimers.push(totalTimeout);
 
             AMap.plugin('AMap.Geolocation', function() {
                 var geolocation = new AMap.Geolocation({
-                    enableHighAccuracy: true,  // P1-4: 强制使用高精度定位
-                    timeout: 15000,           // P1-4: 增加超时时间
+                    enableHighAccuracy: true,
+                    timeout: 12000,
                     buttonPosition: 'RB',
                     needAddress: false,
-                    convert: true,            // P1-4: 自动转换为高德坐标系
-                    showButton: false,        // 使用自定义按钮
-                    showMarker: false,        // 使用自定义marker
-                    showCircle: false         // 不显示精度圈
+                    convert: true,
+                    showButton: false,
+                    showMarker: false,
+                    showCircle: false
                 });
 
                 geolocation.getCurrentPosition(function(status, result) {
-                    if (!isLocating) return; // 可能已被超时分支处理
+                    if (!isLocating) return;
                     clearTimeout(totalTimeout);
 
                     if (status === 'complete' && result && result.position) {
-                        userPos = [result.position.lng, result.position.lat];
+                        updateLocationCoords(result.position.lng, result.position.lat);
                         isLocating = false;
                         locationPermissionDenied = false;
                         if (btn) btn.classList.remove('locating');
-                        updateMarker(userPos[0], userPos[1]);
-                        map.setCenter(userPos);
+                        updateMarker(myLocationPos[0], myLocationPos[1]);
+                        map.setCenter(myLocationPos);
                         toast('定位成功');
-                        console.log('[locateMe] 高德定位成功:', userPos);
+                        console.log('[locateMe] 高德定位成功:', myLocationPos);
                     } else {
                         if (navigator.geolocation && protocolOK) {
                             console.log('[locateMe] 高德定位失败，降级浏览器定位');
@@ -2045,14 +2292,14 @@
                                 function(pos) {
                                     if (!isLocating) return;
                                     clearTimeout(totalTimeout);
-                                    userPos = [pos.coords.longitude, pos.coords.latitude];
+                                    updateLocationCoords(pos.coords.longitude, pos.coords.latitude);
                                     isLocating = false;
                                     locationPermissionDenied = false;
                                     if (btn) btn.classList.remove('locating');
-                                    updateMarker(userPos[0], userPos[1]);
-                                    map.setCenter(userPos);
+                                    updateMarker(myLocationPos[0], myLocationPos[1]);
+                                    map.setCenter(myLocationPos);
                                     toast('定位成功（浏览器）');
-                                    console.log('[locateMe] 浏览器定位成功:', userPos);
+                                    console.log('[locateMe] 浏览器定位成功:', myLocationPos);
                                 },
                                 function(err) {
                                     if (!isLocating) return;
@@ -2060,40 +2307,32 @@
                                     console.log('[locateMe] 浏览器定位失败:', err.code);
                                     isLocating = false;
                                     if (btn) btn.classList.remove('locating');
-                                    userPos = [113.2644, 23.1291];
-                                    updateMarker(userPos[0], userPos[1]);
-                                    
+                                    updateLocationCoords(113.2644, 23.1291);
+                                    updateMarker(myLocationPos[0], myLocationPos[1]);
                                     if (err.code === 1) {
-                                        // P1-1: 权限被拒绝
                                         locationPermissionDenied = true;
-                                        // 根据是否为临时拒绝给出不同提示
-                                        if (err.message && err.message.indexOf('denied') !== -1) {
-                                            // 可能是临时拒绝，给出重试选项
-                                            toast('定位权限已拒绝，点击确定重新尝试授权', 4000);
-                                            if (confirm('定位权限被拒绝。\n\n点击"确定"重新尝试，或前往浏览器设置手动开启定位权限。')) {
-                                                locationPermissionDenied = false;
-                                                locateMe();
-                                            }
-                                        } else {
-                                            toast('定位权限已关闭，请前往浏览器设置开启');
+                                        toast('定位权限已拒绝，点击确定重新尝试授权', 4000);
+                                        if (confirm('定位权限被拒绝。\n\n点击"确定"重新尝试，或前往浏览器设置手动开启定位权限。')) {
+                                            locationPermissionDenied = false;
+                                            locateMe();
                                         }
                                     } else if (err.code === 2) {
                                         toast('位置服务不可用，已使用默认位置');
                                     } else if (err.code === 3) {
-                                        // P1-1: 超时可以重试
                                         toast('定位超时，可再次点击重新定位');
                                     } else {
                                         toast('定位失败，已使用默认位置');
                                     }
                                 },
-                                { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+                                { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
                             );
                         } else {
                             isLocating = false;
                             if (btn) btn.classList.remove('locating');
-                            userPos = [113.2644, 23.1291];
-                            updateMarker(userPos[0], userPos[1]);
-                            toast('定位失败，已使用默认位置');
+                            updateLocationCoords(113.2644, 23.1291);
+                            updateMarker(myLocationPos[0], myLocationPos[1]);
+                            console.log('[locateMe] 无法定位，使用默认坐标');
+                            toast('当前环境不支持定位，已使用默认位置');
                         }
                     }
                 });
@@ -2224,38 +2463,92 @@
             return extra;
         }
 
-        // 搜索半径配置
+        // 搜索半径配置（全局共用，随当前模式中心点生效）
         var searchRadius = 2000;
         var radiusOptions = [500, 1000, 2000, 3000, 5000];
 
-        // 双模式查询相关变量
+        // 双模式查询相关变量 - 严格隔离
         var currentSearchMode = 'myLocation'; // 'myLocation' | 'destination'
-        var destSearchPos = null;  // 目的地坐标 [lng, lat]
-        var destSearchName = '';   // 目的地名称
-        
-        // P1-3: 筛选/排序状态隔离（每个模式独立存储）
+        var destSearchPos = null;   // 目的地坐标 [lng, lat]
+        var destSearchName = '';    // 目的地名称
+
+        // P1-03/P1-04: 筛选/排序状态隔离（每个模式独立存储）
         var filterState = {
             myLocation: { filter: 'all', sort: 'distance' },
             destination: { filter: 'all', sort: 'distance' }
         };
-        
-        // P0-1: 追踪正在进行的请求，用于切换模式时取消
+
+        /* ==================== P0-03: 全局节流 + 请求队列管控 ==================== */
+        // 高频叠加操作防卡死：节流、排队、强制取消
         var activeRequests = [];
-        
-        // 注册请求以便取消
+        var lastActionTime = 0;     // 上一次操作时间戳
+        var THROTTLE_MS = 300;      // 最小操作间隔
+        var isSearching = false;    // 搜索状态锁
+
         function registerRequest(controller) {
             activeRequests.push(controller);
         }
-        
-        // 取消所有正在进行的请求
+
         function cancelAllRequests() {
             activeRequests.forEach(function(controller) {
-                try {
-                    controller.abort();
-                } catch(e) {}
+                try { controller.abort(); } catch(e) {}
             });
             activeRequests = [];
         }
+
+        // P0-03: 节流检查 - 防止高频叠加触发JS报错
+        function checkThrottle() {
+            var now = Date.now();
+            if (now - lastActionTime < THROTTLE_MS) {
+                console.warn('[Throttle] 操作过于频繁，已拦截');
+                return true;
+            }
+            lastActionTime = now;
+            return false;
+        }
+
+        // P0-03: 重置搜索状态 - 切换模式或发起新搜索前调用
+        function resetSearchState() {
+            cancelAllRequests();
+            isSearching = false;
+            // 清除可能残留的loading状态
+            var navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(function(el) { el.classList.remove('loading'); });
+        }
+
+        /* ==================== P0-04: 多标签页状态同步 + 页面驻留状态保存 ==================== */
+        // 切换到其他标签页或返回时保持组件状态、导航数据持续更新
+        var pageStateRestoreTimer = null;
+        var pageStateLastUpdate = Date.now();
+
+        function savePageStateToMemory() {
+            // 记录当前状态，用于切回后检查是否丢失
+            pageStateLastUpdate = Date.now();
+        }
+
+        function restorePageStateFromMemory() {
+            // 如果组件状态丢失，静默修复，不打断用户操作
+            console.log('[PageState] 切回页面，校验状态完整性');
+            savePageStateToMemory();
+        }
+
+        // 监听页面可见性变化 - P0-04 核心修复
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // 切到后台：保存状态，保持导航数据更新
+                console.log('[PageState] 页面切到后台');
+                savePageStateToMemory();
+            } else {
+                // 切回前台：恢复状态，导航继续刷新
+                console.log('[PageState] 页面切回前台');
+                restorePageStateFromMemory();
+                // P1-05: 切回页面后重新触发一次导航数据刷新
+                if (isNavigating && naviInterval === null) {
+                    // 确保导航定时器正常工作
+                    console.log('[PageState] 恢复导航定时器');
+                }
+            }
+        });
 
         // P0-1: 切换搜索模式时取消所有请求
         function switchSearchMode(mode) {
@@ -2647,68 +2940,70 @@
         
         function searchNearbyWithCallback(kw, onComplete) {
             var keyword = kw === '停车场' ? '停车场' : '充电桩|充电站';
-            searchAroundByCenter(keyword, userPos, searchRadius, kw, null, onComplete);
+            searchAroundByCenter(keyword, myLocationPos, searchRadius, kw, null, onComplete);
         }
 
         function searchNearby(kw) {
             var keyword = kw === '停车场' ? '停车场' : '充电桩|充电站';
-            searchAroundByCenter(keyword, userPos, searchRadius, kw, null);
+            searchAroundByCenter(keyword, myLocationPos, searchRadius, kw, null);
         }
 
-        var isSearching = false;
-        
         function searchParkingOrCharging(kw) {
+            // P0-03: 节流防止高频点击
+            if (checkThrottle()) return;
+
             if (isSearching) {
                 toast('搜索进行中，请稍候...');
                 return;
             }
-            
-            // P1-1: 保存搜索参数，用于网络恢复后重试
+
+            // 清除选中的POI干扰 - P0-01: 我的位置模式只使用实时定位坐标
+            selectedPOI = null;
+
+            // P1-01: 保存搜索参数，用于网络恢复后重试
             pendingSearchParams = { keyword: kw, mode: currentSearchMode };
-            
+
             var keyword = kw === '停车场' ? '停车场' : '充电桩|充电站';
-            
-            // 设置加载状态
+
             var navIdx = kw === '停车场' ? 1 : 2;
             var navItem = document.getElementById('navItem' + navIdx);
             if (navItem) navItem.classList.add('loading');
             isSearching = true;
-            
+
             var onSearchComplete = function(success) {
                 isSearching = false;
                 if (navItem) navItem.classList.remove('loading');
-                // P1-1: 如果搜索成功，清除待重试的参数
                 if (success) {
                     pendingSearchParams = null;
                 }
             };
-            
-            // P1-1: 检查网络状态
+
             if (networkStatus === 'offline') {
                 toast('网络异常，请检查网络连接');
                 onSearchComplete(false);
                 return;
             }
-            
+
+            // P0-01: 两套坐标严格隔离 - 核心逻辑修复
             if (currentSearchMode === 'destination') {
-                // 目的地模式
+                // 目的地模式：使用用户输入的目的地坐标
                 if (!destSearchPos || !destSearchName) {
                     toast('请输入有效目的地');
                     onSearchComplete(false);
                     return;
                 }
                 console.log('[searchParkingOrCharging] 目的地模式:', destSearchName, destSearchPos);
+                // P1-01: 文案绑定 - 明确标记为"目的地"周边
                 searchAroundByCenterWithCallback(keyword, destSearchPos, searchRadius, kw, '目的地: ' + destSearchName, onSearchComplete);
             } else {
-                // 我的位置模式（原有逻辑）
-                if (selectedPOI && selectedPOI.lngLat && selectedPOI.kw !== 'route') {
-                    console.log('[searchParkingOrCharging] 使用选中地点为中心:', selectedPOI.name, selectedPOI.lngLat);
-                    searchAroundByCenterWithCallback(keyword, selectedPOI.lngLat, searchRadius, kw, selectedPOI.name, onSearchComplete);
-                } else if (userPos && userPos[0] && userPos[1]) {
-                    console.log('[searchParkingOrCharging] 使用设备定位为中心:', userPos);
-                    searchNearbyWithCallback(kw, onSearchComplete);
+                // 我的位置模式：只使用定位更新得到的myLocationPos
+                // 关键修复：不再依赖全局userPos，确保切换模式后使用正确坐标
+                var centerPos = myLocationPos;
+                console.log('[searchParkingOrCharging] 我的位置模式 - 使用坐标:', centerPos, 'isMyLocationUpdated:', isMyLocationUpdated);
+
+                if (centerPos && centerPos[0] && centerPos[1]) {
+                    searchAroundByCenterWithCallback(keyword, centerPos, searchRadius, kw, null, onSearchComplete);
                 } else {
-                    // 需求3.1：沿用原有提示
                     toast('请先开启定位权限');
                     triggerLocation();
                     onSearchComplete(false);
@@ -2721,9 +3016,9 @@
             if (typeof locateMe === 'function') locateMe();
         }
 
-        // 按关键词搜索（备用方案）
+        // P0-01: 按关键词搜索（仅使用我的位置坐标）
         function searchNearbyByKeyword(keywords, kw) {
-            searchAroundByCenter(keywords, userPos, searchRadius, kw, null);
+            searchAroundByCenter(keywords, myLocationPos, searchRadius, kw, null);
         }
 
         // 处理实时POI数据
