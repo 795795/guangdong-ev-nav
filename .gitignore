@@ -1,0 +1,54 @@
+# IDE & Editor
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Android
+Android/.gradle/
+Android/app/build/
+Android/build/
+Android/local.properties
+Android/.externalNativeBuild/
+Android/captures/
+Android/*.apk
+Android/*.ap_
+Android/*.aab
+
+# Gradle
+.gradle/
+build/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temp files
+*.tmp
+*.bak
+*.swp

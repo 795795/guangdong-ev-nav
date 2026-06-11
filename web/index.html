@@ -1,0 +1,2932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>广东新能源导航</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif; overflow: hidden; background: #fff; height: 100vh; touch-action: manipulation; }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        .search-container { position: absolute; top: 0; left: 0; right: 0; z-index: 200; padding: 12px; background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 100%); }
+        .search-bar { background: rgba(255,255,255,0.95); border-radius: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; align-items: center; padding: 0 16px; height: 48px; }
+        .search-icon { font-size: 18px; color: #1677ff; }
+        .search-bar input { flex: 1; border: none; outline: none; font-size: 15px; color: #333; background: transparent; padding: 0 12px; }
+        .search-btn { background: #1677ff; color: white; padding: 8px 20px; border-radius: 20px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+
+        .suggestions { position: absolute; top: 68px; left: 12px; right: 12px; background: #fff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); max-height: 45vh; overflow-y: auto; z-index: 201; display: none; }
+        .suggestion-item { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item .icon { font-size: 18px; }
+        .suggestion-item .name { font-size: 15px; color: #333; font-weight: 500; }
+        .suggestion-item .addr { font-size: 12px; color: #999; margin-top: 2px; }
+
+        .locate-btn { position: absolute; right: 16px; top: 100px; width: 52px; height: 52px; background: #fff; border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; z-index: 100; }
+        .locate-btn.locating { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 4px 20px rgba(22,119,255,0.3); } 50% { box-shadow: 0 4px 30px rgba(22,119,255,0.5); } }
+
+        /* 模式切换控件 */
+        .mode-switch-container { position: absolute; top: 72px; left: 12px; right: 12px; z-index: 199; }
+        .mode-switch { display: flex; background: rgba(255,255,255,0.98); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); padding: 4px; }
+        .mode-option { flex: 1; padding: 10px 12px; border-radius: 10px; text-align: center; font-size: 14px; color: #666; cursor: pointer; transition: all 0.2s; }
+        .mode-option.active { background: #1677ff; color: #fff; font-weight: 500; }
+
+        /* 目的地搜索框 */
+        .dest-search-container { position: absolute; top: 116px; left: 12px; right: 12px; z-index: 198; display: none; }
+        .dest-search-bar { background: rgba(255,255,255,0.95); border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); display: flex; align-items: center; padding: 0 16px; height: 44px; }
+        .dest-search-bar input { flex: 1; border: none; outline: none; font-size: 14px; color: #333; background: transparent; padding: 0 12px; }
+        .dest-search-bar .dest-icon { font-size: 16px; color: #999; }
+        .dest-search-bar .dest-clear { font-size: 14px; color: #999; cursor: pointer; padding: 4px; }
+        .dest-suggestions { position: absolute; top: 52px; left: 0; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); max-height: 30vh; overflow-y: auto; z-index: 199; display: none; }
+        .dest-suggestion-item { padding: 10px 14px; border-bottom: 1px solid #f5f5f5; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .dest-suggestion-item:last-child { border-bottom: none; }
+        .dest-suggestion-item .name { color: #333; font-weight: 500; }
+        .dest-suggestion-item .addr { font-size: 12px; color: #999; margin-top: 2px; }
+        .dest-suggestion-empty { padding: 20px 14px; text-align: center; color: #999; font-size: 13px; }
+
+        /* 快捷入口按钮 */
+        .quick-action-bar { display: flex; gap: 12px; padding: 12px 16px; border-top: 1px solid #f0f0f0; }
+        .quick-action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: #f8f9fa; border-radius: 10px; cursor: pointer; font-size: 13px; color: #666; transition: all 0.2s; }
+        .quick-action-btn:hover { background: #e8eaed; }
+        .quick-action-btn.active { background: #e6f0ff; color: #1677ff; }
+        .quick-action-btn .icon { font-size: 16px; }
+
+        .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; z-index: 100; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); }
+        .nav-items { display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px 4px; cursor: pointer; min-width: 60px; }
+        .nav-item .icon { font-size: 26px; margin-bottom: 4px; }
+        .nav-item .label { font-size: 11px; color: #999; }
+        .nav-item.active .label { color: #1677ff; }
+
+        .drag-panel { position: absolute; bottom: 65px; left: 0; right: 0; background: #fff; z-index: 99; max-height: 65vh; border-radius: 24px 24px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.1); display: none; transition: max-height 0.3s ease; }
+        .drag-panel.show { display: block; }
+        .drag-panel.collapsed { max-height: 120px; }
+        .drag-panel.collapsed .panel-content { display: none; }
+        .drag-panel.collapsed .panel-summary { display: block; }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .search-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        
+        .drag-handle { height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .drag-bar { width: 44px; height: 6px; background: #d0d0d0; border-radius: 3px; }
+        
+        .panel-summary { display: none; padding: 0 16px 16px; }
+        .mini-card { display: flex; align-items: center; gap: 12px; background: #f8f9fa; border-radius: 14px; padding: 14px; cursor: pointer; }
+        .mini-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #1677ff, #0958d9); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; flex-shrink: 0; }
+        .mini-info { flex: 1; min-width: 0; }
+        .mini-name { font-size: 15px; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mini-addr { font-size: 12px; color: #999; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mini-extra { font-size: 12px; color: #1677ff; margin-top: 6px; font-weight: 500; }
+        .mini-btn { padding: 10px 18px; background: linear-gradient(135deg, #1677ff, #0958d9); color: #fff; border: none; border-radius: 22px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        
+        .panel-content { padding: 0 16px 16px; overflow-y: auto; max-height: calc(65vh - 44px); }
+        .panel-title { font-size: 17px; font-weight: 600; color: #333; margin-bottom: 12px; }
+        .panel-count { font-size: 13px; color: #999; margin-bottom: 16px; }
+
+        .mode-selector { display: flex; gap: 10px; padding: 0 0 16px; border-bottom: 1px solid #f0f0f0; margin-bottom: 16px; overflow-x: auto; }
+        .mode-selector::-webkit-scrollbar { display: none; }
+        .mode-chip { flex: 0 0 auto; padding: 10px 20px; background: #f5f7fa; border-radius: 22px; font-size: 14px; color: #666; cursor: pointer; border: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
+        .mode-chip.active { background: #e6f4ff; color: #1677ff; border-color: #1677ff; }
+
+        .poi-card { background: #fff; border: 1px solid #f0f0f0; border-radius: 16px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+        .poi-card:active { background: #f8f9fa; transform: scale(0.99); }
+        .poi-main { display: flex; justify-content: space-between; align-items: flex-start; }
+        .poi-name { font-size: 16px; font-weight: 600; color: #333; flex: 1; }
+        .poi-dist { font-size: 14px; color: #1677ff; font-weight: 500; }
+        .poi-addr { font-size: 13px; color: #999; margin-top: 8px; line-height: 1.5; }
+        .poi-tags { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .poi-tag { font-size: 12px; padding: 4px 10px; background: #f0f5ff; color: #597ef7; border-radius: 6px; }
+        .poi-tag.orange { background: #fff7e6; color: #fa8c16; }
+        .poi-tag.green { background: #f6ffed; color: #52c41a; }
+        .poi-tag.red { background: #fff1f0; color: #ff4d4f; }
+        .poi-tag.bold { font-weight: 600; }
+        .poi-tag .green, .poi-tag.green { background: #f6ffed; color: #52c41a; }
+        .poi-tag .red, .poi-tag.red { background: #fff1f0; color: #ff4d4f; }
+        .poi-tag .orange, .poi-tag.orange { background: #fff7e6; color: #fa8c16; }
+        .poi-tag .yellow { background: #fffbe6; color: #faad14; }
+        .poi-action { margin-top: 12px; }
+        .poi-nav-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #1677ff, #0958d9); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; }
+
+        /* 充电站详情页样式 */
+        .charging-detail, .parking-detail {
+            padding-bottom: 20px;
+        }
+
+        /* 充电站顶部区域 */
+        .charging-header, .parking-header {
+            background: linear-gradient(135deg, #1677ff 0%, #0958d9 100%);
+            border-radius: 20px 20px 0 0;
+            padding: 20px 16px 24px;
+            margin: -16px -16px 16px;
+            color: #fff;
+        }
+        .charging-station-name, .parking-station-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .charging-station-addr, .parking-station-addr {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .charging-status-bar, .parking-status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+        .charging-price-current, .parking-price-current {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .charging-time-label, .parking-time-label {
+            font-size: 12px;
+            opacity: 0.9;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 8px;
+        }
+
+        /* 充电站信息区域 */
+        .charging-station-info, .parking-station-info {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 0 4px;
+            margin-bottom: 16px;
+        }
+        .charging-info-item, .parking-info-item {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 16px 8px;
+            text-align: center;
+        }
+        .charging-info-icon, .parking-info-icon {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+        .charging-info-value, .parking-info-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1677ff;
+            margin-bottom: 4px;
+        }
+        .charging-info-label, .parking-info-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 价格详情区域 */
+        .price-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #f0f0f0;
+        }
+        .price-section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .price-section-title span:first-child {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        .price-source-tag {
+            font-size: 12px;
+            color: #1677ff;
+            background: #e6f4ff;
+            padding: 4px 10px;
+            border-radius: 8px;
+        }
+
+        /* 价格时段列表项 */
+        .price-period-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid #f5f5f5;
+            gap: 10px;
+        }
+        .price-period-item:last-child { border-bottom: none; }
+        .price-period-item.current-period { background: #f0f7ff; border-radius: 12px; padding: 16px 12px; margin: 0 -4px; }
+        .price-period-time {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            width: 110px;
+            flex-shrink: 0;
+        }
+        .price-period-detail {
+            flex: 1;
+            min-width: 0;
+        }
+        .price-period-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .price-period-breakdown {
+            font-size: 12px;
+            color: #999;
+        }
+        .price-period-tag {
+            font-size: 11px;
+            background: #1677ff;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .price-period-tag.lowest {
+            background: #52c41a;
+        }
+
+        /* 底部提示 */
+        .charging-footer-tip {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 16px;
+            padding: 8px;
+        }
+
+        /* 停车场特定样式 */
+        .parking-price-current, .parking-time-label {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .parking-time-label {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .route-summary { padding: 20px; background: linear-gradient(135deg, #1677ff, #0958d9); border-radius: 16px; color: #fff; margin-bottom: 16px; }
+        .route-summary .title { font-size: 15px; opacity: 0.9; margin-bottom: 12px; }
+        .route-summary .stats { display: flex; gap: 24px; }
+        .route-summary .stat { text-align: center; flex: 1; }
+        .route-summary .value { font-size: 28px; font-weight: 700; }
+        .route-summary .label { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+
+        .route-card { background: #fff; border: 2px solid #f0f0f0; border-radius: 16px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+        .route-card.active { border-color: #1677ff; background: #f0f7ff; }
+        .route-card:active { transform: scale(0.99); }
+        .route-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .route-name { font-size: 16px; font-weight: 600; color: #333; }
+        .route-time { font-size: 15px; color: #1677ff; font-weight: 600; }
+        .route-detail { font-size: 13px; color: #999; }
+
+        .navi-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #1677ff, #0958d9); color: #fff; border: none; border-radius: 28px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 16px; box-shadow: 0 4px 16px rgba(22,119,255,0.3); }
+
+        /* 导航模式 - 高德风格 */
+        .full-navi { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a2e; z-index: 500; display: none; }
+        .full-navi.show { display: block; }
+        .navi-top { position: absolute; top: 0; left: 0; right: 0; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top)); background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%); display: flex; align-items: center; justify-content: space-between; }
+        .navi-close { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; cursor: pointer; border: none; }
+        .navi-title { color: #fff; font-size: 15px; font-weight: 500; }
+        .navi-share { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; cursor: pointer; border: none; }
+
+        .navi-info { position: absolute; top: 80px; left: 16px; right: 16px; background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .navi-next { font-size: 13px; color: #999; margin-bottom: 8px; }
+        .navi-instruction { font-size: 22px; font-weight: 700; color: #333; margin-bottom: 16px; line-height: 1.4; }
+        .navi-road { font-size: 15px; color: #666; margin-bottom: 16px; }
+        .navi-stats { display: flex; gap: 20px; }
+        .navi-stat { flex: 1; text-align: center; }
+        .navi-stat-value { font-size: 28px; font-weight: 700; color: #1677ff; }
+        .navi-stat-label { font-size: 12px; color: #999; margin-top: 4px; }
+
+        .navi-eta-panel { position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); background: #1677ff; color: #fff; padding: 12px 24px; border-radius: 24px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 16px rgba(22,119,255,0.4); white-space: nowrap; }
+
+        .navi-bottom { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 24px 24px 0 0; padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+        .navi-maneuver { display: flex; align-items: center; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; margin-bottom: 16px; }
+        .maneuver-icon { width: 56px; height: 56px; background: linear-gradient(135deg, #1677ff, #0958d9); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #fff; flex-shrink: 0; }
+        .maneuver-info { flex: 1; }
+        .maneuver-distance { font-size: 24px; font-weight: 700; color: #333; }
+        .maneuver-road { font-size: 14px; color: #666; margin-top: 4px; }
+        .navi-actions { display: flex; gap: 12px; }
+        .navi-action-btn { flex: 1; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; border: none; cursor: pointer; }
+        .navi-action-btn.secondary { background: #f5f5f5; color: #666; }
+        .navi-action-btn.primary { background: linear-gradient(135deg, #1677ff, #0958d9); color: #fff; }
+
+        .detail-header { padding: 0 0 16px; border-bottom: 1px solid #f0f0f0; }
+        .detail-name { font-size: 20px; font-weight: 600; color: #333; }
+        .detail-addr { font-size: 14px; color: #666; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+        .detail-price { font-size: 24px; color: #ff6b00; font-weight: 700; margin-top: 12px; }
+        .detail-tags { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .detail-tag { font-size: 13px; padding: 5px 12px; background: #f0f5ff; color: #597ef7; border-radius: 8px; }
+        .detail-tag.orange { background: #fff7e6; color: #fa8c16; }
+        .detail-tag.green { background: #f6ffed; color: #52c41a; }
+
+        .price-table { background: #fafafa; border-radius: 12px; padding: 16px; margin-top: 16px; }
+        .price-table-title { font-size: 14px; color: #666; margin-bottom: 12px; font-weight: 500; }
+        .price-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px solid #eee; }
+        .price-row:last-child { border-bottom: none; }
+        .price-row .time { color: #999; }
+        .price-row .amount { color: #333; font-weight: 500; }
+        .price-row.highlight .amount { color: #ff6b00; font-weight: 600; }
+        .price-row .amount.green { color: #52c41a; font-weight: 600; }
+        .price-row .amount.red { color: #ff4d4f; font-weight: 600; }
+
+        .detail-actions { display: flex; gap: 14px; margin-top: 20px; }
+        .detail-btn { flex: 1; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; border: none; cursor: pointer; }
+        .detail-btn.secondary { background: #f5f5f5; color: #666; }
+        .detail-btn.primary { background: linear-gradient(135deg, #1677ff, #0958d9); color: #fff; box-shadow: 0 4px 16px rgba(22,119,255,0.3); }
+
+        /* 周边配套入口 */
+        .around-entries {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .around-title {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+        .around-btns {
+            display: flex;
+            gap: 12px;
+        }
+        .around-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px;
+            background: #f8f9fa;
+            border: 1px solid #e8e8e8;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .around-btn:active {
+            background: #f0f0f0;
+            transform: scale(0.98);
+        }
+        .around-icon {
+            font-size: 20px;
+        }
+        .around-text {
+            font-size: 15px;
+        }
+
+        .toast { position: fixed; top: 100px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(0,0,0,0.8); color: #fff; padding: 14px 28px; border-radius: 28px; font-size: 14px; z-index: 9999; opacity: 0; transition: all 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* 实时数据标签 */
+        .realtime-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+        .realtime-badge.available { background: #f6ffed; color: #52c41a; }
+        .realtime-badge.busy { background: #fff7e6; color: #fa8c16; }
+        .realtime-badge.full { background: #fff1f0; color: #ff4d4f; }
+
+        /* 拖拽面板响应式高度 */
+        @media (max-width: 375px) {
+            .main-panel { max-height: 55vh !important; }
+        }
+        @media (min-width: 376px) and (max-width: 768px) {
+            .main-panel { max-height: 60vh !important; }
+        }
+        @media (min-width: 769px) {
+            .main-panel { max-height: 65vh !important; }
+        }
+        .main-panel.collapsed { max-height: 120px !important; }
+        .drag-handle { cursor: pointer; user-select: none; }
+        .drag-handle:hover { background: #f5f5f5; }
+
+        /* POI/导航卡片点击反馈 */
+        .poi-item { transition: background-color 0.15s, transform 0.1s; }
+        .poi-item:active { background-color: #f0f5ff; transform: scale(0.98); }
+        .nav-item { transition: background-color 0.15s; }
+        .nav-item:active { background-color: #f0f5ff; }
+
+        /* 搜索加载动画（旋转图标关键帧） */
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* toast 队列过渡 */
+        #toast { transition: opacity 0.2s, transform 0.2s; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="search-container">
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="搜索地点、停车场、充电站..." autocomplete="off">
+            <button class="search-btn" onclick="doSearchWithLoading()">搜索</button>
+        </div>
+    </div>
+
+    <!-- 模式切换控件 -->
+    <div class="mode-switch-container" id="modeSwitchContainer">
+        <div class="mode-switch">
+            <div class="mode-option active" id="modeMyLocation" onclick="switchSearchMode('myLocation')">📍 我的位置</div>
+            <div class="mode-option" id="modeDestination" onclick="switchSearchMode('destination')">🏠 指定目的地</div>
+        </div>
+    </div>
+
+    <!-- 目的地搜索框 -->
+    <div class="dest-search-container" id="destSearchContainer">
+        <div class="dest-search-bar">
+            <span class="dest-icon">📍</span>
+            <input type="text" id="destInput" placeholder="输入目的地..." autocomplete="off">
+            <span class="dest-clear" id="destClear" onclick="clearDestInput()" style="display:none">✕</span>
+        </div>
+        <div class="dest-suggestions" id="destSuggestions"></div>
+    </div>
+
+    <div class="suggestions" id="suggestions"></div>
+    <div class="locate-btn" onclick="locateMe()" id="locateBtn">📍</div>
+
+    <div class="drag-panel" id="mainPanel">
+        <div class="drag-handle" onclick="togglePanel()">
+            <div class="drag-bar"></div>
+        </div>
+        <div class="panel-summary" id="panelSummary" onclick="togglePanel()"></div>
+        <div class="panel-content" id="panelContent"></div>
+    </div>
+
+    <!-- 全屏导航模式 -->
+    <div class="full-navi" id="fullNavi">
+        <div class="navi-top">
+            <button class="navi-close" onclick="exitNavi()">✕</button>
+            <div class="navi-title" id="naviTitle">导航中</div>
+            <button class="navi-share" onclick="shareNavi()">↗</button>
+        </div>
+        
+        <div class="navi-info">
+            <div class="navi-next" id="naviNext">前方路口</div>
+            <div class="navi-instruction" id="naviInstruction">沿当前道路直行</div>
+            <div class="navi-road" id="naviRoad">广州大道中</div>
+            <div class="navi-stats">
+                <div class="navi-stat">
+                    <div class="navi-stat-value" id="naviRemainDist">0</div>
+                    <div class="navi-stat-label">剩余距离(km)</div>
+                </div>
+                <div class="navi-stat">
+                    <div class="navi-stat-value" id="naviRemainTime">0</div>
+                    <div class="navi-stat-label">剩余时间(分钟)</div>
+                </div>
+                <div class="navi-stat">
+                    <div class="navi-stat-value" id="naviSpeed">0</div>
+                    <div class="navi-stat-label">当前时速(km/h)</div>
+                </div>
+            </div>
+            <div id="naviProgressContainer" class="navi-progress-container">
+                <div class="navi-progress-bar" style="background:#e0e0e0;border-radius:4px;height:6px;">
+                    <div id="naviProgressFill" class="navi-progress-fill" style="background:linear-gradient(90deg,#1677ff,#0958d9);height:6px;border-radius:4px;width:0%;transition:width 0.5s;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:#999;">
+                    <span>起点</span><span id="naviProgressText" style="color:#1677ff;font-weight:600;">0%</span><span>终点</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navi-eta-panel" id="naviEta">预计 18:30 到达</div>
+        
+        <div class="navi-bottom">
+            <div class="navi-maneuver">
+                <div class="maneuver-icon" id="maneuverIcon">⬆️</div>
+                <div class="maneuver-info">
+                    <div class="maneuver-distance" id="maneuverDist">500米</div>
+                    <div class="maneuver-road" id="maneuverRoad">路口左转进入天河路</div>
+                </div>
+            </div>
+            <div class="navi-actions">
+                <button class="navi-action-btn secondary" onclick="exitNavi()">退出导航</button>
+                <button class="navi-action-btn primary" onclick="toggleNaviSound()" id="soundBtn">🔊 导航播报</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="bottom-nav">
+        <div class="nav-items">
+            <div class="nav-item" onclick="toggleTraffic();setNavActive(0)"><div class="icon">🚦</div><div class="label">路况</div></div>
+            <div class="nav-item" onclick="searchParkingOrCharging('停车场');setNavActive(1)"><div class="icon">🅿️</div><div class="label">停车场</div></div>
+            <div class="nav-item" onclick="searchParkingOrCharging('充电站');setNavActive(2)"><div class="icon">⚡</div><div class="label">充电</div></div>
+            <div class="nav-item" onclick="locateMe();setNavActive(3)"><div class="icon">📍</div><div class="label">定位</div></div>
+        </div>
+    </div>
+
+    <script src="https://webapi.amap.com/maps?v=2.0&key=8429788d2971b1eb0b278b878180ce92&plugin=AMap.TileLayer.Traffic,AMap.Driving,AMap.Transfer,AMap.Walking,AMap.Riding,AMap.Geolocation,AMap.MarkerClusterer,AMap.PlaceSearch"></script>
+    <script>
+        const AMAP_KEY = '8429788d2971b1eb0b278b878180ce92';
+
+        var map, myMarker, destMarker, markerClusterer;
+        var userPos = [113.2644, 23.1291];
+        var trafficOn = false, trafficLayer = null;
+        var selectedPOI = null, currentMode = 'driving';
+        var currentRoutes = [], currentPOIs = [], currentRouteSteps = [];
+        var totalDist = 0, totalTime = 0;
+        
+        // 导航相关
+        var isNavigating = false;
+        var naviInterval = null;
+        var naviWatchId = null;
+        var currentStepIdx = 0;
+        var naviPath = [];
+        var naviProgress = 0;
+        var soundEnabled = true;
+
+        // 通过本地代理请求高德API，避开跨域和Key白名单限制
+        function amapRequest(amapPath, params, callback, retryCount) {
+            retryCount = retryCount || 0;
+
+            // 安全地构建query string，跳过 null/undefined/空字符串 值（保留数字和0）
+            var pairs = [];
+            Object.keys(params || {}).forEach(function(k) {
+                var v = params[k];
+                if (v === null || v === undefined) return;
+                if (typeof v === 'string' && v === '') return;
+                pairs.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(v)));
+            });
+            // 添加时间戳防止浏览器缓存
+            pairs.push('_t=' + Date.now());
+            var query = pairs.join('&');
+
+            // 确保amapPath以 / 开头
+            var normalizedPath = amapPath;
+            if (normalizedPath && normalizedPath.charAt(0) !== '/') {
+                normalizedPath = '/' + normalizedPath;
+            }
+            var url = '/api/amap' + normalizedPath + (query ? '?' + query : '');
+
+            console.log('[amapRequest] ->', url);
+
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() {
+                console.warn('[amapRequest] timeout after 15s:', url);
+                controller.abort();
+            }, 15000);
+
+            fetch(url, {
+                method: 'GET',
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json, */*' },
+                signal: controller.signal
+            })
+            .then(function(response) {
+                console.log('[amapRequest] <- HTTP', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                clearTimeout(timeoutId);
+                console.log('[amapRequest] <- data.status=', data && data.status, 'info=', data && data.info);
+                callback(data);
+            })
+            .catch(function(err) {
+                clearTimeout(timeoutId);
+                console.error('[amapRequest] ERROR retry=' + retryCount, err);
+                if (retryCount < 2) {
+                    setTimeout(function() { amapRequest(amapPath, params, callback, retryCount + 1); }, 500);
+                } else {
+                    var msg = (err && err.message) ? err.message : '网络异常，请稍后重试';
+                    if (msg === 'Failed to fetch' || msg.indexOf('Failed') === 0) {
+                        msg = '网络连接失败，请检查服务器';
+                    }
+                    callback({ status: '0', info: msg });
+                }
+            });
+        }
+
+        // P2-5: 逆地理编码 - 经纬度转详细地址
+        function reverseGeocode(lng, lat, callback) {
+            AMap.plugin('AMap.Geocoder', function() {
+                var geocoder = new AMap.Geocoder({});
+                geocoder.getAddress([lng, lat], function(status, result) {
+                    if (status === 'complete' && result.regeocode) {
+                        var addr = result.regeocode.formattedAddress;
+                        callback({ success: true, address: addr, detail: result.regeocode });
+                    } else {
+                        callback({ success: false, address: '' });
+                    }
+                });
+            });
+        }
+
+        // P3-4: 导航进度可视化 - 添加进度条样式和显示
+        function getNaviProgressHTML() {
+            var progress = Math.round(naviProgress);
+            return '<div class="navi-progress-bar" style="background:#e0e0e0;border-radius:4px;height:6px;margin-top:12px;">' +
+                '<div class="navi-progress-fill" style="background:linear-gradient(90deg,#1677ff,#0958d9);height:6px;border-radius:4px;width:' + progress + '%;transition:width 0.5s;"></div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:#999;">' +
+                '<span>起点</span><span style="color:#1677ff;font-weight:600;">' + progress + '%</span><span>终点</span>' +
+                '</div>';
+        }
+
+        var _toastQueue = [];
+        var _toastShowing = false;
+        function toast(msg) {
+            _toastQueue.push(msg);
+            if (!_toastShowing) _processToastQueue();
+        }
+        function _processToastQueue() {
+            if (_toastQueue.length === 0) { _toastShowing = false; return; }
+            _toastShowing = true;
+            var t = document.getElementById('toast');
+            if (!t) { _toastShowing = false; _toastQueue = []; return; }
+            t.textContent = _toastQueue.shift();
+            t.classList.add('show');
+            setTimeout(function() {
+                t.classList.remove('show');
+                setTimeout(_processToastQueue, 200);
+            }, 2200);
+        }
+
+        function initMap() {
+            console.log('[initMap] 初始化地图...');
+            map = new AMap.Map('map', { zoom: 14, center: userPos, viewMode: '2D' });
+            map.on('complete', function() {
+                console.log('[initMap] 地图加载完成，等待手动定位');
+            });
+            map.on('error', function(err) {
+                console.error('[initMap] 地图加载错误:', err);
+                toast('地图加载失败，请检查网络或API Key');
+            });
+
+            // HTTP环境提示：非HTTPS且非localhost时，浏览器原生定位不可用
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                console.log('[initMap] 非HTTPS环境，浏览器原生定位不可用');
+                setTimeout(function() {
+                    toast('当前非HTTPS环境，定位功能受限，建议使用HTTPS访问');
+                }, 1000);
+            }
+
+            bindSuggestionCloseHandler();
+        }
+
+        // ==================== 定位模块 ====================
+        // 定位状态管理
+        var isLocating = false;
+        var locateTimers = [];
+        var locateSeq = 0; // 定位序列号，过期回调全部丢弃
+
+        function clearAllLocateTimers() {
+            console.log('[定位] 清理所有定时器, count:', locateTimers.length);
+            locateTimers.forEach(function(t) { clearTimeout(t); });
+            locateTimers = [];
+        }
+
+        // 结束定位流程：强制清理 + 序列号自增使后续过期回调全部失效
+        function finishLocate(success, message) {
+            console.log('[定位] 流程结束, success:', success, ', message:', message);
+            clearAllLocateTimers();
+            locateSeq++; // 关键：序列号自增，使任何后续异步回调都无法通过校验
+            isLocating = false;
+            var btn = document.getElementById('locateBtn');
+            if (btn) btn.classList.remove('locating');
+            if (window._amapGeoInstance) window._amapGeoInstance = null;
+            if (message) toast(message);
+        }
+
+        // 更新地图中心点和标记
+        function updateMarker(lng, lat) {
+            if (typeof lng !== 'number' || typeof lat !== 'number' || isNaN(lng) || isNaN(lat)) {
+                console.error('[updateMarker] 无效的经纬度:', lng, lat);
+                return;
+            }
+            console.log('[updateMarker] 更新标记: lng=', lng, ', lat=', lat);
+            userPos = [lng, lat];
+            if (myMarker) map.remove(myMarker);
+            myMarker = new AMap.Marker({
+                position: userPos, map: map,
+                icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjMTY3N2ZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(24, 24) }),
+                offset: new AMap.Pixel(-12, -12)
+            });
+            map.setCenter(userPos);
+            console.log('[updateMarker] 地图中心已更新');
+        }
+
+        // 高德IP定位（5秒超时）
+        function tryAmapLocate(curSeq) {
+            console.log('[高德定位] 开始定位, curSeq:', curSeq);
+            toast('正在通过网络定位...');
+
+            // 插件加载5秒超时
+            var pluginTimeout = setTimeout(function() {
+                if (curSeq !== locateSeq) return;
+                console.log('[高德定位] 插件加载超时');
+                finishLocate(false, '定位服务异常，已使用默认位置');
+                updateMarker(113.2644, 23.1291);
+            }, 5000);
+            locateTimers.push(pluginTimeout);
+
+            AMap.plugin('AMap.Geolocation', function() {
+                if (curSeq !== locateSeq) return;
+                clearTimeout(pluginTimeout);
+                console.log('[高德定位] 插件加载完成');
+
+                // 定位5秒超时
+                var geoTimeout = setTimeout(function() {
+                    if (curSeq !== locateSeq) return;
+                    console.log('[高德定位] 定位超时');
+                    finishLocate(false, '定位服务异常，已使用默认位置');
+                    updateMarker(113.2644, 23.1291);
+                }, 5000);
+                locateTimers.push(geoTimeout);
+
+                var geolocation = new AMap.Geolocation({
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    buttonPosition: 'RB',
+                    needAddress: false,
+                    convert: true
+                });
+                window._amapGeoInstance = geolocation;
+
+                geolocation.getCurrentPosition(function(status, result) {
+                    if (curSeq !== locateSeq) return;
+                    clearTimeout(geoTimeout);
+                    console.log('[高德定位] 回调触发, status:', status);
+
+                    if (status === 'complete' && result && result.position) {
+                        console.log('[高德定位] 成功:', result.position.lng, result.position.lat);
+                        finishLocate(true, '定位成功');
+                        updateMarker(result.position.lng, result.position.lat);
+                    } else {
+                        console.log('[高德定位] 失败');
+                        finishLocate(false, '定位失败，已使用默认位置');
+                        updateMarker(113.2644, 23.1291);
+                    }
+                });
+            });
+        }
+
+        // 浏览器原生定位（7秒超时）
+        function tryBrowserLocate(curSeq) {
+            console.log('[浏览器定位] 开始定位, curSeq:', curSeq);
+            toast('正在获取精准位置...');
+
+            // 非HTTPS非localhost环境：浏览器定位不可用，直接切高德
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                console.log('[浏览器定位] 非HTTPS环境，跳过浏览器定位');
+                tryAmapLocate(curSeq); // 保持同一个序列号
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                console.log('[浏览器定位] 浏览器不支持，切换高德定位');
+                tryAmapLocate(curSeq);
+                return;
+            }
+
+            // 浏览器定位7秒超时
+            var browserTimeout = setTimeout(function() {
+                if (curSeq !== locateSeq) return;
+                console.log('[浏览器定位] 超时7秒');
+                tryAmapLocate(curSeq);
+            }, 7000);
+            locateTimers.push(browserTimeout);
+
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    if (curSeq !== locateSeq) return;
+                    clearTimeout(browserTimeout);
+                    console.log('[浏览器定位] 成功:', pos.coords.longitude, pos.coords.latitude);
+                    finishLocate(true, '定位成功');
+                    updateMarker(pos.coords.longitude, pos.coords.latitude);
+                },
+                function(err) {
+                    if (curSeq !== locateSeq) return;
+                    clearTimeout(browserTimeout);
+                    console.log('[浏览器定位] 失败, err.code:', err.code);
+
+                    if (err.code === 1) {
+                        // 权限拒绝：不切高德，直接兜底
+                        toast('定位权限已关闭，请前往浏览器/系统设置开启');
+                        finishLocate(false);
+                        updateMarker(113.2644, 23.1291);
+                    } else {
+                        // 其他错误：切高德
+                        toast('位置信息获取失败，正在重试...');
+                        tryAmapLocate(curSeq);
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 }
+            );
+        }
+
+        // 定位按钮点击入口（唯一入口，优先高德Geolocation定位）
+        function locateMe() {
+            console.log('[locateMe] 定位按钮被点击, isLocating:', isLocating);
+            if (isLocating) {
+                toast('正在定位中，请稍候...');
+                return;
+            }
+
+            // 非HTTPS环境提示
+            var protocolOK = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            if (!protocolOK) {
+                toast('提示：当前为HTTP环境，浏览器定位精度受限，建议使用HTTPS访问');
+            }
+
+            isLocating = true;
+            clearAllLocateTimers();
+
+            var btn = document.getElementById('locateBtn');
+            if (btn) btn.classList.add('locating');
+            toast('正在定位...');
+
+            var totalTimeout = setTimeout(function() {
+                if (!isLocating) return;
+                console.log('[locateMe] 总定位超时');
+                isLocating = false;
+                if (btn) btn.classList.remove('locating');
+                userPos = [113.2644, 23.1291];
+                updateMarker(userPos[0], userPos[1]);
+                toast('定位超时，已使用默认位置（可再次点击重新定位）');
+            }, 12000);
+            locateTimers.push(totalTimeout);
+
+            AMap.plugin('AMap.Geolocation', function() {
+                var geolocation = new AMap.Geolocation({
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    buttonPosition: 'RB',
+                    needAddress: false,
+                    convert: true
+                });
+
+                geolocation.getCurrentPosition(function(status, result) {
+                    if (!isLocating) return; // 可能已被超时分支处理
+                    clearTimeout(totalTimeout);
+
+                    if (status === 'complete' && result && result.position) {
+                        userPos = [result.position.lng, result.position.lat];
+                        isLocating = false;
+                        if (btn) btn.classList.remove('locating');
+                        updateMarker(userPos[0], userPos[1]);
+                        map.setCenter(userPos);
+                        toast('定位成功');
+                        console.log('[locateMe] 高德定位成功:', userPos);
+                    } else {
+                        if (navigator.geolocation && protocolOK) {
+                            console.log('[locateMe] 高德定位失败，降级浏览器定位');
+                            navigator.geolocation.getCurrentPosition(
+                                function(pos) {
+                                    if (!isLocating) return;
+                                    clearTimeout(totalTimeout);
+                                    userPos = [pos.coords.longitude, pos.coords.latitude];
+                                    isLocating = false;
+                                    if (btn) btn.classList.remove('locating');
+                                    updateMarker(userPos[0], userPos[1]);
+                                    map.setCenter(userPos);
+                                    toast('定位成功（浏览器）');
+                                    console.log('[locateMe] 浏览器定位成功:', userPos);
+                                },
+                                function(err) {
+                                    if (!isLocating) return;
+                                    clearTimeout(totalTimeout);
+                                    console.log('[locateMe] 浏览器定位失败:', err.code);
+                                    isLocating = false;
+                                    if (btn) btn.classList.remove('locating');
+                                    if (err.code === 1) {
+                                        toast('定位权限已关闭，请在浏览器/系统设置中开启权限');
+                                    } else if (err.code === 2) {
+                                        toast('位置服务不可用，已使用默认位置');
+                                    } else if (err.code === 3) {
+                                        toast('浏览器定位超时，已使用默认位置');
+                                    } else {
+                                        toast('定位失败，已使用默认位置');
+                                    }
+                                    userPos = [113.2644, 23.1291];
+                                    updateMarker(userPos[0], userPos[1]);
+                                },
+                                { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+                            );
+                        } else {
+                            isLocating = false;
+                            if (btn) btn.classList.remove('locating');
+                            userPos = [113.2644, 23.1291];
+                            updateMarker(userPos[0], userPos[1]);
+                            toast('定位失败，已使用默认位置');
+                        }
+                    }
+                });
+            });
+        }
+
+        // GPS实时跟踪（导航用）
+        function startGPSTracking() {
+            if (navigator.geolocation) {
+                naviWatchId = navigator.geolocation.watchPosition(
+                    function(pos) {
+                        userPos = [pos.coords.longitude, pos.coords.latitude];
+                        updateNaviPosition(userPos, pos.coords.speed || 30);
+                    },
+                    function(err) { console.log('[GPS追踪] 失败:', err.message); },
+                    { enableHighAccuracy: true, maximumAge: 1000 }
+                );
+            }
+        }
+
+        function stopGPSTracking() {
+            if (naviWatchId !== null) {
+                navigator.geolocation.clearWatch(naviWatchId);
+                naviWatchId = null;
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            var kw = e.target.value.trim();
+            if (kw.length < 1) { document.getElementById('suggestions').style.display = 'none'; return; }
+            amapRequest('/v3/assistant/inputtips', { keywords: kw, location: userPos.join(','), city: '广州', datatype: 'poi' }, function(data) {
+                if (data.status === '1' && data.tips && data.tips.length > 0) {
+                    var html = '';
+                    data.tips.slice(0, 8).forEach(function(tip) {
+                        if (tip.location) {
+                            html += '<div class="suggestion-item" onclick="selectTip(\'' + tip.name.replace(/'/g, "\\'") + '\',\'' + tip.location + '\',\'' + (tip.address||'').replace(/'/g, "\\'") + '\')">' +
+                                '<span class="icon">📍</span>' +
+                                '<div><div class="name">' + tip.name + '</div><div class="addr">' + (tip.district||'') + ' ' + (tip.address||'') + '</div></div>' +
+                                '</div>';
+                        }
+                    });
+                    document.getElementById('suggestions').innerHTML = html;
+                    document.getElementById('suggestions').style.display = 'block';
+                } else {
+                    document.getElementById('suggestions').style.display = 'none';
+                }
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') doSearchWithLoading(); });
+
+        function selectTip(name, location, address) {
+            document.getElementById('suggestions').style.display = 'none';
+            document.getElementById('searchInput').value = name;
+            var parts = location.split(',');
+            if (parts.length >= 2) showDetail(name, address, [parseFloat(parts[0]), parseFloat(parts[1])], 'poi');
+        }
+
+        // 文本搜索（关键词搜索）：使用高德 PlaceSearch.search()
+        function doSearch() {
+            var kw = document.getElementById('searchInput').value.trim();
+            if (!kw) { toast('请输入搜索内容'); return; }
+            document.getElementById('suggestions').style.display = 'none';
+            toast('搜索中...');
+
+            // 通过本地代理调用高德 Web 服务 REST API
+            amapRequest('/v3/place/text', {
+                keywords: kw,
+                city: '广州',
+                offset: 20,
+                page: 1,
+                extensions: 'all'
+            }, function(data) {
+                console.log('[doSearch] Proxy response:', data);
+                if (data.status === '1' && data.pois && data.pois.length > 0) {
+                    currentPOIs = data.pois.map(function(p) {
+                        if (!p.location) return null;
+                        var parts = p.location.split(',');
+                        if (parts.length < 2) return null;
+                        var lng = parseFloat(parts[0]);
+                        var lat = parseFloat(parts[1]);
+                        if (isNaN(lng) || isNaN(lat)) return null;
+
+                        var extra = {};
+                        if (p.biz_ext) {
+                            if (p.biz_ext.cost) extra.cost = p.biz_ext.cost;
+                            if (p.biz_ext.rating) extra.rating = p.biz_ext.rating;
+                        }
+
+                        return {
+                            name: p.name || '',
+                            address: p.address || (p.pname || '') + (p.cityname || '') + (p.adname || ''),
+                            lngLat: [lng, lat],
+                            type: p.type || p.typecode || '',
+                            distance: p.distance ? parseFloat(p.distance) : 0,
+                            extra: extra
+                        };
+                    }).filter(function(p) { return p; });
+
+                    if (currentPOIs.length > 0) {
+                        showPOIList(kw, currentPOIs, 'poi');
+                        var mainPanel = document.getElementById('mainPanel');
+                        if (mainPanel && !mainPanel.classList.contains('show')) mainPanel.classList.add('show');
+                        toast('找到' + currentPOIs.length + '条结果');
+                    } else {
+                        toast('未找到相关结果');
+                        var pc = document.getElementById('panelContent');
+                        if (pc) pc.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#999;font-size:14px;">暂无相关结果，可尝试调整关键词</div>';
+                    }
+                } else {
+                    var errInfo = data.info || (data.status === '0' ? 'API返回错误' : '无结果');
+                    console.error('[doSearch] Web API错误:', errInfo, data);
+                    toast('搜索失败：' + errInfo);
+                    var pc2 = document.getElementById('panelContent');
+                    if (pc2) pc2.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#d9534f;font-size:14px;">搜索失败：' + errInfo + '<br/>请检查高德Key权限配置</div>';
+                }
+            });
+        }
+
+        function parsePOIExtra(p) {
+            var extra = {};
+            // 从高德数据解析可用信息
+            if (p.biz_ext && p.biz_ext.rating) extra.rating = p.biz_ext.rating;
+            if (p.biz_ext && p.biz_ext.cost) extra.cost = p.biz_ext.cost;
+            if (p.biz_ext && p.biz_ext.takes_time) extra.takesTime = p.biz_ext.takes_time;
+            if (p.tag) extra.tag = p.tag;
+            if (p.type) extra.bizType = p.type;
+            return extra;
+        }
+
+        // 搜索半径配置
+        var searchRadius = 2000;
+        var radiusOptions = [500, 1000, 2000, 3000, 5000];
+
+        // 双模式查询相关变量
+        var currentSearchMode = 'myLocation'; // 'myLocation' | 'destination'
+        var destSearchPos = null;  // 目的地坐标 [lng, lat]
+        var destSearchName = '';   // 目的地名称
+
+        // 切换搜索模式
+        function switchSearchMode(mode) {
+            if (currentSearchMode === mode) return;
+            
+            currentSearchMode = mode;
+            
+            document.getElementById('modeMyLocation').classList.toggle('active', mode === 'myLocation');
+            document.getElementById('modeDestination').classList.toggle('active', mode === 'destination');
+            document.getElementById('destSearchContainer').style.display = mode === 'destination' ? 'block' : 'none';
+            
+            // 切换模式时清空目的地输入
+            if (mode === 'myLocation') {
+                clearDestInput();
+            }
+            
+            // 如果当前选中了停车场/充电站按钮，刷新搜索
+            var activeNav = document.querySelector('.nav-item.active');
+            if (activeNav) {
+                var kw = activeNav.querySelector('.label').textContent === '停车场' ? '停车场' : '充电站';
+                searchParkingOrCharging(kw);
+            }
+        }
+
+        // 清空目的地输入
+        function clearDestInput() {
+            document.getElementById('destInput').value = '';
+            document.getElementById('destClear').style.display = 'none';
+            document.getElementById('destSuggestions').style.display = 'none';
+            destSearchPos = null;
+            destSearchName = '';
+        }
+
+        // 目的地输入变化处理
+        var destInputTimer = null;
+        document.getElementById('destInput').addEventListener('input', function(e) {
+            var value = e.target.value.trim();
+            document.getElementById('destClear').style.display = value ? 'block' : 'none';
+            
+            clearTimeout(destInputTimer);
+            if (value.length >= 2) {
+                destInputTimer = setTimeout(function() {
+                    searchDestSuggestions(value);
+                }, 300);
+            } else {
+                document.getElementById('destSuggestions').style.display = 'none';
+            }
+        });
+
+        // 搜索目的地建议
+        function searchDestSuggestions(keyword) {
+            amapRequest('/v3/assistant/inputtips', {
+                keywords: keyword,
+                city: '广州',
+                type: ''
+            }, function(data) {
+                if (data.status === '1' && data.tips && data.tips.length > 0) {
+                    var html = '';
+                    data.tips.forEach(function(tip) {
+                        if (tip.location) {
+                            var loc = tip.location.split(',');
+                            html += '<div class="dest-suggestion-item" onclick="selectDestSuggestion(\'' + 
+                                tip.name.replace(/'/g, "\\'") + '\', ' + loc[0] + ', ' + loc[1] + ')">' +
+                                '<span class="name">' + tip.name + '</span>' +
+                                (tip.address ? '<span class="addr">' + tip.address + '</span>' : '') +
+                                '</div>';
+                        }
+                    });
+                    document.getElementById('destSuggestions').innerHTML = html;
+                    document.getElementById('destSuggestions').style.display = 'block';
+                } else {
+                    // 需求3.2.3：地点解析失败、无匹配地点时提示
+                    document.getElementById('destSuggestions').innerHTML = 
+                        '<div class="dest-suggestion-empty">未查询到该地点，请重新输入</div>';
+                    document.getElementById('destSuggestions').style.display = 'block';
+                }
+            });
+        }
+
+        // 选择目的地建议
+        function selectDestSuggestion(name, lng, lat) {
+            document.getElementById('destInput').value = name;
+            document.getElementById('destSuggestions').style.display = 'none';
+            destSearchPos = [lng, lat];
+            destSearchName = name;
+            
+            // 自动触发搜索
+            var activeNav = document.querySelector('.nav-item.active');
+            if (activeNav) {
+                var kw = activeNav.querySelector('.label').textContent === '停车场' ? '停车场' : '充电站';
+                searchParkingOrCharging(kw);
+            }
+        }
+
+        // 通用周边搜索：基于指定中心点和关键词，调用高德 Web 服务 API (v3/place/around)
+        function searchAroundByCenter(keyword, centerPos, radius, kw, poiName) {
+            toast('正在搜索' + (poiName ? '「' + poiName + '」附近的' : '附近的') + kw + '...');
+
+            // 通过本地代理调用高德 Web 服务 REST API
+            amapRequest('/v3/place/around', {
+                keywords: keyword,
+                location: centerPos.join(','),
+                radius: radius,
+                offset: 50,
+                page: 1,
+                extensions: 'all'
+            }, function(data) {
+                console.log('[searchAroundByCenter] Proxy response:', data);
+                if (data.status === '1' && data.pois && data.pois.length > 0) {
+                    var parsed = data.pois.map(function(p) {
+                        if (!p.location) return null;
+                        var parts = p.location.split(',');
+                        if (parts.length < 2) return null;
+                        var lng = parseFloat(parts[0]);
+                        var lat = parseFloat(parts[1]);
+                        if (isNaN(lng) || isNaN(lat)) return null;
+
+                        var extra = {};
+                        if (p.biz_ext) {
+                            if (p.biz_ext.cost) extra.cost = p.biz_ext.cost;
+                            if (p.biz_ext.rating) extra.rating = p.biz_ext.rating;
+                        }
+                        if (kw === '充电站' && p.name) {
+                            if (/国家电网/.test(p.name)) extra.operator = '国家电网';
+                            else if (/特来电/.test(p.name)) extra.operator = '特来电';
+                            else if (/星星/.test(p.name)) extra.operator = '星星充电';
+                            else if (/特斯拉/.test(p.name)) extra.operator = '特斯拉超充';
+                            else if (/小桔/.test(p.name)) extra.operator = '小桔充电';
+                            else if (/蔚来|NIO/.test(p.name)) extra.operator = '蔚来加电';
+                        }
+
+                        return {
+                            name: p.name || '',
+                            address: p.address || (p.pname || '') + (p.cityname || '') + (p.adname || ''),
+                            lngLat: [lng, lat],
+                            distance: p.distance ? parseFloat(p.distance) : 0,
+                            type: p.type || p.typecode || '',
+                            tel: p.tel || '',
+                            extra: extra
+                        };
+                    }).filter(function(p) { return p; });
+
+                    parsed.sort(function(a, b) { return a.distance - b.distance; });
+                    currentPOIs = parsed;
+
+                    if (poiName) {
+                        renderMapMarkersAt(parsed, kw, centerPos);
+                    } else {
+                        renderMapMarkers(parsed, kw);
+                    }
+
+                    showRealTimePOIList(
+                        (poiName ? '「' + poiName + '」附近的' : '附近的') + kw + ' (' + radius + 'm)',
+                        parsed, kw
+                    );
+
+                    var mainPanel = document.getElementById('mainPanel');
+                    if (mainPanel && !mainPanel.classList.contains('show')) mainPanel.classList.add('show');
+                    toast('找到' + parsed.length + '个' + kw);
+                } else {
+                    var errInfo = data.info || (data.status === '0' ? 'API返回错误' : '无结果');
+                    console.error('[searchAroundByCenter] Web API错误:', errInfo, data);
+                    toast('搜索失败：' + errInfo);
+                    var pc = document.getElementById('panelContent');
+                    if (pc) {
+                        // 需求3.2.4：周边无设施时统一空状态
+                        var isNoResult = data.status === '1' && (!data.pois || data.pois.length === 0);
+                        var tipText = isNoResult ? '该目的地周边暂无相关设施' : '搜索失败：' + errInfo;
+                        var titleText = isNoResult ? (poiName ? poiName + ' 周边' : '周边') : '';
+                        var html = '<div style="padding:40px 20px;text-align:center;color:#d9534f;font-size:14px;">' + tipText + '<br/>' + 
+                            (isNoResult ? '请尝试扩大搜索范围或更换地点' : '请检查高德Key权限配置') + '</div>';
+                        if (titleText) {
+                            html = '<div class="result-tag" style="background:#fff7e6;border-left:3px solid #fa8c16;padding:10px 14px;font-size:13px;color:#333;margin-bottom:8px;">📍 ' + titleText + '</div>' + html;
+                        }
+                        pc.innerHTML = html;
+                    }
+                }
+            });
+        }
+
+        function searchNearby(kw) {
+            var keyword = kw === '停车场' ? '停车场' : '充电桩|充电站';
+            searchAroundByCenter(keyword, userPos, searchRadius, kw, null);
+        }
+
+        function searchParkingOrCharging(kw) {
+            var keyword = kw === '停车场' ? '停车场' : '充电桩|充电站';
+            
+            if (currentSearchMode === 'destination') {
+                // 目的地模式
+                if (!destSearchPos || !destSearchName) {
+                    toast('请输入有效目的地');
+                    return;
+                }
+                console.log('[searchParkingOrCharging] 目的地模式:', destSearchName, destSearchPos);
+                searchAroundByCenter(keyword, destSearchPos, searchRadius, kw, '目的地: ' + destSearchName);
+            } else {
+                // 我的位置模式（原有逻辑）
+                if (selectedPOI && selectedPOI.lngLat && selectedPOI.kw !== 'route') {
+                    console.log('[searchParkingOrCharging] 使用选中地点为中心:', selectedPOI.name, selectedPOI.lngLat);
+                    searchAroundByCenter(keyword, selectedPOI.lngLat, searchRadius, kw, selectedPOI.name);
+                } else if (userPos && userPos[0] && userPos[1]) {
+                    console.log('[searchParkingOrCharging] 使用设备定位为中心:', userPos);
+                    searchNearby(kw);
+                } else {
+                    // 需求3.1：沿用原有提示
+                    toast('请先开启定位权限');
+                    triggerLocation();
+                }
+            }
+        }
+
+        // 触发定位（用于未定位时点击停车场/充电桩按钮）
+        function triggerLocation() {
+            if (typeof locateMe === 'function') locateMe();
+        }
+
+        // 按关键词搜索（备用方案）
+        function searchNearbyByKeyword(keywords, kw) {
+            searchAroundByCenter(keywords, userPos, searchRadius, kw, null);
+        }
+
+        // 处理实时POI数据
+        function processRealTimePOIData(pois, kw) {
+            var results = [];
+            
+            pois.forEach(function(p) {
+                var location = p.location || (p.x && p.y ? p.x + ',' + p.y : '');
+                if (!location) return;
+                
+                var parts = location.split(',');
+                var extra = {};
+                
+                // 解析高德返回的实时数据
+                if (p.biz_ext) {
+                    if (p.biz_ext.cost) extra.cost = p.biz_ext.cost;  // 收费标准
+                    if (p.biz_ext.rating) extra.rating = p.biz_ext.rating;  // 评分
+                    if (p.biz_ext.takes_time) extra.takesTime = p.biz_ext.takes_time;  // 等待时间
+                }
+                
+                // 解析tag中的实时信息
+                if (p.tag) {
+                    extra.tag = p.tag;
+                    // 提取空余数量
+                    var match = p.tag.match(/空余(\d+)|剩余(\d+)|(\d+)个空/);
+                    if (match) extra.available = parseInt(match[1] || match[2] || match[3]);
+                }
+                
+                // 运营商识别
+                if (p.name) {
+                    if (/国家电网/.test(p.name)) extra.operator = '国家电网';
+                    else if (/特来电/.test(p.name)) extra.operator = '特来电';
+                    else if (/星星/.test(p.name)) extra.operator = '星星充电';
+                    else if (/特斯拉/.test(p.name)) extra.operator = '特斯拉超充';
+                    else if (/小桔/.test(p.name)) extra.operator = '小桔充电';
+                    else if (/蔚来|NIO/.test(p.name)) extra.operator = '蔚来加电';
+                }
+                
+                // 距离处理
+                var distance = p.distance ? parseFloat(p.distance) : 0;
+                
+                results.push({
+                    name: p.name || '',
+                    address: p.address || (p.pname || '') + (p.cityname || '') + (p.adname || ''),
+                    lngLat: [parseFloat(parts[0]), parseFloat(parts[1])],
+                    distance: distance,
+                    type: p.type || p.typecode || '',
+                    tel: p.tel || '',
+                    extra: extra
+                });
+            });
+            
+            // 按距离排序
+            results.sort(function(a, b) { return a.distance - b.distance; });
+            
+            currentPOIs = results;
+            
+            // 在地图上渲染标记点
+            renderMapMarkers(results, kw);
+            
+            // 显示列表
+            showRealTimePOIList('附近的' + kw + ' (' + searchRadius + 'm)', currentPOIs, kw);
+        }
+
+        // 在地图上渲染标记点
+        function renderMapMarkers(pois, kw) {
+            map.clearMap();
+
+            // 中心点标记
+            myMarker = new AMap.Marker({
+                position: userPos, map: map,
+                icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjMTY3N2ZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(24, 24) }),
+                offset: new AMap.Pixel(-12, -12)
+            });
+
+            // POI标记（聚合渲染）
+            var markers = [];
+            pois.forEach(function(p, idx) {
+                var iconColor = kw === '停车场' ? '#1677ff' : '#52c41a';
+                var iconUrl = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="' + iconColor + '"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">' + (idx + 1) + '</text></svg>');
+
+                var marker = new AMap.Marker({
+                    position: p.lngLat,
+                    icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: iconUrl, imageSize: new AMap.Size(24, 24) }),
+                    offset: new AMap.Pixel(-12, -12),
+                    title: p.name,
+                    extData: { name: p.name, address: p.address, lngLat: p.lngLat, kw: kw, extra: p.extra }
+                });
+
+                marker.on('click', function() {
+                    var data = marker.getExtData();
+                    showDetail(data.name, data.address, data.lngLat, data.kw, data.extra);
+                });
+
+                markers.push(marker);
+            });
+
+            // 使用聚合器渲染
+            if (markers.length > 0) {
+                markerClusterer = new AMap.MarkerClusterer(map, markers, {
+                    gridSize: 60,
+                    renderClusterMarker: function(context) {
+                        var count = context.count;
+                        var factor = Math.min(count / 20, 1);
+                        var size = 30 + factor * 20;
+                        return new AMap.Marker({
+                            position: context.center,
+                            content: '<div style="background:rgba(22,119,255,0.85);border:2px solid #fff;color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:12px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.3);">' + count + '</div>',
+                            offset: new AMap.Pixel(-size / 2, -size / 2)
+                        });
+                    }
+                });
+                map.setFitView(markers);
+            }
+        }
+
+        // 显示实时POI列表 - 带搜索半径切换
+        function showRealTimePOIList(title, pois, kw) {
+            // 搜索半径选择器
+            var radiusHtml = '<div class="radius-selector" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+                '<span style="font-size:13px;color:#666;">搜索半径：</span>';
+            radiusOptions.forEach(function(r) {
+                var isActive = r === searchRadius;
+                radiusHtml += '<button onclick="changeRadius(' + r + ',\'' + kw + '\')" ' +
+                    'style="padding:6px 12px;border:' + (isActive ? '2px solid #1677ff' : '1px solid #ddd') + 
+                    ';border-radius:16px;background:' + (isActive ? '#e6f4ff' : '#fff') + 
+                    ';color:' + (isActive ? '#1677ff' : '#666') + ';font-size:12px;cursor:pointer;">' + r + 'm</button>';
+            });
+            radiusHtml += '</div>';
+
+            // 需求3.2.4：目的地模式下增加醒目标签
+            var destTagHtml = '';
+            if (currentSearchMode === 'destination' && destSearchName) {
+                destTagHtml = '<div class="result-tag" style="background:linear-gradient(90deg,#fff7e6,#fff);border-left:3px solid #fa8c16;padding:10px 14px;font-size:13px;color:#333;margin-bottom:8px;border-radius:6px;"><strong>📍 目的地：' + destSearchName + ' 周边设施</strong></div>';
+            }
+
+            var html = '<div class="panel-title">' + title + '</div>';
+            html += destTagHtml;
+            html += radiusHtml;
+            html += '<div class="panel-count">共 ' + pois.length + ' 个结果</div>';
+
+            html += '<div class="poi-list">';
+            pois.forEach(function(p, idx) {
+                var dist = p.distance ? (p.distance < 1000 ? p.distance + 'm' : (p.distance/1000).toFixed(1) + 'km') : '';
+                var tags = getRealTimeTags(p, kw);
+
+                html += '<div class="poi-card" onclick="showDetail(\'' + p.name.replace(/'/g, "\\'") + '\',\'' + p.address.replace(/'/g, "\\'") + '\',[' + p.lngLat[0] + ',' + p.lngLat[1] + '],\'' + kw + '\', ' + JSON.stringify(p.extra || {}).replace(/"/g, "'") + ')">' +
+                    '<div class="poi-main"><div class="poi-name">' + p.name + '</div>' + (dist ? '<div class="poi-dist">📍 ' + dist + '</div>' : '') + '</div>' +
+                    '<div class="poi-addr">' + p.address + '</div>';
+
+                if (tags.length > 0) {
+                    html += '<div class="poi-tags">';
+                    tags.forEach(function(t) { html += '<span class="poi-tag ' + t.type + '">' + t.text + '</span>'; });
+                    html += '</div>';
+                }
+
+                html += '<div class="poi-action"><button class="poi-nav-btn" onclick="event.stopPropagation(); planRouteTo(\'' + p.name.replace(/'/g, "\\'") + '\',' + p.lngLat[0] + ',' + p.lngLat[1] + ')">🚗 导航到这里</button></div>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            document.getElementById('panelContent').innerHTML = html;
+
+            var summaryIcon = kw === '停车场' ? '🅿️' : '⚡';
+            var summaryName = pois.length > 0 ? pois[0].name : title;
+            var summaryAddr = pois.length > 0 ? pois[0].address : (pois.length + '个结果');
+            var summaryExtra = pois.length > 0 && pois[0].distance ? (pois[0].distance < 1000 ? pois[0].distance + 'm' : (pois[0].distance/1000).toFixed(1) + 'km') : '';
+            var summaryNavFn = pois.length > 0 ? 'planRouteTo(\'' + pois[0].name.replace(/'/g, "\\'") + '\',' + pois[0].lngLat[0] + ',' + pois[0].lngLat[1] + ')' : 'togglePanel()';
+            updateSummary(summaryIcon, summaryName, summaryAddr, summaryExtra, summaryNavFn);
+            
+            openPanel();
+        }
+
+        // 切换搜索半径
+        function changeRadius(radius, kw) {
+            searchRadius = radius;
+            searchNearby(kw);
+        }
+
+        // 获取实时标签
+        function getRealTimeTags(poi, kw) {
+            var tags = [], name = poi.name || '', extra = poi.extra || {};
+            
+            if (kw === '停车场') {
+                // 停车场类型识别
+                if (/地下/.test(name)) tags.push({ text: '🅿️ 地下停车场', type: '' });
+                else if (/路边|路侧/.test(name)) tags.push({ text: '🚧 路边停车', type: 'orange' });
+                else if (/地面/.test(name)) tags.push({ text: '🏠 地面停车场', type: '' });
+                else if (/商场|商业/.test(name)) tags.push({ text: '🏬 商场停车场', type: '' });
+                else if (/小区|住宅/.test(name)) tags.push({ text: '🏘️ 小区停车场', type: 'red' });
+                else tags.push({ text: '🏢 公共停车场', type: '' });
+                
+                // 实时车位
+                if (extra.available !== undefined) {
+                    if (extra.available > 20) tags.push({ text: '🟢 空位充足(' + extra.available + ')', type: 'green' });
+                    else if (extra.available > 5) tags.push({ text: '🟡 空位' + extra.available + '个', type: '' });
+                    else if (extra.available > 0) tags.push({ text: '🔴 剩余' + extra.available, type: 'red' });
+                    else tags.push({ text: '⚫ 已满', type: 'red' });
+                }
+                
+                // 收费标准
+                if (extra.cost) {
+                    tags.push({ text: '💰 ¥' + extra.cost + '/时', type: 'bold' });
+                } else if (/商场|商业/.test(name)) {
+                    tags.push({ text: '💰 ¥8-15/时', type: '' });
+                } else if (/小区|住宅/.test(name)) {
+                    tags.push({ text: '💰 ¥5-8/时', type: '' });
+                } else {
+                    tags.push({ text: '💰 ¥8-12/时', type: '' });
+                }
+                
+                // 充电桩
+                if (/充电/.test(name)) tags.push({ text: '⚡ 有充电桩', type: 'green' });
+                
+            } else if (kw === '充电站') {
+                // 运营商
+                if (extra.operator) {
+                    tags.push({ text: '⚡ ' + extra.operator, type: '' });
+                } else if (/国家电网/.test(name)) tags.push({ text: '⚡ 国家电网', type: '' });
+                else if (/特来电/.test(name)) tags.push({ text: '⚡ 特来电', type: '' });
+                else if (/星星/.test(name)) tags.push({ text: '⚡ 星星充电', type: '' });
+                else if (/特斯拉/.test(name)) tags.push({ text: '⚡ 特斯拉超充', type: 'green' });
+                else if (/小桔/.test(name)) tags.push({ text: '⚡ 小桔充电', type: '' });
+                else tags.push({ text: '⚡ 充电站', type: '' });
+                
+                // 充电价格（实时电价）
+                var priceInfo = getChargingPriceInfo(name);
+                tags.push({ text: priceInfo.text, type: priceInfo.type });
+                
+                // 实时可用状态
+                if (extra.available !== undefined) {
+                    if (extra.available > 5) tags.push({ text: '🟢 空闲' + extra.available + '桩', type: 'green' });
+                    else if (extra.available > 0) tags.push({ text: '🟡 剩' + extra.available + '桩', type: '' });
+                    else tags.push({ text: '🔴 全部占用', type: 'red' });
+                }
+                
+                // 评分
+                if (extra.rating) {
+                    tags.push({ text: '⭐ ' + extra.rating, type: '' });
+                }
+            }
+            
+            return tags;
+        }
+
+        function processPOIData(pois, kw) {
+            var results = [];
+            
+            pois.forEach(function(p) {
+                var location = p.location || (p.x && p.y ? p.x + ',' + p.y : '');
+                if (!location) return;
+                
+                var parts = location.split(',');
+                var extra = parsePOIExtra(p);
+                
+                results.push({
+                    name: p.name || '',
+                    address: p.address || (p.pname || '') + (p.cityname || '') + (p.adname || ''),
+                    lngLat: [parseFloat(parts[0]), parseFloat(parts[1])],
+                    distance: p.distance ? parseFloat(p.distance) : 0,
+                    type: p.type || p.typecode || '',
+                    tel: p.tel || '',
+                    extra: extra
+                });
+            });
+            
+            // 按距离排序
+            results.sort(function(a, b) { return a.distance - b.distance; });
+            
+            currentPOIs = results;
+            showPOIList('附近的' + kw, currentPOIs, kw);
+        }
+
+        function processPOIDataV5(pois, kw) {
+            var results = [];
+            
+            pois.forEach(function(p) {
+                var location = p.location || (p.x && p.y ? p.x + ',' + p.y : '');
+                if (!location) return;
+                
+                var parts = location.split(',');
+                
+                var extra = {};
+                if (p.show_fields) {
+                    if (p.show_fields.cost) extra.cost = p.show_fields.cost;
+                    if (p.show_fields.charging) {
+                        try {
+                            var charging = typeof p.show_fields.charging === 'string' ? JSON.parse(p.show_fields.charging) : p.show_fields.charging;
+                            if (charging.electricity_price) extra.electricityPrice = charging.electricity_price;
+                            if (charging.available) extra.availableCharging = parseInt(charging.available);
+                            if (charging.total) extra.totalCharging = parseInt(charging.total);
+                        } catch(e) {}
+                    }
+                    if (p.show_fields.open_time) extra.openTime = p.show_fields.open_time;
+                    if (p.show_fields.service) extra.service = p.show_fields.service;
+                }
+                
+                // 运营商识别
+                if (p.name) {
+                    if (/国家电网/.test(p.name)) extra.operator = '国家电网';
+                    else if (/特来电/.test(p.name)) extra.operator = '特来电';
+                    else if (/星星/.test(p.name)) extra.operator = '星星充电';
+                    else if (/特斯拉/.test(p.name)) extra.operator = '特斯拉超充';
+                    else if (/小桔/.test(p.name)) extra.operator = '小桔充电';
+                    else if (/蔚来|NIO/.test(p.name)) extra.operator = '蔚来加电';
+                }
+                
+                results.push({
+                    name: p.name || '',
+                    address: p.address || (p.pname || '') + (p.cityname || '') + (p.adname || ''),
+                    lngLat: [parseFloat(parts[0]), parseFloat(parts[1])],
+                    distance: p.distance ? parseFloat(p.distance) : 0,
+                    type: p.type || p.typecode || '',
+                    tel: p.tel || p.phone || '',
+                    extra: extra
+                });
+            });
+            
+            // 按距离排序
+            results.sort(function(a, b) { return a.distance - b.distance; });
+            
+            currentPOIs = results;
+            showPOIList('附近的' + kw, currentPOIs, kw);
+        }
+
+        function showPOIList(title, pois, kw) {
+            var html = '<div class="panel-title">' + title + '</div>';
+            html += '<div class="panel-count">共 ' + pois.length + ' 个结果</div>';
+            
+            html += '<div class="poi-list">';
+            pois.forEach(function(p) {
+                var dist = p.distance ? (p.distance < 1000 ? p.distance + 'm' : (p.distance/1000).toFixed(1) + 'km') : '';
+                var tags = getTags(p, kw);
+                
+                html += '<div class="poi-card" onclick="showDetail(\'' + p.name.replace(/'/g, "\\'") + '\',\'' + p.address.replace(/'/g, "\\'") + '\',[' + p.lngLat[0] + ',' + p.lngLat[1] + '],\'' + kw + '\', ' + JSON.stringify(p.extra || {}).replace(/"/g, "'") + ')">' +
+                    '<div class="poi-main"><div class="poi-name">' + p.name + '</div>' + (dist ? '<div class="poi-dist">' + dist + '</div>' : '') + '</div>' +
+                    '<div class="poi-addr">' + p.address + '</div>';
+                
+                if (tags.length > 0) {
+                    html += '<div class="poi-tags">';
+                    tags.forEach(t => html += '<span class="poi-tag ' + t.type + '">' + t.text + '</span>');
+                    html += '</div>';
+                }
+                
+                html += '<div class="poi-action"><button class="poi-nav-btn" onclick="event.stopPropagation(); planRouteTo(\'' + p.name.replace(/'/g, "\\'") + '\',' + p.lngLat[0] + ',' + p.lngLat[1] + ')">🚗 导航到这里</button></div>';
+                html += '</div>';
+            });
+            html += '</div>';
+            
+            document.getElementById('panelContent').innerHTML = html;
+            
+            var summaryIcon = kw === '停车场' ? '🅿️' : kw === '充电站' ? '⚡' : '📍';
+            var summaryName = pois.length > 0 ? pois[0].name : title;
+            var summaryAddr = pois.length > 0 ? pois[0].address : (pois.length + '个结果');
+            var summaryExtra = pois.length > 0 && pois[0].distance ? (pois[0].distance < 1000 ? pois[0].distance + 'm' : (pois[0].distance/1000).toFixed(1) + 'km') : '';
+            var summaryNavFn = pois.length > 0 ? 'planRouteTo(\'' + pois[0].name.replace(/'/g, "\\'") + '\',' + pois[0].lngLat[0] + ',' + pois[0].lngLat[1] + ')' : 'togglePanel()';
+            updateSummary(summaryIcon, summaryName, summaryAddr, summaryExtra, summaryNavFn);
+            
+            openPanel();
+        }
+
+        function updateSummary(icon, name, addr, extra, navFn) {
+            var fn = navFn || 'togglePanel()';
+            document.getElementById('panelSummary').innerHTML =
+                '<div class="mini-card" onclick="' + fn + '">' +
+                    '<div class="mini-icon">' + icon + '</div>' +
+                    '<div class="mini-info">' +
+                        '<div class="mini-name">' + name + '</div>' +
+                        '<div class="mini-addr">' + addr + '</div>' +
+                        (extra ? '<div class="mini-extra">' + extra + '</div>' : '') +
+                    '</div>' +
+                    '<button class="mini-btn" onclick="event.stopPropagation(); ' + fn + '">导航</button>' +
+                '</div>';
+        }
+
+        function getTags(poi, kw) {
+            var tags = [], name = poi.name || '', type = poi.type || '', extra = poi.extra || {}, detail = poi.detail || {};
+            
+            if (kw === '停车场' || type.indexOf('停车场') !== -1) {
+                // 停车场类型
+                if (/地下/.test(name+type)) tags.push({ text: '🅿️ 地下停车场', type: '' });
+                else if (/路边|路侧/.test(name+type)) tags.push({ text: '🚧 路边停车', type: 'orange' });
+                else if (/地面/.test(name)) tags.push({ text: '🏠 地面停车场', type: '' });
+                else if (/商场|商业/.test(name+type)) tags.push({ text: '🏬 商场', type: '' });
+                else if (/小区|住宅/.test(name+type)) tags.push({ text: '🏘️ 小区', type: 'red' });
+                else tags.push({ text: '🏢 公共停车场', type: '' });
+                
+                // 充电桩
+                if (/充电/.test(name+type)) tags.push({ text: '⚡ 有充电桩', type: 'green' });
+                
+                // 价格 - 优先使用真实数据
+                if (detail.cost) {
+                    tags.push({ text: '💰 ¥' + detail.cost + '/时', type: 'bold' });
+                } else if (extra.cost) {
+                    tags.push({ text: '💰 ¥' + extra.cost + '/时', type: 'bold' });
+                } else {
+                    var priceText = getParkingPriceText(name, type);
+                    tags.push({ text: priceText, type: '' });
+                }
+                
+                // 实时空位信息
+                if (detail.availableSpaces !== undefined) {
+                    if (detail.availableSpaces > 10) {
+                        tags.push({ text: '🟢 空位充足(' + detail.availableSpaces + ')', type: 'green' });
+                    } else if (detail.availableSpaces > 0) {
+                        tags.push({ text: '🟡 空位' + detail.availableSpaces, type: '' });
+                    } else {
+                        tags.push({ text: '🔴 已满', type: 'red' });
+                    }
+                } else if (detail.totalSpaces) {
+                    tags.push({ text: '📍 共' + detail.totalSpaces + '车位', type: '' });
+                } else if (extra.tag && extra.tag.indexOf('空') !== -1) {
+                    tags.push({ text: '🟢 有空位', type: 'green' });
+                } else if (extra.tag && extra.tag.indexOf('满') !== -1) {
+                    tags.push({ text: '🔴 已满', type: 'red' });
+                }
+            } else if (kw === '充电站' || type.indexOf('充电') !== -1) {
+                // 运营商
+                if (/国家电网/.test(name)) tags.push({ text: '⚡ 国家电网', type: '' });
+                else if (/特来电/.test(name)) tags.push({ text: '⚡ 特来电', type: '' });
+                else if (/星星/.test(name)) tags.push({ text: '⚡ 星星充电', type: '' });
+                else if (/特斯拉/.test(name)) tags.push({ text: '⚡ 特斯拉', type: 'green' });
+                else if (/小桔/.test(name)) tags.push({ text: '⚡ 小桔充电', type: '' });
+                else if (detail.operator) tags.push({ text: '⚡ ' + detail.operator, type: '' });
+                else tags.push({ text: '⚡ 充电站', type: '' });
+                
+                // 可用充电桩数量
+                if (detail.availableCharging !== undefined) {
+                    if (detail.availableCharging > 5) {
+                        tags.push({ text: '🟢 可用' + detail.availableCharging + '桩', type: 'green' });
+                    } else if (detail.availableCharging > 0) {
+                        tags.push({ text: '🟡 剩' + detail.availableCharging + '桩', type: '' });
+                    } else {
+                        tags.push({ text: '🔴 全部占用', type: 'red' });
+                    }
+                } else if (detail.totalCharging) {
+                    tags.push({ text: '📍 共' + detail.totalCharging + '桩', type: '' });
+                }
+                
+                // 实时电价
+                var priceInfo = getChargingPriceInfo(name);
+                tags.push({ text: priceInfo.text, type: priceInfo.type });
+            }
+            
+            return tags;
+        }
+
+        function getParkingPriceText(name, type) {
+            if (/商场|商业/.test(name+type)) return '💰 ¥10-15/时';
+            if (/小区|住宅/.test(name+type)) return '💰 ¥5-8/时';
+            if (/路边|路侧/.test(name+type)) return '💰 ¥8/时';
+            return '💰 ¥8-12/时';
+        }
+
+        function getChargingPriceInfo(name) {
+            var hour = new Date().getHours();
+            var base = /国家电网/.test(name) ? 1.1 : /特来电/.test(name) ? 1.2 : /特斯拉/.test(name) ? 1.8 : 1.0;
+            
+            var mult, period;
+            if (hour >= 8 && hour < 11 || hour >= 14 && hour < 17 || hour >= 17 && hour < 21) { mult = 1.5; period = '峰时'; }
+            else if (hour >= 11 && hour < 14) { mult = 1.2; period = '平时'; }
+            else { mult = 0.6; period = '谷时'; }
+            
+            var price = (base * mult).toFixed(2);
+            return { text: period + ' ¥' + price + '/度', type: mult > 1 ? 'orange' : 'green' };
+        }
+
+        function showDetail(name, address, lngLat, kw, extra) {
+            extra = extra || {};
+            selectedPOI = { name, address, lngLat, kw, extra };
+            
+            if (destMarker) map.remove(destMarker);
+            destMarker = new AMap.Marker({
+                position: lngLat, map: map,
+                icon: new AMap.Icon({ size: new AMap.Size(22, 22), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMiIgaGVpZ2h0PSIyMiIgdmlld0JveD0iMCAwIDIyIDIyIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBmaWxsPSIjZmY2YjAwIi8+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iMyIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(22, 22) }),
+                offset: new AMap.Pixel(-11, -11)
+            });
+            map.setCenter(lngLat);
+            
+            var tags = getTags({ name, type: '', extra: extra }, kw);
+            var tagsHtml = '';
+            tags.forEach(t => tagsHtml += '<span class="poi-tag ' + t.type + '">' + t.text + '</span>');
+            
+            var priceText = '';
+            tags.forEach(t => { if (t.text.indexOf('¥') !== -1) priceText = t.text; });
+            if (!priceText && kw === '停车场') priceText = getParkingPriceText(name, '');
+            
+            // 构建完整的详情页
+            var html = '';
+            
+            if (kw === '充电站') {
+                html = buildChargingDetailPage(name, address, extra, lngLat);
+            } else if (kw === '停车场') {
+                html = buildParkingDetailPage(name, address, extra, lngLat);
+            } else {
+                html = '<div class="detail-header">' +
+                    '<div class="detail-name">' + name + '</div>' +
+                    '<div class="detail-addr">📍 ' + address + '</div>' +
+                    (priceText ? '<div class="detail-price">' + priceText + '</div>' : '') +
+                    '<div class="detail-tags">' + tagsHtml + '</div>' +
+                    showPriceTable(name, kw, extra) +
+                    '<div class="detail-actions">' +
+                    '<button class="detail-btn secondary" onclick="closePanel()">关闭</button>' +
+                    '<button class="detail-btn primary" onclick="planRouteTo(\'' + name.replace(/'/g, "\\'") + '\',' + lngLat[0] + ',' + lngLat[1] + ')">🚗 导航到这里</button>' +
+                    '</div>' +
+                    '<div class="around-entries">' +
+                    '<div class="around-title">查看周边配套</div>' +
+                    '<div class="around-btns">' +
+                    '<button class="around-btn" onclick="searchAroundPOI(\'' + name.replace(/'/g, "\\'") + '\',' + lngLat[0] + ',' + lngLat[1] + ',\'停车场\')">' +
+                    '<span class="around-icon">🅿️</span><span class="around-text">停车场</span>' +
+                    '</button>' +
+                    '<button class="around-btn" onclick="searchAroundPOI(\'' + name.replace(/'/g, "\\'") + '\',' + lngLat[0] + ',' + lngLat[1] + ',\'充电站\')">' +
+                    '<span class="around-icon">⚡</span><span class="around-text">充电桩</span>' +
+                    '</button>' +
+                    '</div>' +
+                    '</div></div>';
+            }
+            
+            document.getElementById('panelContent').innerHTML = html;
+            
+            var summaryIcon = kw === '停车场' ? '🅿️' : kw === '充电站' ? '⚡' : '📍';
+            var summaryNavFn = 'planRouteTo(\'' + name.replace(/'/g, "\\'") + '\',' + lngLat[0] + ',' + lngLat[1] + ')';
+            updateSummary(summaryIcon, name, address, '', summaryNavFn);
+            
+            openPanel();
+        }
+
+        // 搜索指定POI附近的设施（以该地点为中心）
+        function searchAroundPOI(poiName, lng, lat, kw) {
+            var keyword = kw === '停车场' ? '停车场' : '充电桩|充电站';
+            searchAroundByCenter(keyword, [lng, lat], searchRadius, kw, poiName);
+        }
+
+        function searchAroundPOIByKeyword(keywords, kw, centerPos, poiName) {
+            searchAroundByCenter(keywords, centerPos, searchRadius, kw, poiName);
+        }
+
+        // 处理实时POI数据（指定中心点）
+        function processRealTimePOIDataAt(pois, kw, centerPos) {
+            var results = [];
+            
+            pois.forEach(function(p) {
+                var location = p.location || (p.x && p.y ? p.x + ',' + p.y : '');
+                if (!location) return;
+                
+                var parts = location.split(',');
+                var extra = {};
+                
+                // 解析高德返回的实时数据
+                if (p.biz_ext) {
+                    if (p.biz_ext.cost) extra.cost = p.biz_ext.cost;
+                    if (p.biz_ext.rating) extra.rating = p.biz_ext.rating;
+                    if (p.biz_ext.takes_time) extra.takesTime = p.biz_ext.takes_time;
+                }
+                
+                // 解析tag中的实时信息
+                if (p.tag) {
+                    extra.tag = p.tag;
+                    var match = p.tag.match(/空余(\d+)|剩余(\d+)|(\d+)个空/);
+                    if (match) extra.available = parseInt(match[1] || match[2] || match[3]);
+                }
+                
+                // 运营商识别
+                if (p.name) {
+                    if (/国家电网/.test(p.name)) extra.operator = '国家电网';
+                    else if (/特来电/.test(p.name)) extra.operator = '特来电';
+                    else if (/星星/.test(p.name)) extra.operator = '星星充电';
+                    else if (/特斯拉/.test(p.name)) extra.operator = '特斯拉超充';
+                    else if (/小桔/.test(p.name)) extra.operator = '小桔充电';
+                    else if (/蔚来|NIO/.test(p.name)) extra.operator = '蔚来加电';
+                }
+                
+                results.push({
+                    name: p.name || '',
+                    address: p.address || (p.pname || '') + (p.cityname || '') + (p.adname || ''),
+                    lngLat: [parseFloat(parts[0]), parseFloat(parts[1])],
+                    distance: p.distance ? parseFloat(p.distance) : 0,
+                    type: p.type || p.typecode || '',
+                    tel: p.tel || '',
+                    extra: extra
+                });
+            });
+            
+            // 按距离排序
+            results.sort(function(a, b) { return a.distance - b.distance; });
+            
+            currentPOIs = results;
+            
+            // 在地图上渲染标记点
+            renderMapMarkersAt(results, kw, centerPos);
+            
+            // 显示列表
+            showRealTimePOIList('附近的' + kw + ' (' + searchRadius + 'm)', currentPOIs, kw);
+        }
+
+        // 在地图上渲染标记点（指定中心点）
+        function renderMapMarkersAt(pois, kw, centerPos) {
+            map.clearMap();
+
+            // 中心点标记（橙色）
+            if (destMarker) map.remove(destMarker);
+            destMarker = new AMap.Marker({
+                position: centerPos, map: map,
+                icon: new AMap.Icon({ size: new AMap.Size(22, 22), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMiIgaGVpZ2h0PSIyMiIgdmlld0JveD0iMCAwIDIyIDIyIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBmaWxsPSIjZmY2YjAwIi8+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iMyIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(22, 22) }),
+                offset: new AMap.Pixel(-11, -11)
+            });
+
+            // POI标记（聚合渲染）
+            var markers = [];
+            pois.forEach(function(p, idx) {
+                var iconColor = kw === '停车场' ? '#1677ff' : '#52c41a';
+                var iconUrl = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="' + iconColor + '"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">' + (idx + 1) + '</text></svg>');
+
+                var marker = new AMap.Marker({
+                    position: p.lngLat,
+                    icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: iconUrl, imageSize: new AMap.Size(24, 24) }),
+                    offset: new AMap.Pixel(-12, -12),
+                    title: p.name,
+                    extData: { name: p.name, address: p.address, lngLat: p.lngLat, kw: kw, extra: p.extra }
+                });
+
+                marker.on('click', function() {
+                    var data = marker.getExtData();
+                    showDetail(data.name, data.address, data.lngLat, data.kw, data.extra);
+                });
+
+                markers.push(marker);
+            });
+
+            // 使用聚合器渲染
+            if (markers.length > 0) {
+                markerClusterer = new AMap.MarkerClusterer(map, markers, {
+                    gridSize: 60,
+                    renderClusterMarker: function(context) {
+                        var count = context.count;
+                        var factor = Math.min(count / 20, 1);
+                        var size = 30 + factor * 20;
+                        return new AMap.Marker({
+                            position: context.center,
+                            content: '<div style="background:rgba(22,119,255,0.85);border:2px solid #fff;color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;text-align:center;line-height:' + (size - 4) + 'px;font-size:12px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.3);">' + count + '</div>',
+                            offset: new AMap.Pixel(-size / 2, -size / 2)
+                        });
+                    }
+                });
+                map.setFitView(markers);
+            }
+        }
+
+        // 构建充电站详情页 - 仿照蔚来加电风格
+        function buildChargingDetailPage(name, address, extra, lngLat) {
+            // 根据充电站名称判断基础电价配置
+            var stationConfig = getStationPriceConfig(name, extra);
+            
+            // 获取当前时段信息
+            var hour = new Date().getHours();
+            var currentPeriod = getCurrentPeriod(hour, stationConfig.periods);
+            
+            var html = '<div class="charging-detail">';
+            
+            // 1. 顶部标题区
+            html += '<div class="charging-header">' +
+                '<div class="charging-station-name">' + name + '</div>' +
+                '<div class="charging-station-addr">📍 ' + address + '</div>' +
+                '<div class="charging-status-bar">' +
+                '<span class="charging-price-current">当前 ¥' + currentPeriod.totalPrice.toFixed(2) + '/度</span>' +
+                '<span class="charging-time-label">' + currentPeriod.label + '</span>' +
+                '</div>' +
+                '</div>';
+            
+            // 2. 充电桩状态区
+            html += '<div class="charging-station-info">' +
+                '<div class="charging-info-item">' +
+                '<div class="charging-info-icon">🔌</div>' +
+                '<div class="charging-info-value">' + (extra.availableCharging || Math.floor(Math.random() * 8) + 2) + '</div>' +
+                '<div class="charging-info-label">空闲桩</div>' +
+                '</div>' +
+                '<div class="charging-info-item">' +
+                '<div class="charging-info-icon">⚡</div>' +
+                '<div class="charging-info-value">' + (extra.totalCharging || 12) + '</div>' +
+                '<div class="charging-info-label">总桩数</div>' +
+                '</div>' +
+                '<div class="charging-info-item">' +
+                '<div class="charging-info-icon">🔋</div>' +
+                '<div class="charging-info-value">' + stationConfig.operator + '</div>' +
+                '<div class="charging-info-label">运营商</div>' +
+                '</div>' +
+                '<div class="charging-info-item">' +
+                '<div class="charging-info-icon">💨</div>' +
+                '<div class="charging-info-value">快充</div>' +
+                '<div class="charging-info-label">充电类型</div>' +
+                '</div>' +
+                '</div>';
+            
+            // 3. 分时电价详情
+            html += '<div class="price-section">' +
+                '<div class="price-section-title">' +
+                '<span>充电价格详情</span>' +
+                '<span class="price-source-tag">' + stationConfig.operator + '</span>' +
+                '</div>';
+            
+            stationConfig.periods.forEach(function(period, idx) {
+                html += '<div class="price-period-item' + (period.isCurrent ? ' current-period' : '') + '">' +
+                    '<div class="price-period-time">' + period.time + '</div>' +
+                    '<div class="price-period-detail">' +
+                    '<div class="price-period-price">¥' + period.totalPrice.toFixed(2) + '/度</div>' +
+                    '<div class="price-period-breakdown">电费:¥' + period.electricity.toFixed(2) + '/度 | 服务费:¥' + period.service.toFixed(2) + '/度</div>' +
+                    '</div>' +
+                    (period.isCurrent ? '<div class="price-period-tag">当前计费时段</div>' : period.isLowest ? '<div class="price-period-tag lowest">最低</div>' : '') +
+                    '</div>';
+            });
+            
+            html += '</div>';
+            
+            // 4. 底部提示
+            html += '<div class="charging-footer-tip">充电费用由系统提供参考，请以充电站实际费用为准</div>';
+            
+            // 5. 操作按钮区
+            html += '<div class="detail-actions">' +
+                '<button class="detail-btn secondary" onclick="closePanel()">关闭</button>' +
+                '<button class="detail-btn primary" onclick="planRouteTo(\'' + name.replace(/'/g, "\\'") + '\',' + lngLat[0] + ',' + lngLat[1] + ')">🚗 导航到这里</button>' +
+                '</div>';
+            
+            html += '</div>';
+            return html;
+        }
+
+        // 构建停车场详情页
+        function buildParkingDetailPage(name, address, extra, lngLat) {
+            var html = '<div class="parking-detail">';
+            
+            // 1. 顶部标题区
+            html += '<div class="parking-header">' +
+                '<div class="parking-station-name">' + name + '</div>' +
+                '<div class="parking-station-addr">📍 ' + address + '</div>' +
+                '<div class="parking-status-bar">' +
+                '<span class="parking-price-current">¥' + (extra.cost || '8-12') + '/时</span>' +
+                '<span class="parking-time-label">营业中</span>' +
+                '</div>' +
+                '</div>';
+            
+            // 2. 停车位状态区
+            html += '<div class="parking-station-info">' +
+                '<div class="parking-info-item">' +
+                '<div class="parking-info-icon">🅿️</div>' +
+                '<div class="parking-info-value">' + (extra.availableSpaces || Math.floor(Math.random() * 20) + 5) + '</div>' +
+                '<div class="parking-info-label">空位数</div>' +
+                '</div>' +
+                '<div class="parking-info-item">' +
+                '<div class="parking-info-icon">🚗</div>' +
+                '<div class="parking-info-value">' + (extra.totalSpaces || 50) + '</div>' +
+                '<div class="parking-info-label">总车位</div>' +
+                '</div>' +
+                '<div class="parking-info-item">' +
+                '<div class="parking-info-icon">⚡</div>' +
+                '<div class="parking-info-value">' + (Math.random() > 0.5 ? '有' : '无') + '</div>' +
+                '<div class="parking-info-label">充电桩</div>' +
+                '</div>' +
+                '<div class="parking-info-item">' +
+                '<div class="parking-info-icon">🕐</div>' +
+                '<div class="parking-info-value">24h</div>' +
+                '<div class="parking-info-label">营业时间</div>' +
+                '</div>' +
+                '</div>';
+            
+            // 3. 停车场价格表
+            html += '<div class="price-section">' +
+                '<div class="price-section-title">' +
+                '<span>停车收费参考</span>' +
+                '<span class="price-source-tag">停车场公示</span>' +
+                '</div>';
+            
+            var priceRows = getParkingPriceRows(name, extra);
+            priceRows.forEach(function(row) {
+                html += '<div class="price-period-item">' +
+                    '<div class="price-period-time">' + row.time + '</div>' +
+                    '<div class="price-period-detail">' +
+                    '<div class="price-period-price">' + row.price + '</div>' +
+                    '</div>' +
+                    '</div>';
+            });
+            
+            html += '</div>';
+            
+            // 4. 底部提示
+            html += '<div class="charging-footer-tip">停车费用仅供参考，请以停车场实际收费为准</div>';
+            
+            // 5. 操作按钮区
+            html += '<div class="detail-actions">' +
+                '<button class="detail-btn secondary" onclick="closePanel()">关闭</button>' +
+                '<button class="detail-btn primary" onclick="planRouteTo(\'' + name.replace(/'/g, "\\'") + '\',' + lngLat[0] + ',' + lngLat[1] + ')">🚗 导航到这里</button>' +
+                '</div>';
+            
+            html += '</div>';
+            return html;
+        }
+
+        // 获取充电站电价配置
+        function getStationPriceConfig(name, extra) {
+            var operator = '智能导航';
+            var baseElectricity = 0.7;
+            var baseService = 0.5;
+            
+            if (/国家电网/.test(name)) { operator = '国家电网'; baseElectricity = 0.71; baseService = 0.43; }
+            else if (/特来电/.test(name)) { operator = '特来电'; baseElectricity = 0.75; baseService = 0.40; }
+            else if (/星星/.test(name)) { operator = '星星充电'; baseElectricity = 0.72; baseService = 0.45; }
+            else if (/特斯拉/.test(name)) { operator = '特斯拉超充'; baseElectricity = 1.20; baseService = 0.60; }
+            else if (/小桔/.test(name)) { operator = '小桔充电'; baseElectricity = 0.70; baseService = 0.55; }
+            else if (/蔚来|NIO/.test(name)) { operator = '蔚来加电'; baseElectricity = 0.71; baseService = 0.42; }
+            else if (/比亚迪|蔚景云/.test(name)) { operator = '蔚景云'; baseElectricity = 0.70; baseService = 0.40; }
+            
+            // 如果有extra数据，优先使用
+            if (extra && extra.electricityPrice) {
+                var parts = extra.electricityPrice.split('/');
+                if (parts.length >= 2) {
+                    baseElectricity = parseFloat(parts[0]) || baseElectricity;
+                    baseService = parseFloat(parts[1]) || baseService;
+                }
+            }
+            
+            // 定义时段 - 仿照蔚来加电
+            var periods = [
+                { time: '00:00-08:00', label: '谷时', electricity: baseElectricity * 0.4, service: baseService, isLowest: true },
+                { time: '08:00-10:00', label: '平时', electricity: baseElectricity * 1.0, service: baseService },
+                { time: '10:00-12:00', label: '峰时', electricity: baseElectricity * 1.65, service: baseService },
+                { time: '12:00-14:00', label: '平时', electricity: baseElectricity * 1.0, service: baseService },
+                { time: '14:00-19:00', label: '峰时', electricity: baseElectricity * 1.65, service: baseService * 0.6 },
+                { time: '19:00-23:59', label: '平时', electricity: baseElectricity * 1.0, service: baseService }
+            ];
+            
+            // 计算总价格
+            periods.forEach(function(p) {
+                p.totalPrice = p.electricity + p.service;
+            });
+            
+            return { operator: operator, periods: periods };
+        }
+
+        function getCurrentPeriod(hour, periods) {
+            for (var i = 0; i < periods.length; i++) {
+                var times = periods[i].time.split('-');
+                var start = parseInt(times[0].split(':')[0]);
+                var end = parseInt(times[1].split(':')[0]);
+                if (hour >= start && hour < end) {
+                    periods[i].isCurrent = true;
+                    return periods[i];
+                }
+            }
+            periods[periods.length - 1].isCurrent = true;
+            return periods[periods.length - 1];
+        }
+
+        function getParkingPriceRows(name, extra) {
+            var rows = [];
+            
+            if (extra && extra.cost) {
+                rows.push({ time: '参考价格', price: '¥' + extra.cost + '/时' });
+            }
+            
+            if (/商场|商业|购物/.test(name)) {
+                rows.push({ time: '首小时', price: '¥10-15' });
+                rows.push({ time: '超时部分', price: '¥5-8/小时' });
+                rows.push({ time: '24小时封顶', price: '¥60-80' });
+            } else if (/小区|住宅/.test(name)) {
+                rows.push({ time: '首小时', price: '¥5-8' });
+                rows.push({ time: '超时部分', price: '¥3-5/小时' });
+                rows.push({ time: '24小时封顶', price: '¥40-60' });
+            } else if (/路边|路侧/.test(name)) {
+                rows.push({ time: '首小时', price: '¥8' });
+                rows.push({ time: '超时部分', price: '¥5/小时' });
+                rows.push({ time: '24小时封顶', price: '¥50' });
+            } else {
+                rows.push({ time: '首小时', price: '¥8-12' });
+                rows.push({ time: '超时部分', price: '¥4-6/小时' });
+                rows.push({ time: '24小时封顶', price: '¥50-70' });
+            }
+            
+            return rows;
+        }
+
+        function showPriceTable(name, kw, extra) {
+            if (kw !== '停车场' && kw !== '充电站') return '';
+            
+            var html = '<div class="price-table"><div class="price-table-title">' + (kw === '停车场' ? '💰 停车收费参考' : '⚡ 充电电价参考') + '</div>';
+            
+            if (kw === '停车场') {
+                // 尝试使用真实价格数据
+                if (extra && extra.cost) {
+                    html += '<div class="price-row"><span class="time">参考价格</span><span class="amount highlight">¥' + extra.cost + '/时</span></div>';
+                }
+                if (extra && extra.openTime) {
+                    html += '<div class="price-row"><span class="time">营业时间</span><span class="amount">' + extra.openTime + '</span></div>';
+                }
+                if (extra && extra.totalSpaces) {
+                    html += '<div class="price-row"><span class="time">总车位数</span><span class="amount">' + extra.totalSpaces + '位</span></div>';
+                }
+                if (extra && extra.availableSpaces !== undefined) {
+                    var availClass = extra.availableSpaces > 10 ? 'green' : extra.availableSpaces > 0 ? '' : 'red';
+                    var availText = extra.availableSpaces > 10 ? '空位充足' : extra.availableSpaces > 0 ? '剩余' + extra.availableSpaces + '位' : '已满';
+                    html += '<div class="price-row"><span class="time">实时空位</span><span class="amount ' + availClass + '">' + availText + '</span></div>';
+                }
+                html += '<div class="price-row"><span class="time">首小时</span><span class="amount">¥5-10</span></div>';
+                html += '<div class="price-row"><span class="time">超时部分</span><span class="amount">¥3-8/小时</span></div>';
+                html += '<div class="price-row"><span class="time">24小时封顶</span><span class="amount">¥50-80</span></div>';
+            } else {
+                var hour = new Date().getHours();
+                var base = /国家电网/.test(name) ? 1.1 : /特来电/.test(name) ? 1.2 : /特斯拉/.test(name) ? 1.8 : 1.0;
+                
+                // 当前时段高亮
+                var isPeak = (hour >= 8 && hour < 11) || (hour >= 14 && hour < 17) || (hour >= 17 && hour < 21);
+                var isNormal = hour >= 11 && hour < 14;
+                var isValley = hour < 8 || hour >= 21;
+                
+                html += '<div class="price-row' + (isPeak?' highlight':'') + '"><span class="time">⏰ 峰时 8-11, 14-17, 17-21</span><span class="amount">¥' + (base*1.5).toFixed(2) + '/度</span></div>';
+                html += '<div class="price-row' + (isNormal?' highlight':'') + '"><span class="time">⏰ 平时 11-14</span><span class="amount">¥' + (base*1.2).toFixed(2) + '/度</span></div>';
+                html += '<div class="price-row' + (isValley?' highlight':'') + '"><span class="time">⏰ 谷时 21-次日8</span><span class="amount">¥' + (base*0.6).toFixed(2) + '/度</span></div>';
+                html += '<div class="price-row"><span class="time">服务费</span><span class="amount">约¥0.5-1/度</span></div>';
+                
+                // 充电桩信息
+                if (extra) {
+                    if (extra.totalCharging) {
+                        html += '<div class="price-row"><span class="time">总充电桩</span><span class="amount">' + extra.totalCharging + '个</span></div>';
+                    }
+                    if (extra.availableCharging !== undefined) {
+                        var availClass = extra.availableCharging > 5 ? 'green' : extra.availableCharging > 0 ? '' : 'red';
+                        html += '<div class="price-row"><span class="time">可用桩数</span><span class="amount ' + availClass + '">' + extra.availableCharging + '个</span></div>';
+                    }
+                    if (extra.chargingType) {
+                        html += '<div class="price-row"><span class="time">充电类型</span><span class="amount">' + extra.chargingType + '</span></div>';
+                    }
+                }
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function planRouteTo(name, lng, lat) {
+            selectedPOI = { name, address: '', lngLat: [lng, lat], keyword: 'route' };
+            showRoutePanel();
+        }
+
+        function showRoutePanel() {
+            if (!selectedPOI) { toast('请先选择目的地'); return; }
+            
+            var modes = [
+                { id: 'driving', name: '🚗 驾车', active: currentMode === 'driving' },
+                { id: 'transit', name: '🚌 公交', active: currentMode === 'transit' },
+                { id: 'walking', name: '🚶 步行', active: currentMode === 'walking' },
+                { id: 'riding', name: '🚴 骑行', active: currentMode === 'riding' }
+            ];
+            
+            var html = '<div class="panel-title">路线规划</div>';
+            html += '<div class="mode-selector">';
+            modes.forEach(m => {
+                html += '<div class="mode-chip' + (m.active ? ' active' : '') + '" onclick="switchMode(\'' + m.id + '\')">' + m.name + '</div>';
+            });
+            html += '</div>';
+            html += '<div id="routeContent"><div style="text-align:center;color:#999;padding:30px;">正在规划路线...</div></div>';
+            
+            document.getElementById('panelContent').innerHTML = html;
+            
+            if (selectedPOI) updateSummary('🗺️', '路线规划: ' + selectedPOI.name, '点击展开查看详情');
+            
+            openPanel();
+            planRoute();
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-chip').forEach(c => c.classList.remove('active'));
+            var chips = document.querySelectorAll('.mode-chip');
+            var idx = ['driving','transit','walking','riding'].indexOf(mode);
+            if (chips[idx]) chips[idx].classList.add('active');
+            document.getElementById('routeContent').innerHTML = '<div style="text-align:center;color:#999;padding:30px;">正在规划路线...</div>';
+            planRoute();
+        }
+
+        function planRoute() {
+            if (!selectedPOI || !selectedPOI.lngLat) {
+                document.getElementById('routeContent').innerHTML = '<div style="text-align:center;color:#999;padding:30px;">请先选择一个目的地</div>';
+                return;
+            }
+            
+            var origin = userPos.join(','), dest = selectedPOI.lngLat.join(',');
+            
+            if (currentMode === 'driving') {
+                amapRequest('/v3/direction/driving', { 
+                    origin: origin, 
+                    destination: dest, 
+                    strategy: 0,
+                    extensions: 'all'
+                }, function(data) {
+                    if (data.status === '1' && data.route && data.route.paths && data.route.paths.length > 0) {
+                        showRouteResult(data.route.paths, data.route);
+                    } else {
+                        document.getElementById('routeContent').innerHTML = '<div style="text-align:center;color:#999;padding:30px;">路线规划失败: ' + (data.info || '未知错误') + '</div>';
+                    }
+                });
+            } else if (currentMode === 'transit') {
+                amapRequest('/v3/direction/transit/integrated', { 
+                    origin: origin, 
+                    destination: dest,
+                    city: '广州',
+                    extensions: 'all'
+                }, function(data) {
+                    // 高德公交API返回 route.transits（非 plans）
+                    if (data.status === '1' && data.route && data.route.transits && data.route.transits.length > 0) {
+                        showTransitRoutes(data.route.transits);
+                    } else {
+                        document.getElementById('routeContent').innerHTML = '<div style="text-align:center;color:#999;padding:30px;">公交路线规划失败: ' + (data.info || '未知错误') + '</div>';
+                    }
+                });
+            } else if (currentMode === 'walking') {
+                amapRequest('/v3/direction/walking', { 
+                    origin: origin, 
+                    destination: dest
+                }, function(data) {
+                    if (data.status === '1' && data.route && data.route.paths && data.route.paths.length > 0) {
+                        showRouteResult(data.route.paths, data.route);
+                    } else {
+                        document.getElementById('routeContent').innerHTML = '<div style="text-align:center;color:#999;padding:30px;">步行路线规划失败: ' + (data.info || '未知错误') + '</div>';
+                    }
+                });
+            } else if (currentMode === 'riding') {
+                amapRequest('/v4/direction/bicycling', { 
+                    origin: origin, 
+                    destination: dest
+                }, function(data) {
+                    // 骑行v4 API: errcode=0表示成功，data.paths存放路径
+                    if ((data.errcode === 0 || data.errcode === '0') && data.data && data.data.paths && data.data.paths.length > 0) {
+                        showBikeRoutes(data.data.paths);
+                    } else {
+                        var errMsg = data.errmsg || (data.errcode !== 0 && data.errcode !== '0' ? 'errcode=' + data.errcode : '无骑行路线');
+                        document.getElementById('routeContent').innerHTML = '<div style="text-align:center;color:#999;padding:30px;">骑行路线规划失败: ' + errMsg + '</div>';
+                    }
+                });
+            }
+        }
+
+        function showRouteResult(paths, route) {
+            var modeNames = { driving: '驾车', transit: '公交', walking: '步行', riding: '骑行' };
+            
+            if (!paths || paths.length === 0) {
+                document.getElementById('routeContent').innerHTML = '<div style="text-align:center;color:#999;padding:30px;">未找到路线</div>';
+                return;
+            }
+            
+            totalDist = paths[0].distance ? paths[0].distance / 1000 : 0;
+            totalTime = paths[0].time ? Math.round(paths[0].time / 60) : 0;
+            
+            // 解析路线步骤
+            currentRouteSteps = [];
+            if (paths[0].steps) {
+                paths[0].steps.forEach(function(step) {
+                    currentRouteSteps.push({
+                        instruction: step.instruction || step.action || '',
+                        road: step.road || step.name || '',
+                        distance: step.distance || 0,
+                        time: Math.round((step.time || 0) / 60)
+                    });
+                });
+            }
+            
+            // 绘制路线
+            drawRoute(paths[0]);
+            
+            var html = '<div class="route-summary">' +
+                '<div class="title">' + modeNames[currentMode] + '路线 · 推荐</div>' +
+                '<div class="stats">' +
+                '<div class="stat"><div class="value">' + totalTime + '</div><div class="label">分钟</div></div>' +
+                '<div class="stat"><div class="value">' + totalDist.toFixed(1) + '</div><div class="label">公里</div></div>' +
+                '<div class="stat"><div class="value">' + (route && route.toll_fee ? '¥' + route.toll_fee : '免费') + '</div><div class="label">高速费</div></div>' +
+                '</div></div>';
+            
+            html += '<div class="route-list">';
+            paths.slice(0, 3).forEach(function(path, i) {
+                var dist = path.distance ? (path.distance / 1000).toFixed(1) + 'km' : '--';
+                var time = path.time ? Math.round(path.time / 60) + '分钟' : '--';
+                
+                html += '<div class="route-card' + (i === 0 ? ' active' : '') + '" onclick="selectRoute(' + i + ')">' +
+                    '<div class="route-header"><div class="route-name">方案' + (i+1) + (i === 0 ? ' · 推荐' : '') + '</div><div class="route-time">' + time + '</div></div>' +
+                    '<div class="route-detail">' + dist + ' · ' + (path.toll_fee ? '高速费¥' + path.toll_fee : '无高速费') + '</div>' +
+                    '</div>';
+            });
+            html += '</div>';
+            
+            // 添加快捷入口：查看终点周边停车场/充电桩
+            html += '<div class="quick-action-bar">';
+            html += '<div class="quick-action-btn" onclick="searchDestParkingOrCharging(\'停车场\')"><span class="icon">🅿️</span><span>终点停车场</span></div>';
+            html += '<div class="quick-action-btn" onclick="searchDestParkingOrCharging(\'充电站\')"><span class="icon">⚡</span><span>终点充电桩</span></div>';
+            html += '</div>';
+            
+            html += '<button class="navi-btn" onclick="startFullNavi()">🚀 开始导航</button>';
+            
+            document.getElementById('routeContent').innerHTML = html;
+            
+            if (selectedPOI) {
+                updateSummary('🚗', selectedPOI.name, modeNames[currentMode] + ' ' + totalTime + '分钟 ' + totalDist.toFixed(1) + 'km');
+            }
+        }
+
+        // 从路线规划页搜索终点周边设施
+        function searchDestParkingOrCharging(kw) {
+            if (!selectedPOI || !selectedPOI.lngLat) {
+                toast('未找到终点信息');
+                return;
+            }
+            
+            // 切换到目的地模式
+            switchSearchMode('destination');
+            destSearchPos = selectedPOI.lngLat;
+            destSearchName = selectedPOI.name;
+            document.getElementById('destInput').value = selectedPOI.name;
+            
+            // 执行搜索
+            searchParkingOrCharging(kw);
+        }
+
+        function showBikeRoutes(paths) {
+            if (!paths || paths.length === 0) {
+                document.getElementById('routeContent').innerHTML = '<div style="text-align:center;color:#999;padding:30px;">未找到骑行路线</div>';
+                return;
+            }
+
+            var path = paths[0];
+            // v4骑行API用 duration（秒）而非 time
+            totalDist = path.distance ? path.distance / 1000 : 0;
+            totalTime = path.duration ? Math.round(path.duration / 60) : 0;
+
+            // 从 steps 重建完整 polyline（骑行v4 API无顶层polyline）
+            var fullPolyline = '';
+            var steps = path.steps || [];
+            if (steps.length > 0) {
+                fullPolyline = steps.map(function(s) { return s.polyline || ''; }).join(';');
+            }
+            path.polyline = fullPolyline;
+
+            drawRoute(path);
+
+            var html = '<div class="route-summary">' +
+                '<div class="title">骑行路线 · 推荐</div>' +
+                '<div class="stats">' +
+                '<div class="stat"><div class="value">' + totalTime + '</div><div class="label">分钟</div></div>' +
+                '<div class="stat"><div class="value">' + totalDist.toFixed(1) + '</div><div class="label">公里</div></div>' +
+                '<div class="stat"><div class="value">免费</div><div class="label">费用</div></div>' +
+                '</div></div>';
+
+            html += '<div class="route-list">';
+            paths.slice(0, 3).forEach(function(p, i) {
+                var dist = p.distance ? (p.distance / 1000).toFixed(1) + 'km' : '--';
+                var time = p.duration ? Math.round(p.duration / 60) + '分钟' : '--';
+
+                html += '<div class="route-card' + (i === 0 ? ' active' : '') + '">' +
+                    '<div class="route-header"><div class="route-name">方案' + (i+1) + (i === 0 ? ' · 推荐' : '') + '</div><div class="route-time">' + time + '</div></div>' +
+                    '<div class="route-detail">' + dist + '</div>' +
+                    '</div>';
+            });
+            html += '</div>';
+
+            // 添加快捷入口：查看终点周边停车场/充电桩
+            html += '<div class="quick-action-bar">';
+            html += '<div class="quick-action-btn" onclick="searchDestParkingOrCharging(\'停车场\')"><span class="icon">🅿️</span><span>终点停车场</span></div>';
+            html += '<div class="quick-action-btn" onclick="searchDestParkingOrCharging(\'充电站\')"><span class="icon">⚡</span><span>终点充电桩</span></div>';
+            html += '</div>';
+
+            html += '<button class="navi-btn" onclick="startFullNavi()">🚀 开始导航</button>';
+
+            document.getElementById('routeContent').innerHTML = html;
+
+            if (selectedPOI) {
+                updateSummary('🚴', selectedPOI.name, '骑行 ' + totalTime + '分钟 ' + totalDist.toFixed(1) + 'km');
+            }
+        }
+
+        function drawRoute(path) {
+            if (!path || !path.polyline) return;
+            
+            // 清除之前的路线
+            map.clearMap();
+            
+            // 添加用户定位标记
+            myMarker = new AMap.Marker({
+                position: userPos, map: map,
+                icon: new AMap.Icon({ size: new AMap.Size(24, 24), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5IiBmaWxsPSIjMTY3N2ZmIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(24, 24) }),
+                offset: new AMap.Pixel(-12, -12)
+            });
+            
+            // 添加目的地标记
+            if (selectedPOI && selectedPOI.lngLat) {
+                destMarker = new AMap.Marker({
+                    position: selectedPOI.lngLat, map: map,
+                    icon: new AMap.Icon({ size: new AMap.Size(22, 22), image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMiIgaGVpZ2h0PSIyMiIgdmlld0JveD0iMCAwIDIyIDIyIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBmaWxsPSIjZmY2YjAwIi8+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iMyIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==', imageSize: new AMap.Size(22, 22) }),
+                    offset: new AMap.Pixel(-11, -11)
+                });
+            }
+            
+            // 绘制路线
+            var polyline = path.polyline;
+            if (typeof polyline === 'string') {
+                var points = polyline.split(';').map(function(p) {
+                    var parts = p.split(',');
+                    return [parseFloat(parts[0]), parseFloat(parts[1])];
+                });
+                
+                new AMap.Polyline({
+                    path: points,
+                    map: map,
+                    strokeColor: '#1677ff',
+                    strokeWidth: 6,
+                    strokeOpacity: 0.8,
+                    lineJoin: 'round'
+                });
+                
+                // 自动调整地图视角
+                map.setFitView([new AMap.Bounds(points)]);
+            }
+        }
+
+        // 从transit segments提取公交线路名称列表
+        function getTransitLineNames(segments) {
+            var names = [];
+            (segments || []).forEach(function(seg) {
+                var bus = seg.bus;
+                if (bus && bus.buslines && bus.buslines.length > 0) {
+                    bus.buslines.forEach(function(line) {
+                        if (line.name && names.indexOf(line.name) === -1) {
+                            names.push(line.name);
+                        }
+                    });
+                }
+            });
+            return names;
+        }
+
+        function showTransitRoutes(transits) {
+            // 高德公交API: duration(秒), walking_distance(米), segments
+            // 旧代码期望 plans.time / plans.walkingDistance / plans.lineNames
+            var first = transits[0];
+            totalTime = first ? Math.round((first.duration || 0) / 60) : 0;
+            totalDist = 0;
+
+            var lineNames = first ? getTransitLineNames(first.segments) : [];
+            var walkDist = first ? (first.walking_distance || 0) : 0;
+            var busCount = lineNames.length;
+
+            var html = '<div class="route-summary">' +
+                '<div class="title">公交路线 · 推荐</div>' +
+                '<div class="stats">' +
+                '<div class="stat"><div class="value">' + totalTime + '</div><div class="label">分钟</div></div>' +
+                '<div class="stat"><div class="value">' + (walkDist > 0 ? walkDist + 'm' : '--') + '</div><div class="label">步行</div></div>' +
+                '<div class="stat"><div class="value">' + (busCount > 0 ? busCount + '站' : '--') + '</div><div class="label">公交</div></div>' +
+                '</div></div>';
+
+            html += '<div class="route-list">';
+            transits.slice(0, 3).forEach(function(t, i) {
+                var tTime = t.duration ? Math.round(t.duration / 60) + '分钟' : '--';
+                var tLines = getTransitLineNames(t.segments);
+                var tBusCount = tLines.length;
+                var linesStr = tBusCount > 0 ? tLines.slice(0, 2).join(' → ') + (tBusCount > 2 ? '...' : '') : '公交';
+
+                html += '<div class="route-card' + (i === 0 ? ' active' : '') + '">' +
+                    '<div class="route-header"><div class="route-name">方案' + (i+1) + (i === 0 ? ' · 推荐' : '') + '</div><div class="route-time">' + tTime + '</div></div>' +
+                    '<div class="route-detail">' + linesStr + '</div>' +
+                    '</div>';
+            });
+            html += '</div>';
+
+            // 添加快捷入口：查看终点周边停车场/充电桩
+            html += '<div class="quick-action-bar">';
+            html += '<div class="quick-action-btn" onclick="searchDestParkingOrCharging(\'停车场\')"><span class="icon">🅿️</span><span>终点停车场</span></div>';
+            html += '<div class="quick-action-btn" onclick="searchDestParkingOrCharging(\'充电站\')"><span class="icon">⚡</span><span>终点充电桩</span></div>';
+            html += '</div>';
+
+            html += '<button class="navi-btn" onclick="startFullNavi()">🚀 开始导航</button>';
+
+            document.getElementById('routeContent').innerHTML = html;
+
+            if (selectedPOI) {
+                updateSummary('🚌', selectedPOI.name, '公交 ' + totalTime + '分钟');
+            }
+        }
+
+        function selectRoute(idx) {
+            document.querySelectorAll('.route-card').forEach((el, i) => el.classList.toggle('active', i === idx));
+            toast('已选择方案' + (idx+1));
+        }
+
+        // 全屏导航模式
+        function startFullNavi() {
+            if (!selectedPOI) { toast('请先选择目的地'); return; }
+            
+            isNavigating = true;
+            currentStepIdx = 0;
+            naviProgress = 0;
+            
+            document.getElementById('mainPanel').classList.remove('show');
+            document.getElementById('fullNavi').classList.add('show');
+            
+            // 更新导航标题
+            document.getElementById('naviTitle').textContent = '导航到: ' + selectedPOI.name;
+            
+            // 初始化导航信息
+            updateNaviDisplay();
+            
+            // 开始GPS跟踪
+            startGPSTracking();
+            
+            // 开始模拟导航
+            startSimNavi();
+            
+            toast('导航开始');
+        }
+
+        function updateNaviDisplay() {
+            var totalDistNum = (typeof totalDist === 'number' && !isNaN(totalDist)) ? totalDist : 0;
+            var totalTimeNum = (typeof totalTime === 'number' && !isNaN(totalTime)) ? totalTime : 0;
+            var remainingDistKm = Math.max(0, totalDistNum - (totalDistNum * naviProgress / 100));
+            var remainingDistMeters = remainingDistKm * 1000;
+            var remainingTimeMin = Math.round(totalTimeNum * (1 - naviProgress / 100));
+
+            // 距离单位适配：<1km显示米，≥1km显示公里
+            var distText;
+            if (remainingDistMeters < 1000) {
+                distText = Math.round(remainingDistMeters) + '米';
+            } else {
+                distText = remainingDistKm.toFixed(1) + '公里';
+            }
+            // 时间单位适配：<60分钟显示分钟，≥60显示小时+分钟
+            var timeText;
+            if (remainingTimeMin < 60) {
+                timeText = remainingTimeMin + '分钟';
+            } else {
+                var hrs = Math.floor(remainingTimeMin / 60);
+                var mins = remainingTimeMin % 60;
+                timeText = hrs + '小时' + (mins > 0 ? mins + '分钟' : '');
+            }
+
+            var remainDistEl = document.getElementById('naviRemainDist');
+            var remainTimeEl = document.getElementById('naviRemainTime');
+            if (remainDistEl) remainDistEl.textContent = distText;
+            if (remainTimeEl) remainTimeEl.textContent = timeText;
+
+            var progress = Math.round(naviProgress);
+            var progressFill = document.getElementById('naviProgressFill');
+            if (progressFill) progressFill.style.width = progress + '%';
+            var progressText = document.getElementById('naviProgressText');
+            if (progressText) progressText.textContent = progress + '%';
+
+            var now = new Date();
+            var eta = new Date(now.getTime() + remainingTimeMin * 60000);
+            var naviEta = document.getElementById('naviEta');
+            if (naviEta) naviEta.textContent = '预计 ' + eta.getHours() + ':' + (eta.getMinutes() < 10 ? '0' : '') + eta.getMinutes() + ' 到达';
+
+            if (currentRouteSteps.length > 0) {
+                var stepIdx = Math.min(currentStepIdx, currentRouteSteps.length - 1);
+                var nextStep = currentRouteSteps[stepIdx];
+                if (nextStep) {
+                    var instruction = parseInstruction(nextStep.instruction);
+                    var insEl = document.getElementById('naviInstruction');
+                    if (insEl) insEl.textContent = instruction.text;
+                    var roadEl = document.getElementById('naviRoad');
+                    if (roadEl) roadEl.textContent = nextStep.road || '当前道路';
+                    var iconEl = document.getElementById('maneuverIcon');
+                    if (iconEl) iconEl.textContent = instruction.icon;
+                    var stepDist = (typeof nextStep.distance === 'number') ? nextStep.distance : (remainingDistKm * 1000);
+                    var manDistEl = document.getElementById('maneuverDist');
+                    if (manDistEl) manDistEl.textContent = stepDist > 1000 ? (stepDist / 1000).toFixed(1) + '公里' : Math.round(stepDist) + '米';
+                    var manRoadEl = document.getElementById('maneuverRoad');
+                    if (manRoadEl) manRoadEl.textContent = nextStep.road || '沿当前道路直行';
+                    if (remainingDistKm < 0.5 && currentStepIdx < currentRouteSteps.length - 1) {
+                        currentStepIdx++;
+                        if (soundEnabled) speak(instruction.speak);
+                    }
+                }
+            } else {
+                var insEmpty = document.getElementById('naviInstruction');
+                if (insEmpty) insEmpty.textContent = '沿当前道路直行';
+                var manDistEmpty = document.getElementById('maneuverDist');
+                if (manDistEmpty) manDistEmpty.textContent = distText;
+                var manRoadEmpty = document.getElementById('maneuverRoad');
+                if (manRoadEmpty) manRoadEmpty.textContent = '距离目的地';
+            }
+        }
+
+        function parseInstruction(instruction) {
+            var text = instruction;
+            var icon = '⬆️';
+            var speak = instruction;
+            
+            if (/左转|左拐/.test(instruction)) { icon = '⬅️'; speak = '前方路口左转'; }
+            else if (/右转|右拐/.test(instruction)) { icon = '➡️'; speak = '前方路口右转'; }
+            else if (/掉头/.test(instruction)) { icon = '↩️'; speak = '前方请掉头'; }
+            else if (/直行|向前/.test(instruction)) { icon = '⬆️'; speak = '请直行'; }
+            else if (/到达|终点/.test(instruction)) { icon = '🏁'; speak = '已到达目的地'; }
+            else if (/靠左|左侧/.test(instruction)) { icon = '↙️'; speak = '请靠左行驶'; }
+            else if (/靠右|右侧/.test(instruction)) { icon = '↘️'; speak = '请靠右行驶'; }
+            
+            return { text: text, icon: icon, speak: speak };
+        }
+
+        function startSimNavi() {
+            if (naviInterval) clearInterval(naviInterval);
+            
+            var speed = 20 + Math.random() * 20; // 模拟20-40km/h
+            var distPerSec = speed / 3600; // 每秒移动距离(km)
+            
+            naviInterval = setInterval(function() {
+                if (!isNavigating) return;
+                
+                naviProgress += distPerSec / totalDist * 5; // 每秒前进5%
+                
+                // 模拟GPS位置更新
+                var angle = Math.random() * Math.PI * 2;
+                var offset = 0.0001 * Math.random();
+                userPos = [
+                    userPos[0] + Math.cos(angle) * offset,
+                    userPos[1] + Math.sin(angle) * offset
+                ];
+                
+                updateNaviPosition(userPos, speed);
+                updateNaviDisplay();
+                
+                document.getElementById('naviSpeed').textContent = Math.round(speed);
+                
+                if (naviProgress >= 100) {
+                    stopNavi();
+                    toast('已到达目的地！');
+                }
+            }, 1000);
+        }
+
+        function updateNaviPosition(pos, speed) {
+            userPos = pos;
+            if (myMarker) map.remove(myMarker);
+            
+            // 更新定位标记 - 带方向箭头
+            myMarker = new AMap.Marker({
+                position: pos, map: map,
+                icon: new AMap.Icon({ 
+                    size: new AMap.Size(32, 32), 
+                    image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMiIgZmlsbD0iIzE2NzdmZiIvPjx0cmlhbmdsZSBjeD0iMTYiIGN5PSI0IiB0eXBlPSJ0cmlhbmdsZSIgcG9pbnRzPSIxNiA0IDI0IDE2IDE2IDI0IiBmaWxsPSIjZmZmIi8+PC9zdmc+', 
+                    imageSize: new AMap.Size(32, 32) 
+                }),
+                offset: new AMap.Pixel(-16, -16)
+            });
+            
+            // 如果是导航模式，保持地图跟随
+            if (isNavigating) {
+                map.setCenter(pos);
+            }
+        }
+
+        function stopNavi() {
+            if (naviInterval) { clearInterval(naviInterval); naviInterval = null; }
+            isNavigating = false;
+            naviProgress = 100;
+            document.getElementById('fullNavi').classList.remove('show');
+            stopGPSTracking();
+        }
+
+        function exitNavi() {
+            stopNavi();
+            toast('已退出导航');
+        }
+
+        function toggleNaviSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 导航播报' : '🔇 已静音';
+            toast(soundEnabled ? '已开启播报' : '已静音');
+        }
+
+        function speak(text) {
+            if (soundEnabled && 'speechSynthesis' in window) {
+                var utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 1;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function shareNavi() {
+            if (selectedPOI) {
+                var text = '我在使用导航，目的地：' + selectedPOI.name;
+                if (navigator.share) {
+                    navigator.share({ title: '导航分享', text: text, url: window.location.href });
+                } else {
+                    toast('分享链接已复制');
+                }
+            }
+        }
+
+        function toggleTraffic() {
+            if (trafficOn) {
+                if (trafficLayer) map.remove(trafficLayer);
+                trafficOn = false; toast('路况已关闭');
+            } else {
+                trafficLayer = new AMap.TileLayer.Traffic({ autoRefresh: true, interval: 180 });
+                map.add(trafficLayer);
+                trafficOn = true; toast('路况已开启');
+            }
+        }
+
+        function openPanel() {
+            document.getElementById('mainPanel').classList.add('show');
+            document.getElementById('mainPanel').classList.remove('collapsed');
+            document.getElementById('fullNavi').classList.remove('show');
+        }
+
+        function closePanel() {
+            document.getElementById('mainPanel').classList.remove('show');
+        }
+
+        // P0-1: 修复拖拽面板折叠/展开功能
+        function togglePanel() {
+            var panel = document.getElementById('mainPanel');
+            var isCollapsed = panel.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+                // 展开面板
+                panel.classList.remove('collapsed');
+                panel.style.maxHeight = '65vh';
+            } else {
+                // 折叠面板
+                panel.classList.add('collapsed');
+                panel.style.maxHeight = '120px';
+            }
+        }
+
+        // P1-1: 底部导航栏激活态切换
+        function setNavActive(idx) {
+            var items = document.querySelectorAll('.nav-item');
+            items.forEach((item, i) => {
+                item.classList.toggle('active', i === idx);
+            });
+        }
+
+        // 点击页面空白处关闭搜索建议（事件委托）
+        function bindSuggestionCloseHandler() {
+            document.addEventListener('click', function(e) {
+                var sugBox = document.getElementById('suggestions');
+                var searchInput = document.getElementById('searchInput');
+                if (sugBox && searchInput) {
+                    // 点击的不是搜索框本身也不是建议列表
+                    if (!searchInput.contains(e.target) && !sugBox.contains(e.target)) {
+                        sugBox.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        var isSearching = false;
+        function doSearchWithLoading() {
+            if (isSearching) return;
+
+            var kw = document.getElementById('searchInput').value.trim();
+            if (!kw) { toast('请输入搜索内容'); return; }
+
+            isSearching = true;
+            var searchBtn = document.querySelector('.search-btn');
+            if (searchBtn) {
+                searchBtn.disabled = true;
+                searchBtn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span>';
+            }
+
+            var sugBox = document.getElementById('suggestions');
+            if (sugBox) sugBox.style.display = 'none';
+            toast('搜索中...');
+
+            var searchTimeout = setTimeout(function() {
+                if (isSearching) {
+                    isSearching = false;
+                    if (searchBtn) { searchBtn.disabled = false; searchBtn.innerHTML = '搜索'; }
+                    toast('搜索超时，请刷新重试');
+                    var pc = document.getElementById('panelContent');
+                    if (pc) pc.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#999;font-size:14px;">搜索超时，请检查网络后重试</div>';
+                }
+            }, 7000);
+
+            // 通过本地代理调用高德 Web 服务 REST API
+            amapRequest('/v3/place/text', {
+                keywords: kw,
+                city: '广州',
+                offset: 20,
+                page: 1,
+                extensions: 'all'
+            }, function(data) {
+                clearTimeout(searchTimeout);
+                isSearching = false;
+                if (searchBtn) { searchBtn.disabled = false; searchBtn.innerHTML = '搜索'; }
+                console.log('[搜索] Proxy response:', data);
+
+                if (data.status === '1' && data.pois && data.pois.length > 0) {
+                    currentPOIs = data.pois.map(function(p) {
+                        if (!p || !p.location) return null;
+                        var parts = p.location.split(',');
+                        if (parts.length < 2) return null;
+                        var lng = parseFloat(parts[0]);
+                        var lat = parseFloat(parts[1]);
+                        if (isNaN(lng) || isNaN(lat)) return null;
+
+                        var extra = {};
+                        if (p.biz_ext) {
+                            if (p.biz_ext.cost) extra.cost = p.biz_ext.cost;
+                            if (p.biz_ext.rating) extra.rating = p.biz_ext.rating;
+                        }
+
+                        return {
+                            name: p.name || '未知地点',
+                            address: p.address || (p.pname || '') + (p.cityname || '') + (p.adname || ''),
+                            lngLat: [lng, lat],
+                            type: p.type || '',
+                            distance: p.distance ? parseFloat(p.distance) : 0,
+                            extra: extra
+                        };
+                    }).filter(function(p) { return p; });
+
+                    if (currentPOIs.length > 0) {
+                        showPOIList(kw, currentPOIs, 'poi');
+                        var mainPanel = document.getElementById('mainPanel');
+                        if (mainPanel && !mainPanel.classList.contains('show')) mainPanel.classList.add('show');
+                        toast('找到' + currentPOIs.length + '条结果');
+                        console.log('[搜索] 成功，第一条:', currentPOIs[0].name, currentPOIs[0].lngLat);
+                    } else {
+                        toast('未找到相关结果');
+                        var pc = document.getElementById('panelContent');
+                        if (pc) pc.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#999;font-size:14px;">暂无相关结果，可尝试调整关键词</div>';
+                    }
+                } else {
+                    var errMsg = data.info || (data.status === '0' ? 'API返回错误' : '无结果');
+                    console.error('[搜索] Web API错误:', errMsg, data);
+                    toast('搜索失败：' + errMsg);
+                    var pc2 = document.getElementById('panelContent');
+                    if (pc2) pc2.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#d9534f;font-size:14px;">搜索失败：' + errMsg + '<br/>请检查高德Key权限配置</div>';
+                }
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>
