@@ -25,7 +25,7 @@ html, body { height: 100%; width: 100%; overflow: hidden; font-family: -apple-sy
   --anim-fast: 0.15s; --anim-normal: 0.25s; --anim-slow: 0.35s;
 }
 body.dark {
-  --text-1: #f0f0f0; --text-2: #c0c0c0; --text-3: #999; --text-4: #666;
+  --text-1: #e8e8e8; --text-2: #c0c0c0; --text-3: #999; --text-4: #666;
   --bg: #1a1a1a; --bg-soft: #252525; --border: #3a3a3a;
   --primary-light: rgba(22,119,255,0.15);
   --success-bg: rgba(82,196,26,0.15); --warning-bg: rgba(250,173,20,0.15);
@@ -867,6 +867,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
 .loading-spinner::before { content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px; border: 4px solid transparent; border-top-color: rgba(22,119,255,0.3); border-radius: 50%; animation: spin 1.2s linear infinite reverse; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-size: 14px; color: var(--text-2); font-weight: 600; letter-spacing: 0.5px; text-align: center; max-width: 80%; }
+.loading-hint { font-size: 12px; color: var(--text-3); margin-top: 8px; text-align: center; line-height: 1.6; }
 .loading-dots { display: flex; gap: 6px; margin-top: 12px; }
 .loading-dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; animation: loadingDotPulse 1.2s ease infinite; }
 .loading-dot:nth-child(2) { animation-delay: 0.2s; }
@@ -1048,7 +1049,33 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
   .circle-btn:hover { transform: scale(1.05); color: var(--primary); }
   .mode-option:not(.active):hover { background: var(--primary-light); color: var(--primary); }
   .nav-item:hover .nav-icon { color: var(--primary); }
+  .quick-filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .detail-data-item:hover { background: var(--primary-light); }
 }
+
+/* 高DPI缩放优化：保证图文在高缩放比例下不截断 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .poi-card, .poi-nav-btn, .quick-filter-btn, .radius-btn,
+  .detail-data-item, .detail-action-btn, .nav-item {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .poi-icon, .nav-icon, .circle-btn {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* 浏览器缩放 125%-200% 适配 */
+@media (max-resolution: 200dpi) and (min-resolution: 125dpi) {
+  .poi-card, .poi-nav-btn, .quick-filter-btn {
+    overflow: visible;
+  }
+  .panel-content, .bottom-nav {
+    overflow-x: visible;
+  }
+}
+
 @media (max-width: 768px) {
   body.keyboard-open .bottom-nav { display: none; }
   body.keyboard-open .main-panel { max-height: 55vh; bottom: 0; }
@@ -1235,8 +1262,9 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 <div class="loading-overlay" id="loadingOverlay">
   <button class="loading-close" onclick="hideLoading()">✕</button>
   <div class="loading-spinner"></div>
-  <div class="loading-text" id="loadingText">加载中...</div>
-  <div class="loading-status" id="loadingStatus"></div>
+  <div class="loading-text" id="loadingText">正在搜索附近停车场和充电站...</div>
+  <div class="loading-status" id="loadingStatus">定位中，请稍候</div>
+  <div class="loading-hint" id="loadingHint">搜索范围：5公里内</div>
   <div class="loading-dots">
     <div class="loading-dot"></div>
     <div class="loading-dot"></div>
