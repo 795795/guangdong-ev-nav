@@ -39,19 +39,55 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 body.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
 
-/* ====== 地图容器：修复高度问题，确保地图正常显示 ====== */
-html, body { height: 100%; width: 100%; margin: 0; padding: 0; }
-#map {
-  position: absolute;
-  top: 0; left: 0;
+/* ====== 地图容器：修复移动端 vh 兼容性问题 ====== */
+html, body {
+  height: 100%;
   width: 100%;
-  height: calc(100vh - 60px);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  /* iOS Safari 橡皮筋滚动禁用 */
+  position: fixed;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+#map {
+  position: fixed;
+  top: 0; left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
   background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
   transition: opacity 0.3s ease;
 }
 #map.map-loaded { opacity: 1; }
 #map.map-loading { opacity: 0.7; }
+
+/* 修复 iOS 键盘弹出时页面不挤压 */
+@media screen and (max-width: 768px) {
+  html, body {
+    /* 使用 min-height 防止键盘挤压 */
+    height: 100vh;
+    height: -webkit-fill-available;
+    height: fill-available;
+  }
+  #map {
+    /* 绝对定位覆盖全屏，不受键盘影响 */
+    bottom: auto;
+    height: 100vh;
+    height: -webkit-fill-available;
+    height: fill-available;
+  }
+}
+
+/* 横屏适配 */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  #map {
+    height: 100vh;
+  }
+}
 
 /* ====== 地图初始加载动画 ====== */
 .map-init-loading {
@@ -761,20 +797,131 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
 'use strict';
 
 /* =========================================================================
- * 环境检测：本地开发（/api/ 可用）vs GitHub Pages（直接调高德）
+ * 高德 API 配置（静态 GitHub Pages 环境 - 直连高德）
  * ======================================================================== */
 (function(){
-  // 统一配置：所有 REST API 请求都走后端代理 /api/amap/...
-  // 后端代理负责注入 Web服务 Key，前端不暴露任何密钥
+  // 密钥配置说明：
+  // - JS API Key (amapJsKey): 用于加载地图 JS SDK，仅限 webapi.amap.com
+  // - Web 服务 Key (amapRestKey): 用于 REST API 调用，必须搭配 sig 签名使用
+  // - 安全密钥 (amapSecCode): JS API v2.0 安全配置
   window._env = {
-    // REST API 基地址：统一走后端代理
-    apiBase: '/api/amap',
-    // 高德 JS API Key（仅用于地图加载，不走 REST API）
+    // REST API 基地址（直连高德，无需代理）
+    apiBase: 'https://restapi.amap.com/v3',
+    // 高德 JS API Key（仅用于地图加载）
     amapJsKey: 'faf78a1b9d57c1e1a88fd9f50c795032',
-    // 高德安全密钥（JS API v2.0 必须配置 _AMapSecurityConfig）
-    amapSecCode: '6bd6ab656be75d5fc632bca3a68059c9',
-    // 是否本地开发（用于调试）
-    isLocal: /^(localhost|127\.0\.0\.1|\:\:1|0\.0\.0\.0|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.test(location.hostname) || location.protocol === 'file:'
+    // 高德 Web 服务 Key（用于 REST API，必须搭配 sig 签名）
+    amapRestKey: '8429788d2971b1eb0b278b878180ce92',
+    // 高德安全密钥（JS API v2.0 安全配置）
+    amapSecCode: '6bd6ab656be75d5fc632bca3a68059c9'
+  };
+})();
+
+/* =========================================================================
+ * MD5 签名算法（用于高德 REST API 签名校验）
+ * ======================================================================== */
+(function(){
+  function md5_encrypt(string) {
+    function md5_rotl(n, s) { return (n << s) | (n >>> (32 - s)); }
+    function md5_ft(b, c, d) { return (b & c) | (~b & d); }
+    function md5_gt(b, c, d) { return (b & d) | (c & ~d); }
+    function md5_ht(b, c, d) { return b ^ c ^ d; }
+    function md5_dt(b, c, d) { return c ^ (b | ~d); }
+    function md5_cmn(q, a, b, x, s, t) {
+      a = (((a + q) >>> 0) + x) >>> 0;
+      t = (t + a) >>> 0;
+      a = (a << s) | (a >>> (32 - s));
+      a = (a + t) >>> 0;
+      return (((b + a) >>> 0) + q) >>> 0;
+    }
+    function md5_ff(a, b, c, d, x, s, t) { return md5_cmn((b & c) | (~b & d), a, b, x, s, t); }
+    function md5_gg(a, b, c, d, x, s, t) { return md5_cmn((b & d) | (c & ~d), a, b, x, s, t); }
+    function md5_hh(a, b, c, d, x, s, t) { return md5_cmn(b ^ c ^ d, a, b, x, s, t); }
+    function md5_ii(a, b, c, d, x, s, t) { return md5_cmn(c ^ (b | ~d), a, b, x, s, t); }
+
+    var x = Array();
+    var k, AA, BB, CC, DD, a, b, c, d;
+    var S11 = 7, S12 = 12, S13 = 17, S14 = 22;
+    var S21 = 5, S22 = 9, S23 = 14, S24 = 20;
+    var S31 = 4, S32 = 11, S33 = 16, S34 = 23;
+    var S41 = 6, S42 = 10, S43 = 15, S44 = 21;
+
+    string = md5_utf8_encode(string);
+    x = md5_word_array(string);
+    a = 1732584193; b = 4023233417; c = 2562383102; d = 271733878;
+
+    for (k = 0; k < x.length; k += 16) {
+      AA = a; BB = b; CC = c; DD = d;
+      a = md5_ff(a, b, c, d, x[k], S11, 3614090360); d = md5_ff(d, a, b, c, x[k+1], S12, 3905402710);
+      c = md5_ff(c, d, a, b, x[k+2], S13, 606105819); b = md5_ff(b, c, d, a, x[k+3], S14, 3250441966);
+      a = md5_ff(a, b, c, d, x[k+4], S11, 1770035416); d = md5_ff(d, a, b, c, x[k+5], S12, 2336552879);
+      c = md5_ff(c, d, a, b, x[k+6], S13, 4294925233); b = md5_ff(b, c, d, a, x[k+7], S14, 2304563134);
+      a = md5_ff(a, b, c, d, x[k+8], S11, 1804603682); d = md5_ff(d, a, b, c, x[k+9], S12, 4254626195);
+      c = md5_ff(c, d, a, b, x[k+10], S13, 2792965006); b = md5_ff(b, c, d, a, x[k+11], S14, 1236535329);
+      a = md5_gg(a, b, c, d, x[k+1], S21, 4129170786); d = md5_gg(d, a, b, c, x[k+6], S22, 3225465664);
+      c = md5_gg(c, d, a, b, x[k+11], S23, 643717713); b = md5_gg(b, c, d, a, x[k], S24, 3921069994);
+      a = md5_gg(a, b, c, d, x[k+5], S21, 3593408605); d = md5_gg(d, a, b, c, x[k+10], S22, 38016083);
+      c = md5_gg(c, d, a, b, x[k+15], S23, 3634488961); b = md5_gg(b, c, d, a, x[k+4], S24, 3889429448);
+      a = md5_gg(a, b, c, d, x[k+9], S21, 568446438); d = md5_gg(d, a, b, c, x[k+14], S22, 3275163606);
+      c = md5_gg(c, d, a, b, x[k+3], S23, 4107603335); b = md5_gg(b, c, d, a, x[k+8], S24, 1163531501);
+      a = md5_gg(a, b, c, d, x[k+13], S21, 2850285829); d = md5_gg(d, a, b, c, x[k+2], S22, 4243563512);
+      c = md5_gg(c, d, a, b, x[k+7], S23, 1735328473); b = md5_gg(b, c, d, a, x[k+12], S24, 2368359562);
+      a = md5_hh(a, b, c, d, x[k+5], S31, 4294588738); d = md5_hh(d, a, b, c, x[k+8], S32, 2272392832);
+      c = md5_hh(c, d, a, b, x[k+11], S33, 1839030562); b = md5_hh(b, c, d, a, x[k+14], S34, 4259657740);
+      a = md5_hh(a, b, c, d, x[k+1], S31, 2763975236); d = md5_hh(d, a, b, c, x[k+4], S32, 1272893353);
+      c = md5_hh(c, d, a, b, x[k+7], S33, 4139469664); b = md5_hh(b, c, d, a, x[k+10], S34, 3200236656);
+      a = md5_hh(a, b, c, d, x[k+13], S31, 681279174); d = md5_hh(d, a, b, c, x[k+0], S32, 3936430074);
+      c = md5_hh(c, d, a, b, x[k+3], S33, 3572445317); b = md5_hh(b, c, d, a, x[k+6], S34, 76029189);
+      a = md5_hh(a, b, c, d, x[k+9], S31, 3654602809); d = md5_hh(d, a, b, c, x[k+12], S32, 3873151461);
+      c = md5_hh(c, d, a, b, x[k+15], S33, 530742520); b = md5_hh(b, c, d, a, x[k+2], S34, 895663659);
+      a = md5_ii(a, b, c, d, x[k+0], S41, 647827014); d = md5_ii(d, a, b, c, x[k+7], S42, 354875808);
+      c = md5_ii(c, d, a, b, x[k+14], S43, 3605218044); b = md5_ii(b, c, d, a, x[k+5], S44, 4094571909);
+      a = md5_ii(a, b, c, d, x[k+12], S41, 963900573); d = md5_ii(d, a, b, c, x[k+3], S42, 4144222469);
+      c = md5_ii(c, d, a, b, x[k+10], S43, 2870752391); b = md5_ii(b, c, d, a, x[k+1], S44, 4251139744);
+      a = md5_ii(a, b, c, d, x[k+8], S41, 2394180491); d = md5_ii(d, a, b, c, x[k+15], S42, 3675008525);
+      c = md5_ii(c, d, a, b, x[k+6], S43, 1091631240); b = md5_ii(b, c, d, a, x[k+13], S44, 38057699);
+      a = md5_ii(a, b, c, d, x[k+4], S41, 2683133786); d = md5_ii(d, a, b, c, x[k+11], S42, 4202028663);
+      c = md5_ii(c, d, a, b, x[k+2], S43, 2910493974); b = md5_ii(b, c, d, a, x[k+9], S44, 440426659);
+      a = (a + AA) >>> 0; b = (b + BB) >>> 0; c = (c + CC) >>> 0; d = (d + DD) >>> 0;
+    }
+    return (md5_word_to_hex(a) + md5_word_to_hex(b) + md5_word_to_hex(c) + md5_word_to_hex(d)).toLowerCase();
+  }
+
+  function md5_utf8_encode(str) {
+    return unescape(encodeURIComponent(str.replace(/\r\n/g, '\n')));
+  }
+
+  function md5_word_array(str) {
+    var words = [];
+    for (var i = 0; i < str.length * 8; i += 8) {
+      words[i >> 5] |= (str.charCodeAt(i / 8) & 0xFF) << (i % 32);
+    }
+    return words;
+  }
+
+  function md5_word_to_hex(n) {
+    var hex = '0123456789abcdef';
+    var s = '';
+    for (var j = 0; j < 4; j++) {
+      s += hex.charAt((n >> (j * 8 + 4)) & 0x0F) + hex.charAt((n >> (j * 8)) & 0x0F);
+    }
+    return s;
+  }
+
+  // 生成高德 sig 签名的辅助函数
+  // 参数: paramsObj = {key: 'xxx', location: '113,23', ...}, secret = '安全密钥'
+  window._md5Sign = function(paramsObj, secret) {
+    var keys = Object.keys(paramsObj).sort();
+    var pairs = [];
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var v = paramsObj[k];
+      if (v !== undefined && v !== null && v !== '') {
+        pairs.push(k + '=' + v);
+      }
+    }
+    pairs.push('key=' + paramsObj.key);
+    var str = pairs.join('&') + secret;
+    return md5_encrypt(str);
   };
 })();
 
@@ -937,30 +1084,48 @@ function speak(text){
 }
 
 /* =========================================================================
- * 高德 REST API 请求（带超时、断网检测、友好错误提示）
- * 所有请求都走后端代理 /api/amap/...，后端负责注入 Web服务 Key
+ * 高德 REST API 请求（直连高德，带 MD5 签名）
+ * 使用 Web 服务 Key，自动计算 sig 签名
  * ======================================================================== */
 function amapFetch(alias, params){
   var env = window._env || {};
-  var base = env.apiBase || '/api/amap';
+  var base = env.apiBase || 'https://restapi.amap.com/v3';
+  var restKey = env.amapRestKey || '';
+  var secCode = env.amapSecCode || '';
 
   // 断网快速失败
   if(navigator.onLine === false){
     return Promise.reject(new Error('网络已断开'));
   }
 
-  // 组装参数
-  var parts = [];
+  // 组装参数对象（包含 key）
+  var paramsWithKey = { key: restKey };
   if(params){
     for(var k in params){
-      if(params[k] === undefined || params[k] === null || params[k] === '') continue;
-      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
+      if(params[k] !== undefined && params[k] !== null && params[k] !== ''){
+        paramsWithKey[k] = params[k];
+      }
+    }
+  }
+
+  // 计算 MD5 签名（如果可用）
+  if(typeof _md5Sign === 'function' && secCode){
+    try {
+      paramsWithKey.sig = _md5Sign(paramsWithKey, secCode);
+    } catch(e){
+      console.warn('签名计算失败:', e);
+    }
+  }
+
+  // 组装查询字符串
+  var parts = [];
+  for(var k in paramsWithKey){
+    if(paramsWithKey[k] !== undefined && paramsWithKey[k] !== null && paramsWithKey[k] !== ''){
+      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(paramsWithKey[k]));
     }
   }
   var qs = parts.length ? '?' + parts.join('&') : '';
   var url = base + '/' + alias + qs;
-
-  // 后端代理会自动注入 Web服务 Key，前端不需要处理
 
   // 10 秒超时 + 标准 fetch
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
@@ -980,14 +1145,19 @@ function amapFetch(alias, params){
     })
     .then(function(j){
       if(!j) throw new Error('响应为空');
-      if(String(j.status) !== '1'){
-        var info = j.info || j.msg || ('status=' + j.status);
+      var status = String(j.status || j.infocode || '0');
+      // infocode 为 10000 表示成功
+      if(status !== '1' && status !== '10000'){
+        var info = j.info || j.msg || ('错误码: ' + status);
         // 高德常见错误码提示
-        if(info.indexOf('INVALID_USER_SCODE') !== -1 || info.indexOf('INVALID_USER_KEY') !== -1){
-          throw new Error('高德 Key 校验失败，请检查 Key 与安全密钥配置');
+        if(info.indexOf('INVALID_USER_SCODE') !== -1 || info.indexOf('INVALID_USER_KEY') !== -1 || info.indexOf('KEY不存在') !== -1){
+          throw new Error('高德 Key 校验失败，请检查 Key 配置');
         }
-        if(info.indexOf('QUOTA_PLAN_RUN_OUT') !== -1 || info.indexOf('DAILY_QUERY_OVER_LIMIT') !== -1){
-          throw new Error('今日查询次数已达上限，请稍后再试');
+        if(info.indexOf('QUOTA_PLAN_RUN_OUT') !== -1 || info.indexOf('DAILY_QUERY_OVER_LIMIT') !== -1 || info.indexOf('日配额超限') !== -1){
+          throw new Error('今日查询次数已达上限，请明天再试');
+        }
+        if(info.indexOf('USERKEY_PLAT_NOMATCH') !== -1){
+          throw new Error('Key 类型不匹配，请确认使用 Web 服务 Key');
         }
         throw new Error(info);
       }
@@ -1562,7 +1732,15 @@ function renderPOIPanel(pois, kw){
   var html = '<div class="panel-title">「' + escapeHtml(kw||'搜索') + '」共 ' + count + ' 个结果</div>';
 
   if(!pois || count === 0){
-    box.innerHTML = html + '<div class="empty-state"><div class="empty-icon">🏚️</div><div class="empty-text">附近没有搜索结果</div><div class="empty-hint">可尝试调整半径或更改关键字</div></div>';
+    box.innerHTML = html + '<div class="empty-state">'
+      + '<div class="empty-icon">🏚️</div>'
+      + '<div class="empty-text">附近没有搜索到停车场或充电站</div>'
+      + '<div class="empty-hint">可尝试：<br>1. 扩大搜索半径<br>2. 检查定位是否准确<br>3. 稍后重新搜索</div>'
+      + '<div class="empty-action">'
+      + '<button class="empty-action-btn" onclick="if(searchMode===\'nearby\'){searchRadiusNearby=Math.min(searchRadiusNearby+3000,25000);searchNearby(currentKeyword||\'附近\');}">扩大搜索范围</button>'
+      + '<button class="empty-action-btn" onclick="showPOIByIdx(-1);">重试</button>'
+      + '</div>'
+      + '</div>';
     return;
   }
 
