@@ -7,23 +7,54 @@
 <meta name="theme-color" content="#1677ff">
 <title>广东新能源导航 - 停车场/充电站搜索路线</title>
 <style>
+/* 全局重置：rem响应式单位 */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; width: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; user-select: none; -webkit-user-select: none; touch-action: manipulation; overscroll-behavior: none; }
+/* 根字体16px，使用rem响应式布局 */
+html { font-size: 16px; }
+html, body { 
+  height: 100%; 
+  width: 100%; 
+  overflow: hidden; 
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif; 
+  -webkit-font-smoothing: antialiased; 
+  -moz-osx-font-smoothing: grayscale; 
+  text-rendering: optimizeLegibility; 
+  user-select: none; 
+  -webkit-user-select: none; 
+  touch-action: manipulation; 
+  overscroll-behavior: none; 
+}
+/* CSS变量：统一间距规范（使用rem） */
 :root {
-  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px; --radius-pill: 999px;
+  /* 圆角 */
+  --radius-xs: 0.25rem; --radius-sm: 0.5rem; --radius-md: 0.75rem; --radius-lg: 1rem; --radius-xl: 1.25rem; --radius-pill: 999px;
+  /* 主色调 */
   --primary: #1677ff; --primary-dark: #0958d9; --primary-light: #e6f4ff;
   --success: #52c41a; --success-bg: rgba(82,196,26,0.12);
   --warning: #faad14; --warning-bg: rgba(250,173,20,0.12);
   --danger: #ff4d4f; --danger-bg: rgba(255,77,79,0.12);
   --orange: #fa8c16; --orange-bg: rgba(250,140,22,0.12);
+  /* 文字颜色 */
   --text-1: #1f1f1f; --text-2: #595959; --text-3: #8c8c8c; --text-4: #bfbfbf;
+  /* 背景 */
   --bg: #fff; --bg-soft: #f5f7fa; --border: #e8e8e8;
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08); --shadow-md: 0 4px 16px rgba(0,0,0,0.12); --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
-  --safe-top: max(env(safe-area-inset-top), 20px);
-  --safe-bottom: max(env(safe-area-inset-bottom), 8px);
-  --nav-h: 58px;
+  /* 阴影 */
+  --shadow-sm: 0 0.125rem 0.5rem rgba(0,0,0,0.08); --shadow-md: 0 0.25rem 1rem rgba(0,0,0,0.12); --shadow-lg: 0 0.5rem 2rem rgba(0,0,0,0.15);
+  /* 安全区域 */
+  --safe-top: max(env(safe-area-inset-top), 1.25rem);
+  --safe-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  /* 导航栏高度 */
+  --nav-h: 3.625rem;
+  /* 动画时长 */
   --anim-fast: 0.15s; --anim-normal: 0.25s; --anim-slow: 0.35s;
+  /* 统一间距（rem） */
+  --spacing-xs: 0.25rem; --spacing-sm: 0.5rem; --spacing-md: 0.75rem; --spacing-lg: 1rem; --spacing-xl: 1.25rem;
+  /* 统一内边距 */
+  --card-padding: 1rem; --card-gap: 1rem;
+  /* 最小点击区域 */
+  --touch-min: 2.75rem;
 }
+/* 深色模式 */
 body.dark {
   --text-1: #e8e8e8; --text-2: #c0c0c0; --text-3: #999; --text-4: #666;
   --bg: #1a1a1a; --bg-soft: #252525; --border: #3a3a3a;
@@ -34,10 +65,23 @@ body.dark {
 body { background: var(--bg); color: var(--text-1); }
 input, textarea { -webkit-user-select: text; user-select: text; font-family: inherit; }
 button { border: none; background: none; cursor: pointer; font-family: inherit; outline: none; }
-::-webkit-scrollbar { width: 4px; height: 4px; }
+/* 滚动条样式 */
+::-webkit-scrollbar { width: 0.25rem; height: 0.25rem; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 0.125rem; }
 body.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+
+/* 响应式字体：小屏自动缩小 */
+@media screen and (max-width: 375px) {
+  html { font-size: 14px; }
+}
+@media screen and (max-width: 320px) {
+  html { font-size: 12px; }
+}
+/* 大屏字体稍微放大 */
+@media screen and (min-width: 768px) {
+  html { font-size: 18px; }
+}
 
 /* ====== 地图容器：移除 vh 单位，使用 min-height + 百分比，修复移动端兼容性 ====== */
 html, body {
@@ -144,11 +188,11 @@ html, body {
 .search-input { flex: 1; min-width: 0; border: none; outline: none; font-size: 15px; color: var(--text-1); background: transparent; height: 48px; line-height: 48px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; padding: 0 8px; }
 .search-input::placeholder { color: var(--text-4); transition: color var(--anim-fast); }
 .search-input:focus::placeholder { color: var(--text-3); }
-.search-clear { font-size: 18px; color: var(--text-3); padding: 6px 8px; margin-right: 2px; flex-shrink: 0; border-radius: 50%; transition: all var(--anim-fast); display: none; align-items: center; justify-content: center; }
+.search-clear { font-size: 18px; color: var(--text-3); padding: 6px 8px; margin-right: 2px; flex-shrink: 0; border-radius: 50%; transition: all var(--anim-fast); display: none; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; box-sizing: border-box; }
 .search-clear.visible { display: flex; animation: popIn 0.2s ease; }
 @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
 .search-clear:active { background: var(--danger-bg); color: var(--danger); transform: scale(0.9); }
-.search-btn { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; padding: 8px 16px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 600; margin-left: 6px; flex-shrink: 0; white-space: nowrap; transition: all var(--anim-normal); position: relative; overflow: hidden; }
+.search-btn { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; padding: 8px 16px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 600; margin-left: 6px; flex-shrink: 0; white-space: nowrap; transition: all var(--anim-normal); position: relative; overflow: hidden; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; }
 .search-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition: left 0.5s ease; }
 .search-btn:hover::before { left: 100%; }
 .search-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(22,119,255,0.4); }
@@ -261,18 +305,29 @@ body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
 }
 
 /* ====== 筛选条件顶部回显标签 ====== */
-.filter-tags-bar { position: absolute; top: calc(var(--safe-top) + 115px); left: 12px; right: 56px; z-index: 148; display: none; flex-wrap: wrap; gap: 6px; padding: 0; max-height: 44px; overflow: hidden; }
+.filter-tags-bar { position: absolute; top: calc(var(--safe-top) + 115px); left: 12px; right: 56px; z-index: 148; display: none; gap: 6px; padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; scrollbar-width: none; }
+.filter-tags-bar::-webkit-scrollbar { display: none; }
 .filter-tags-bar.show { display: flex; }
-.filter-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 500; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); max-width: 120px; }
+.filter-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 500; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); max-width: 120px; flex-shrink: 0; }
 .filter-tag span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
 .filter-tag .tag-close { font-size: 14px; cursor: pointer; opacity: 0.7; flex-shrink: 0; }
 .filter-tag .tag-close:hover { opacity: 1; }
 
-/* 筛选标签回显区域 */
-.active-filters-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0; align-items: center; }
-.active-filters-row .filter-tag { cursor: pointer; transition: all var(--anim-fast); }
+/* 筛选标签回显区域：横向滚动，小屏可左右滑动 */
+.active-filters-row { 
+  display: flex; 
+  gap: 6px; 
+  padding: 8px 0; 
+  align-items: center; 
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch; 
+  white-space: nowrap; 
+  scrollbar-width: none;
+}
+.active-filters-row::-webkit-scrollbar { display: none; }
+.active-filters-row .filter-tag { cursor: pointer; transition: all var(--anim-fast); flex-shrink: 0; }
 .active-filters-row .filter-tag:active { transform: scale(0.95); opacity: 0.8; }
-.clear-all-filters-btn { padding: 4px 12px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 500; background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); cursor: pointer; transition: all var(--anim-fast); }
+.clear-all-filters-btn { padding: 4px 12px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 500; background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); cursor: pointer; transition: all var(--anim-fast); flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; }
 .clear-all-filters-btn:active { transform: scale(0.95); background: var(--danger); color: #fff; }
 
 /* 快速筛选按钮 */
@@ -317,11 +372,29 @@ body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
   color: #fff; 
 }
 
-/* 快捷筛选行：增大间距 */
-.quick-filter-row { display: flex; gap: 10px; padding: 10px 0; flex-wrap: wrap; }
+/* 快捷筛选行：横向滚动，小屏可左右滑动，禁止换行溢出 */
+.quick-filter-row { 
+  display: flex; 
+  gap: 0.625rem; 
+  padding: 0.625rem 0; 
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch; 
+  white-space: nowrap; 
+  scrollbar-width: none; /* Firefox隐藏滚动条 */
+}
+.quick-filter-row::-webkit-scrollbar { display: none; /* Chrome/Safari隐藏滚动条 */ }
 
-/* 高级筛选行 */
-.advanced-filter-row { display: flex; gap: 6px; padding: 0 0 8px 0; flex-wrap: wrap; }
+/* 高级筛选行：同样支持横向滚动 */
+.advanced-filter-row { 
+  display: flex; 
+  gap: 0.375rem; 
+  padding: 0 0 0.5rem 0; 
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch; 
+  white-space: nowrap; 
+  scrollbar-width: none;
+}
+.advanced-filter-row::-webkit-scrollbar { display: none; }
 
 /* 加载更多指示器 */
 .load-more-indicator {
@@ -638,10 +711,22 @@ body.dark .poi-tag.tag-blue { background: rgba(22,119,255,0.2); color: #69b1ff; 
 .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.98); z-index: 100; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); padding-bottom: var(--safe-bottom); border-top: 1px solid var(--border); backdrop-filter: blur(10px); animation: slideUpNav 0.5s ease 0.3s both; }
 @keyframes slideUpNav { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 body.dark .bottom-nav { background: rgba(30,30,30,0.98); border-color: var(--border); }
-.nav-items { display: flex; justify-content: space-around; padding: 8px 0 4px 0; }
-.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 4px; cursor: pointer; min-width: 0; position: relative; transition: all var(--anim-normal); }
+/* 等分flex布局：5个按钮自动平分宽度，禁止挤压 */
+.nav-items { display: flex; padding: 8px 0 4px 0; }
+.nav-item { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  padding: 6px 4px; 
+  cursor: pointer; 
+  min-width: 0; 
+  position: relative; 
+  transition: all var(--anim-normal); 
+}
 .nav-item .nav-icon { font-size: 24px; margin-bottom: 4px; line-height: 1; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--text-3); transition: all var(--anim-normal); border-radius: 8px; }
-.nav-item .nav-label { font-size: 11px; color: var(--text-3); transition: all var(--anim-normal); white-space: nowrap; text-align: center; line-height: 1.2; font-weight: 500; }
+.nav-item .nav-label { font-size: 11px; color: var(--text-3); transition: all var(--anim-normal); white-space: nowrap; text-align: center; line-height: 1.2; font-weight: 500; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .nav-item:active .nav-icon { transform: scale(0.9); }
 .nav-item.active .nav-icon { 
   color: var(--primary); 
@@ -1137,7 +1222,9 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
 /* 安卓触控优化：确保最小点击区域 44x44px */
 .circle-btn, .poi-card, .poi-nav-btn, .quick-filter-btn, .radius-btn,
 .filter-select, .panel-mode-btn, .empty-action-btn, .nav-item,
-.bottom-nav .nav-item { min-height: 44px; min-width: 44px; touch-action: manipulation; }
+.bottom-nav .nav-item, .route-action-btn, .detail-action-btn,
+.suggestion-clear, .detail-call-btn, .detail-copy-btn,
+.report-cancel-btn, .report-submit-btn { min-height: 44px; min-width: 44px; touch-action: manipulation; }
 
 /* 安卓 300ms 点击延迟修复 */
 html { touch-action: manipulation; }
@@ -1929,24 +2016,71 @@ function afterAmapLoad(){
   try { new AMap.Scale({ position: 'LB' }); } catch(e){}
   try { new AMap.Compass({ position: 'RT' }); } catch(e){}
 
-  // 定位：WGS84 → GCJ02 → 地图中心 → 请求数据
+  // 定位：三级降级策略
+  // 1. 优先使用高德 AMap.Geolocation（需Key白名单）
+  // 2. 失败后自动降级使用浏览器原生 navigator.geolocation + WGS84→GCJ02 转换
+  // 3. 都失败后使用默认位置
+  function fallbackLocate(){
+    // 备选方案：浏览器原生 geolocation
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        function(pos){
+          var rawLng = pos.coords.longitude;
+          var rawLat = pos.coords.latitude;
+          // WGS84 → GCJ02 坐标转换
+          var gcj = (typeof wgs84ToGcj02 === 'function')
+            ? wgs84ToGcj02(rawLng, rawLat)
+            : [rawLng, rawLat];
+          myPos = [Number(gcj[0].toFixed(6)), Number(gcj[1].toFixed(6))];
+          myAddress = '';
+          placeUserMarker(myPos);
+          map.setCenter(myPos);
+          searchParkingAndCharging(myPos);
+          toast('📍 已定位（浏览器原生定位）');
+        },
+        function(err){
+          // 最终备选：默认位置
+          myPos = [113.2644, 23.1291];
+          myAddress = '';
+          placeUserMarker(myPos);
+          map.setCenter(myPos);
+          searchParkingAndCharging(myPos);
+          toast('⚠️ 定位失败，使用默认位置（广州市中心）\n请确保浏览器已授权定位权限');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    } else {
+      // 浏览器不支持 geolocation
+      myPos = [113.2644, 23.1291];
+      myAddress = '';
+      placeUserMarker(myPos);
+      map.setCenter(myPos);
+      searchParkingAndCharging(myPos);
+      toast('⚠️ 当前浏览器不支持定位，使用默认位置');
+    }
+  }
+
   try {
     var geo = new AMap.Geolocation({
       enableHighAccuracy: true,
-      timeout: 12000,
+      timeout: 15000,
       buttonPosition: 'RB',
       showButton: true,
       panToLocation: true,
       zoomToAccuracy: true,
-      convert: true  // 重要：AMap 内置坐标转换
+      convert: true
     });
     map.addControl(geo);
 
+    // 记录定位是否成功
+    var locateSuccess = false;
+
     geo.getCurrentPosition(function(status, result){
       if(status === 'complete' && result.position){
+        locateSuccess = true;
         var rawLng = result.position.lng;
         var rawLat = result.position.lat;
-        // 双重保险：即使 AMap.convert=true，也再做一次 WGS84→GCJ02 转换
+        // 双重保险：WGS84→GCJ02 转换
         var gcj = (typeof wgs84ToGcj02 === 'function')
           ? wgs84ToGcj02(rawLng, rawLat)
           : [rawLng, rawLat];
@@ -1956,28 +2090,29 @@ function afterAmapLoad(){
         map.setCenter(myPos);
         searchParkingAndCharging(myPos);
       } else {
-        myPos = [113.2644, 23.1291];
-        toast('定位未授权或超时，已使用默认位置（广州市中心）');
-        placeUserMarker(myPos);
-        map.setCenter(myPos);
-        searchParkingAndCharging(myPos);
+        // 高德定位失败，尝试浏览器原生定位
+        if(!locateSuccess){
+          fallbackLocate();
+        }
       }
     });
 
     // 监听定位超时
     geo.on('error', function(e){
-      myPos = [113.2644, 23.1291];
-      toast('定位失败，已使用默认位置');
-      placeUserMarker(myPos);
-      map.setCenter(myPos);
-      searchParkingAndCharging(myPos);
+      if(!locateSuccess){
+        fallbackLocate();
+      }
     });
+
+    // 兜底：16秒后如果还没定位成功，强制使用浏览器原生定位
+    setTimeout(function(){
+      if(!myPos){
+        fallbackLocate();
+      }
+    }, 16000);
   } catch(e){
-    myPos = [113.2644, 23.1291];
-    toast('定位初始化失败，使用默认位置');
-    placeUserMarker(myPos);
-    map.setCenter(myPos);
-    searchParkingAndCharging(myPos);
+    // 高德定位初始化失败，直接用浏览器原生定位
+    fallbackLocate();
   }
 
   map.on('rightclick', onMapLongPress);
@@ -4179,25 +4314,29 @@ function setupVisibilityHandler(){
   if(typeof document.addEventListener === 'undefined') return;
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'visible'){
-      // 页面重新可见，刷新定位
+      // 页面重新可见，刷新定位（使用浏览器原生定位，避免Key白名单问题）
       if(map && mapReady && searchMode === 'nearby'){
-        // 延迟执行，避免频繁刷新
         clearTimeout(window._visibilityTimer);
         window._visibilityTimer = setTimeout(function(){
-          if(window.AMap && AMap.Geolocation){
-            var geo = new AMap.Geolocation({ enableHighAccuracy: true, convert: true });
-            geo.getCurrentPosition(function(status, result){
-              if(status === 'complete' && result.position){
-                var pos = [result.position.lng, result.position.lat];
-                // 如果位置变化超过50米，刷新数据
-                if(!myPos || getDistance(myPos, pos) > 50){
-                  myPos = pos;
-                  placeUserMarker(pos);
-                  searchParkingAndCharging(pos);
-                  toast('已刷新位置', 1500);
+          if(navigator.geolocation){
+            navigator.geolocation.getCurrentPosition(
+              function(pos){
+                var rawLng = pos.coords.longitude;
+                var rawLat = pos.coords.latitude;
+                var gcj = (typeof wgs84ToGcj02 === 'function')
+                  ? wgs84ToGcj02(rawLng, rawLat)
+                  : [rawLng, rawLat];
+                var newPos = [Number(gcj[0].toFixed(6)), Number(gcj[1].toFixed(6))];
+                if(!myPos || getDistance(myPos, newPos) > 50){
+                  myPos = newPos;
+                  placeUserMarker(newPos);
+                  searchParkingAndCharging(newPos);
+                  toast('📍 已刷新位置', 1500);
                 }
-              }
-            });
+              },
+              function(){ /* 忽略错误 */ },
+              { enableHighAccuracy: true, timeout: 8000 }
+            );
           }
         }, 1000);
       }
