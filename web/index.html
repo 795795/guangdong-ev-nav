@@ -182,17 +182,83 @@ body.dark .mode-switch { background: rgba(42,42,42,0.97); }
 .suggestion-empty { padding: 40px 20px; text-align: center; color: var(--text-4); font-size: 13px; }
 
 /* ====== 右上角工具按钮 ====== */
-.top-right-btns { position: absolute; right: 12px; top: calc(var(--safe-top) + 120px); z-index: 150; display: flex; flex-direction: column; gap: 10px; animation: slideInRight 0.6s ease 0.2s both; }
+.top-right-btns { 
+  position: absolute; 
+  right: 12px; 
+  top: calc(var(--safe-top) + 120px); 
+  z-index: 150; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
+  padding: 10px 6px;
+  background: rgba(255,255,255,0.95);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  animation: slideInRight 0.6s ease 0.2s both;
+  backdrop-filter: blur(10px);
+}
+body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
 @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-.circle-btn { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.97); box-shadow: var(--shadow-md); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-2); transition: all var(--anim-normal); flex-shrink: 0; border: none; position: relative; overflow: hidden; }
-body.dark .circle-btn { background: rgba(42,42,42,0.97); }
-.circle-btn::after { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: var(--primary-light); border-radius: 50%; transform: translate(-50%, -50%); transition: width 0.3s ease, height 0.3s ease; }
-.circle-btn:active::after { width: 60px; height: 60px; }
-.circle-btn:active { transform: scale(0.88); }
-.circle-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 10px rgba(22,119,255,0.35); animation: pulseActive 2s ease infinite; }
-@keyframes pulseActive { 0%, 100% { box-shadow: 0 2px 10px rgba(22,119,255,0.35); } 50% { box-shadow: 0 2px 15px rgba(22,119,255,0.5); } }
-.circle-btn.loading { pointer-events: none; }
-.circle-btn.loading::before { content: ''; width: 20px; height: 20px; border: 2px solid rgba(22,119,255,0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; position: absolute; }
+
+.circle-btn { 
+  width: 48px; 
+  height: 48px; 
+  border-radius: 50%; 
+  background: transparent; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 22px; 
+  color: var(--text-2); 
+  transition: all var(--anim-fast); 
+  flex-shrink: 0; 
+  border: none; 
+  position: relative; 
+  overflow: hidden;
+}
+.circle-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+  background: rgba(22,119,255,0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.25s ease, height 0.25s ease;
+}
+.circle-btn:active::before { width: 60px; height: 60px; }
+.circle-btn:active { transform: scale(0.92); }
+.circle-btn.active { 
+  background: var(--primary); 
+  color: #fff; 
+  box-shadow: 0 4px 12px rgba(22,119,255,0.4);
+  animation: pulseActive 2s ease infinite;
+}
+@keyframes pulseActive { 
+  0%, 100% { box-shadow: 0 4px 12px rgba(22,119,255,0.4); transform: scale(1); } 
+  50% { box-shadow: 0 6px 20px rgba(22,119,255,0.6); transform: scale(1.02); } 
+}
+.circle-btn.loading { pointer-events: none; opacity: 0.6; }
+.circle-btn.loading::after { 
+  content: ''; 
+  width: 20px; height: 20px; 
+  border: 2px solid rgba(22,119,255,0.3); 
+  border-top-color: var(--primary); 
+  border-radius: 50%; 
+  animation: spin 0.6s linear infinite; 
+  position: absolute; 
+}
+
+@media (hover: hover) {
+  .circle-btn:hover { 
+    background: var(--bg-soft); 
+    transform: scale(1.05); 
+  }
+  .circle-btn.active:hover { 
+    background: var(--primary); 
+    transform: scale(1.05); 
+  }
+}
 
 /* ====== 筛选条件顶部回显标签 ====== */
 .filter-tags-bar { position: absolute; top: calc(var(--safe-top) + 115px); left: 12px; right: 56px; z-index: 148; display: none; flex-wrap: wrap; gap: 6px; padding: 0; max-height: 44px; overflow: hidden; }
@@ -231,29 +297,96 @@ body.dark .circle-btn { background: rgba(42,42,42,0.97); }
 
 /* ====== POI 列表 ====== */
 .poi-list { margin-top: 4px; }
-.poi-card { background: var(--bg-soft); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all var(--anim-normal); position: relative; animation: fadeInUp 0.4s ease both; }
+.poi-card { 
+  background: var(--bg); 
+  border: 1.5px solid var(--border); 
+  border-radius: 14px; 
+  padding: 16px; 
+  margin-bottom: 12px; 
+  cursor: pointer; 
+  transition: all var(--anim-normal); 
+  position: relative; 
+  animation: fadeInUp 0.4s ease both;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
 .poi-card:nth-child(1) { animation-delay: 0.05s; }
 .poi-card:nth-child(2) { animation-delay: 0.1s; }
 .poi-card:nth-child(3) { animation-delay: 0.15s; }
 .poi-card:nth-child(4) { animation-delay: 0.2s; }
 .poi-card:nth-child(5) { animation-delay: 0.25s; }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-.poi-card:active { transform: translateY(2px) scale(0.98); box-shadow: var(--shadow-sm); }
-.poi-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(22,119,255,0.12); }
-.poi-card.selected { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 3px rgba(22,119,255,0.2); transform: scale(1.01); }
-.poi-card.selected::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--primary); border-radius: 4px 0 0 4px; }
+.poi-card:active { transform: translateY(2px) scale(0.985); box-shadow: var(--shadow-sm); }
+.poi-card:hover { 
+  border-color: var(--primary); 
+  box-shadow: 0 6px 20px rgba(22,119,255,0.15);
+  transform: translateY(-1px);
+}
+.poi-card.selected { 
+  border-color: var(--primary); 
+  background: var(--primary-light); 
+  box-shadow: 0 0 0 3px rgba(22,119,255,0.2), 0 6px 20px rgba(22,119,255,0.15); 
+  transform: scale(1.01); 
+}
+.poi-card.selected::before { 
+  content: ''; 
+  position: absolute; 
+  left: 0; 
+  top: 50%; 
+  transform: translateY(-50%);
+  width: 4px; 
+  height: 40%;
+  background: var(--primary); 
+  border-radius: 0 4px 4px 0; 
+}
 .poi-card.hl { animation: cardFlash 1.8s ease; }
-@keyframes cardFlash { 0%,100%{background:var(--bg-soft)} 30%{background:var(--primary-light)} 60%{background:var(--bg-soft)} }
+@keyframes cardFlash { 0%,100%{background:var(--bg)} 30%{background:var(--primary-light)} 60%{background:var(--bg)} }
+
 .poi-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; width: 100%; }
 .poi-name-wrap { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 10px; }
-.fav-icon { font-size: 18px; color: var(--text-4); cursor: pointer; transition: all var(--anim-fast); flex-shrink: 0; margin-top: 2px; }
+.fav-icon { 
+  font-size: 18px; 
+  color: var(--text-4); 
+  cursor: pointer; 
+  transition: all var(--anim-fast); 
+  flex-shrink: 0; 
+  margin-top: 2px;
+  padding: 4px;
+}
 .fav-icon:active { transform: scale(1.4); }
 .fav-icon.favorited { color: var(--warning); animation: starPop 0.3s ease; }
 @keyframes starPop { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
-.poi-name { font-size: 15px; font-weight: 600; color: var(--text-1); flex: 1; min-width: 0; word-break: break-word; line-height: 1.45; }
-.poi-dist { font-size: 15px; color: var(--primary); font-weight: 700; flex-shrink: 0; white-space: nowrap; text-align: right; line-height: 1.5; padding-left: 8px; }
-.poi-addr { font-size: 12px; color: var(--text-3); margin-top: 8px; line-height: 1.6; word-break: break-all; display: flex; align-items: flex-start; gap: 6px; }
-.poi-addr::before { content: '📍'; font-size: 11px; opacity: 0.6; flex-shrink: 0; }
+.poi-name { 
+  font-size: 15px; 
+  font-weight: 600; 
+  color: var(--text-1); 
+  flex: 1; 
+  min-width: 0; 
+  word-break: break-word; 
+  line-height: 1.45;
+  margin-top: 2px;
+}
+.poi-dist { 
+  font-size: 15px; 
+  color: var(--primary); 
+  font-weight: 700; 
+  flex-shrink: 0; 
+  white-space: nowrap; 
+  text-align: right; 
+  line-height: 1.5; 
+  padding-left: 8px;
+}
+.poi-addr { 
+  font-size: 12px; 
+  color: var(--text-3); 
+  margin-top: 10px; 
+  line-height: 1.6; 
+  word-break: break-all; 
+  display: flex; 
+  align-items: flex-start; 
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
 
 /* ====== POI 标签 ====== */
 .poi-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; width: 100%; }
@@ -269,14 +402,62 @@ body.dark .poi-tag.tag-orange { background: rgba(250,140,22,0.2); color: #ffb366
 body.dark .poi-tag.tag-blue { background: rgba(22,119,255,0.2); color: #69b1ff; }
 
 /* ====== POI 操作按钮 ====== */
-.poi-action { margin-top: 14px; width: 100%; display: flex; gap: 8px; }
-.poi-nav-btn { flex: 1; min-height: 44px; padding: 10px 14px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 600; cursor: pointer; transition: all var(--anim-normal); display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; position: relative; overflow: hidden; }
-.poi-nav-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent); transition: left 0.4s ease; }
+.poi-action { margin-top: 12px; width: 100%; display: flex; gap: 10px; }
+.poi-nav-btn { 
+  flex: 1.5; 
+  min-height: 46px; 
+  padding: 12px 16px; 
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
+  color: #fff; 
+  border: none; 
+  border-radius: 12px; 
+  font-size: 14px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: all var(--anim-normal); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 8px; 
+  white-space: nowrap; 
+  position: relative; 
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(22,119,255,0.3);
+}
+.poi-nav-btn::before { 
+  content: ''; 
+  position: absolute; 
+  top: 0; 
+  left: -100%; 
+  width: 100%; 
+  height: 100%; 
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); 
+  transition: left 0.4s ease; 
+}
 .poi-nav-btn:hover::before { left: 100%; }
-.poi-nav-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(22,119,255,0.35); }
-.poi-nav-btn.secondary { background: var(--bg); color: var(--text-2); border: 1.5px solid var(--border); }
-.poi-nav-btn.secondary:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
-.poi-nav-btn.secondary:active { background: var(--primary); color: #fff; }
+.poi-nav-btn:active { 
+  transform: scale(0.96); 
+  box-shadow: 0 2px 8px rgba(22,119,255,0.4); 
+}
+.poi-nav-btn.secondary { 
+  flex: 1;
+  min-height: 46px;
+  padding: 12px 16px;
+  background: var(--bg-soft); 
+  color: var(--text-2); 
+  border: 1.5px solid var(--border); 
+  box-shadow: none;
+}
+.poi-nav-btn.secondary:hover { 
+  border-color: var(--primary); 
+  color: var(--primary); 
+  background: var(--primary-light); 
+}
+.poi-nav-btn.secondary:active { 
+  background: var(--primary); 
+  color: #fff; 
+  border-color: var(--primary);
+}
 
 /* ====== 空状态 ====== */
 .empty-state { padding: 60px 24px 50px 24px; text-align: center; animation: fadeInEmpty 0.5s ease; }
@@ -1084,14 +1265,15 @@ function speak(text){
 }
 
 /* =========================================================================
- * 高德 REST API 请求（直连高德，带 MD5 签名）
+ * 高德 REST API 请求（直连高德，带 MD5 签名，支持重试）
  * 使用 Web 服务 Key，自动计算 sig 签名
  * ======================================================================== */
-function amapFetch(alias, params){
+function amapFetch(alias, params, retryCount){
   var env = window._env || {};
   var base = env.apiBase || 'https://restapi.amap.com/v3';
   var restKey = env.amapRestKey || '';
   var secCode = env.amapSecCode || '';
+  var maxRetries = retryCount !== undefined ? retryCount : 2;  // 默认重试2次
 
   // 断网快速失败
   if(navigator.onLine === false){
@@ -1127,11 +1309,17 @@ function amapFetch(alias, params){
   var qs = parts.length ? '?' + parts.join('&') : '';
   var url = base + '/' + alias + qs;
 
-  // 10 秒超时 + 标准 fetch
+  return doFetch(url, maxRetries);
+}
+
+// 带重试的 fetch 实现
+function doFetch(url, retries){
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   var timeoutId = null;
+  var timeoutMs = 12000;  // 12秒超时
+
   if(ctrl){
-    timeoutId = setTimeout(function(){ ctrl.abort(); }, 10000);
+    timeoutId = setTimeout(function(){ ctrl.abort(); }, timeoutMs);
   }
 
   var fetchOpts = { method: 'GET', headers: { 'Accept': 'application/json' } };
@@ -1140,7 +1328,13 @@ function amapFetch(alias, params){
   return fetch(url, fetchOpts)
     .then(function(r){
       if(timeoutId) clearTimeout(timeoutId);
-      if(!r.ok) throw new Error('HTTP ' + r.status + ' ' + (r.statusText || ''));
+      if(!r.ok){
+        // 5xx 服务器错误可以重试
+        if(r.status >= 500 && retries > 0){
+          return delay(1500).then(function(){ return doFetch(url, retries - 1); });
+        }
+        throw new Error('HTTP ' + r.status + ' ' + (r.statusText || ''));
+      }
       return r.json();
     })
     .then(function(j){
@@ -1159,6 +1353,10 @@ function amapFetch(alias, params){
         if(info.indexOf('USERKEY_PLAT_NOMATCH') !== -1){
           throw new Error('Key 类型不匹配，请确认使用 Web 服务 Key');
         }
+        // 服务器内部错误可以重试
+        if((info.indexOf('服务内部错误') !== -1 || status === '2') && retries > 0){
+          return delay(1000).then(function(){ return doFetch(url, retries - 1); });
+        }
         throw new Error(info);
       }
       return j;
@@ -1166,10 +1364,19 @@ function amapFetch(alias, params){
     .catch(function(err){
       if(timeoutId) clearTimeout(timeoutId);
       if(err && err.name === 'AbortError'){
+        // 超时可以重试
+        if(retries > 0){
+          return delay(1000).then(function(){ return doFetch(url, retries - 1); });
+        }
         throw new Error('请求超时，请检查网络后重试');
       }
       throw err;
     });
+}
+
+// 延迟辅助函数
+function delay(ms){
+  return new Promise(function(resolve){ setTimeout(resolve, ms); });
 }
 
 /* =========================================================================
@@ -1415,12 +1622,24 @@ function searchParkingAndCharging(centerPos){
       }
 
       var combined = rawParking.concat(rawCharging);
+      // 获取具体的错误信息
+      var parkingErr = results[0].status === 'rejected' ? (results[0].reason && results[0].reason.message || '停车场数据加载失败') : null;
+      var chargingErr = results[1].status === 'rejected' ? (results[1].reason && results[1].reason.message || '充电站数据加载失败') : null;
+
       if(combined.length === 0){
         currentPOIs = [];
         renderPOIPanel([], currentKeyword);
         renderMapMarkers([]);
-        if(hasAnyFailure) toast('接口请求失败，可稍后重试');
-        else toast('附近未查询到停车场与充电站，可尝试扩大半径');
+        // 显示友好的错误提示
+        if(parkingErr && chargingErr){
+          toast('数据获取失败，请检查网络后重试');
+        } else if(parkingErr){
+          toast('停车场数据加载失败，可稍后重试');
+        } else if(chargingErr){
+          toast('充电站数据加载失败，可稍后重试');
+        } else {
+          toast('附近未查询到停车场与充电站', 3000);
+        }
         showPanel();
         return;
       }
@@ -1431,7 +1650,15 @@ function searchParkingAndCharging(centerPos){
       saveLS('offline_cache', offlineCache);
       renderPOIPanel(processed, currentKeyword);
       renderMapMarkers(processed);
-      if(hasAnyFailure) showMapError('部分数据获取失败，已显示可用结果');
+
+      // 部分数据失败时显示友好提示
+      if(parkingErr && chargingErr){
+        // 两个都失败但还有数据？不可能，因为上面已经判断 combined.length === 0
+      } else if(parkingErr){
+        toast('停车场数据加载失败，仅显示充电站结果', 3000);
+      } else if(chargingErr){
+        toast('充电站数据加载失败，仅显示停车场结果', 3000);
+      }
       showPanel();
     });
   } else {
@@ -1729,13 +1956,41 @@ function drawRadiusCircle(center, radius){
 function renderPOIPanel(pois, kw){
   var box = $('panelContent'); if(!box) return;
   var count = pois ? pois.length : 0;
-  var html = '<div class="panel-title">「' + escapeHtml(kw||'搜索') + '」共 ' + count + ' 个结果</div>';
+  
+  // 优化结果文案
+  var titleText = '';
+  if(kw === '停车场 & 充电站'){
+    titleText = '找到 ' + count + ' 个附近停车场/充电站';
+  } else if(kw === '停车场'){
+    titleText = '找到 ' + count + ' 个附近停车场';
+  } else if(kw === '充电站'){
+    titleText = '找到 ' + count + ' 个附近充电站';
+  } else {
+    titleText = '「' + escapeHtml(kw||'搜索') + '」找到 ' + count + ' 个结果';
+  }
+  var html = '<div class="panel-title">' + titleText + '</div>';
 
   if(!pois || count === 0){
+    var emptyText = '';
+    var emptyHint = '';
+    if(kw === '停车场 & 充电站'){
+      emptyText = '附近没有搜索到停车场或充电站';
+      emptyHint = '可尝试：<br>1. 扩大搜索半径<br>2. 检查定位是否准确<br>3. 稍后重新搜索';
+    } else if(kw === '停车场'){
+      emptyText = '附近没有搜索到停车场';
+      emptyHint = '可尝试：<br>1. 扩大搜索半径<br>2. 切换到充电站模式';
+    } else if(kw === '充电站'){
+      emptyText = '附近没有搜索到充电站';
+      emptyHint = '可尝试：<br>1. 扩大搜索半径<br>2. 切换到停车场模式';
+    } else {
+      emptyText = '没有找到 "' + escapeHtml(kw) + '" 相关结果';
+      emptyHint = '可尝试：<br>1. 更换搜索关键词<br>2. 检查网络连接';
+    }
+    
     box.innerHTML = html + '<div class="empty-state">'
       + '<div class="empty-icon">🏚️</div>'
-      + '<div class="empty-text">附近没有搜索到停车场或充电站</div>'
-      + '<div class="empty-hint">可尝试：<br>1. 扩大搜索半径<br>2. 检查定位是否准确<br>3. 稍后重新搜索</div>'
+      + '<div class="empty-text">' + emptyText + '</div>'
+      + '<div class="empty-hint">' + emptyHint + '</div>'
       + '<div class="empty-action">'
       + '<button class="empty-action-btn" onclick="if(searchMode===\'nearby\'){searchRadiusNearby=Math.min(searchRadiusNearby+3000,25000);searchNearby(currentKeyword||\'附近\');}">扩大搜索范围</button>'
       + '<button class="empty-action-btn" onclick="showPOIByIdx(-1);">重试</button>'
