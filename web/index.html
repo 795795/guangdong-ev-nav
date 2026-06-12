@@ -39,14 +39,14 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 body.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
 
-/* ====== 地图容器：修复移动端 vh 兼容性问题 ====== */
+/* ====== 地图容器：移除 vh 单位，使用 min-height + 百分比，修复移动端兼容性 ====== */
 html, body {
+  min-height: 100%;
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
-  /* iOS Safari 橡皮筋滚动禁用 */
   position: fixed;
   overscroll-behavior: none;
   touch-action: none;
@@ -57,6 +57,7 @@ html, body {
   right: 0;
   bottom: 0;
   width: 100%;
+  min-height: 100%;
   height: 100%;
   z-index: 1;
   background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
@@ -65,27 +66,26 @@ html, body {
 #map.map-loaded { opacity: 1; }
 #map.map-loading { opacity: 0.7; }
 
-/* 修复 iOS 键盘弹出时页面不挤压 */
+/* 移动端适配：使用混合方案解决 vh 兼容性问题 */
 @media screen and (max-width: 768px) {
   html, body {
-    /* 使用 min-height 防止键盘挤压 */
-    height: 100vh;
-    height: -webkit-fill-available;
-    height: fill-available;
+    height: 100%;
+    min-height: 100%;
+    -webkit-fill-available: 100%;
+    fill-available: 100%;
   }
   #map {
-    /* 绝对定位覆盖全屏，不受键盘影响 */
     bottom: auto;
-    height: 100vh;
-    height: -webkit-fill-available;
-    height: fill-available;
+    height: 100%;
+    min-height: 100%;
   }
 }
 
 /* 横屏适配 */
 @media screen and (orientation: landscape) and (max-height: 500px) {
   #map {
-    height: 100vh;
+    height: 100%;
+    min-height: 100%;
   }
 }
 
@@ -167,7 +167,7 @@ body.dark .mode-switch { background: rgba(42,42,42,0.97); }
 .mode-option:not(.active):active { background: var(--primary-light); transform: scale(0.98); }
 
 /* ====== 搜索联想列表 ====== */
-.suggestions { position: absolute; top: calc(var(--safe-top) + 60px); left: 12px; right: 12px; background: var(--bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); max-height: 55vh; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; z-index: 201; display: none; touch-action: pan-y; }
+.suggestions { position: absolute; top: calc(var(--safe-top) + 60px); left: 12px; right: 12px; background: var(--bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); max-height: 55%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; z-index: 201; display: none; touch-action: pan-y; }
 .suggestions.show { display: block; animation: slideDown var(--anim-normal) ease; }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .suggestion-header { padding: 10px 16px; font-size: 12px; color: var(--text-3); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); font-weight: 500; }
@@ -361,15 +361,17 @@ body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
 }
 
 /* ====== 主结果面板 ====== */
-.main-panel { position: absolute; bottom: var(--nav-h); left: 0; right: 0; background: var(--bg); z-index: 102; max-height: 65vh; display: none; overflow: hidden; flex-direction: column; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.10); transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), bottom 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease; }
+.main-panel { position: fixed; bottom: var(--nav-h); left: 0; right: 0; background: var(--bg); z-index: 102; height: 65%; display: none; overflow: hidden; flex-direction: column; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.10); transition: height 0.3s cubic-bezier(0.4,0,0.2,1), bottom 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease; }
 .main-panel.show { display: flex; animation: slideUpPanel var(--anim-slow) cubic-bezier(0.4,0,0.2,1); }
 .main-panel.dragging { box-shadow: 0 -8px 32px rgba(0,0,0,0.15); transition: none; }
 /* 悬浮态：保留底部地图可视区域 */
-.main-panel.mode-float { bottom: calc(var(--nav-h) + 55vh); max-height: 45vh; }
+.main-panel.mode-float { bottom: calc(var(--nav-h) + 55%); height: 45%; }
 /* 全屏态：几乎占满屏幕 */
-.main-panel.mode-fullscreen { bottom: 0; max-height: 92vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+.main-panel.mode-fullscreen { bottom: 0; height: calc(100% - 10px); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
 /* 折叠态：仅显示标题栏 */
-.main-panel.mode-collapsed { max-height: 60px; }
+.main-panel.mode-collapsed { height: 60px; }
+/* 标准态 */
+.main-panel.mode-normal { bottom: var(--nav-h); height: 65%; }
 @keyframes slideUpPanel { from { transform: translateY(100%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
 .drag-handle { height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; flex-shrink: 0; transition: background var(--anim-fast); gap: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }
 .drag-handle:active, .drag-handle.dragging { cursor: grabbing; background: var(--bg-soft); }
@@ -624,7 +626,7 @@ body.dark .bottom-nav { background: rgba(30,30,30,0.98); border-color: var(--bor
 .detail-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 500; display: none; align-items: flex-end; justify-content: center; transition: background var(--anim-normal); }
 .detail-overlay.show { display: flex; animation: fadeInOverlay var(--anim-normal); }
 @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-.detail-panel { width: 100%; max-height: 88vh; background: var(--bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0; overflow-y: auto; overflow-x: hidden; animation: slideUpDetail var(--anim-slow) cubic-bezier(0.4,0,0.2,1); }
+.detail-panel { width: 100%; max-height: 88%; background: var(--bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0; overflow-y: auto; overflow-x: hidden; animation: slideUpDetail var(--anim-slow) cubic-bezier(0.4,0,0.2,1); }
 @keyframes slideUpDetail { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .detail-drag { height: 32px; display: flex; align-items: center; justify-content: center; background: var(--bg-soft); }
 .detail-close { position: absolute; top: 14px; right: 18px; font-size: 22px; color: var(--text-3); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2; background: var(--bg-soft); transition: all var(--anim-fast); }
@@ -675,7 +677,7 @@ body.dark .bottom-nav { background: rgba(30,30,30,0.98); border-color: var(--bor
 .detail-copy-btn:active { transform: scale(0.95); background: var(--primary-light); }
 
 /* ====== 路线规划面板 ====== */
-.route-panel { position: absolute; bottom: var(--nav-h); left: 0; right: 0; background: var(--bg); z-index: 180; display: none; max-height: 72vh; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.12); }
+.route-panel { position: absolute; bottom: var(--nav-h); left: 0; right: 0; background: var(--bg); z-index: 180; display: none; max-height: 72%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.12); }
 .route-panel.show { display: block; animation: slideUp var(--anim-normal) ease; }
 .route-header { padding: 16px 16px 12px 16px; border-bottom: 1px solid var(--border); }
 .route-header-title { font-size: 16px; font-weight: 600; color: var(--text-1); margin-bottom: 10px; }
@@ -736,7 +738,7 @@ body.dark .bottom-nav { background: rgba(30,30,30,0.98); border-color: var(--bor
 
 /* EV 车型选择器 */
 .ev-picker-title { font-size: 16px; font-weight: 600; color: var(--text-1); padding: 16px 0; text-align: center; border-bottom: 1px solid var(--border); }
-.ev-picker-list { max-height: 60vh; overflow-y: auto; }
+.ev-picker-list { max-height: 60%; overflow-y: auto; }
 .ev-picker-item { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background var(--anim-fast); }
 .ev-picker-item:active { background: var(--bg-soft); }
 .ev-picker-item.selected { background: var(--primary-light); }
@@ -1040,8 +1042,8 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
   .filter-tags-bar { right: calc(50% - 320px); }
 }
 @media (orientation: landscape) and (max-height: 500px) {
-  #map { width: 100%; height: 100vh !important; }
-  .main-panel, .route-panel { max-height: 65vh; }
+  #map { width: 100%; height: 100% !important; }
+  .main-panel, .route-panel { max-height: 65%; }
 }
 @media (hover: hover) and (pointer: fine) {
   .poi-card:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: var(--primary); }
@@ -1078,9 +1080,9 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
 
 @media (max-width: 768px) {
   body.keyboard-open .bottom-nav { display: none; }
-  body.keyboard-open .main-panel { max-height: 55vh; bottom: 0; }
-  body.keyboard-open .route-panel { max-height: 55vh; bottom: 0; }
-  body.keyboard-open #map { height: 50vh !important; }
+  body.keyboard-open .main-panel { max-height: 55%; bottom: 0; }
+  body.keyboard-open .route-panel { max-height: 55%; bottom: 0; }
+  body.keyboard-open #map { height: 50% !important; }
   body.keyboard-open .search-bar { display: none; }
   body.keyboard-open .tool-bar { display: none; }
 }
@@ -1510,6 +1512,22 @@ var loadedChargingCount = 0;      // 已加载充电站数量
 var allRawParking = [];          // 所有停车场原始数据
 var allRawCharging = [];         // 所有充电站原始数据
 var scrollLoadBound = null;       // 滚动监听绑定函数
+
+/* =========================================================================
+ * 高德地图密钥配置（部署时需在 URL 参数或环境变量中配置）
+ * ======================================================================== */
+// JSAPI地图Key：用于加载高德地图JS SDK，支持地图显示、定位、搜索等功能
+// Key: faf78a1b9d57c1e1a88fd9f50c795032
+// 
+// Web服务接口Key：用于调用高德Web服务API（如周边搜索、路径规划等）
+// Key: 8429788d2971b1eb0b278b878180ce92
+// 
+// 安全密钥（jscode）：用于JSAPI安全校验，防止Key被滥用
+// Key: 6bd6ab656be75d5fc632bca3a68059c9
+// 
+// 配置方式：
+// 1. URL参数：?amapJsKey=xxx&amapWebKey=xxx&amapSecCode=xxx
+// 2. 环境变量：在部署环境中设置对应变量
 
 /* =========================================================================
  * 工具函数
@@ -2304,9 +2322,6 @@ function setPanelMode(mode){
   var mp = $('mainPanel');
   if(!mp) return;
 
-  // 移除所有形态类
-  mp.classList.remove('mode-float', 'mode-fullscreen', 'mode-collapsed');
-
   // 更新按钮状态
   var btns = document.querySelectorAll('.panel-mode-btn');
   for(var i = 0; i < btns.length; i++){
@@ -2316,15 +2331,30 @@ function setPanelMode(mode){
     }
   }
 
-  // 应用形态
+  // 应用形态 - 使用直接设置高度的方式
   currentPanelMode = mode;
+  var viewportHeight = window.innerHeight;
+  var navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
+  
   if(mode === 'float'){
-    mp.classList.add('mode-float');
+    mp.style.height = panelFloatHeight + '%';
+    mp.style.bottom = navHeight + 'px';
   } else if(mode === 'fullscreen'){
-    mp.classList.add('mode-fullscreen');
+    mp.style.height = (viewportHeight - 10) + 'px';
+    mp.style.bottom = '0px';
   } else if(mode === 'collapsed'){
-    mp.classList.add('mode-collapsed');
+    mp.style.height = panelMinHeight + 'px';
+    mp.style.bottom = navHeight + 'px';
+  } else {
+    mp.style.height = panelNormalHeight + '%';
+    mp.style.bottom = navHeight + 'px';
   }
+  
+  // 触发CSS过渡动画
+  mp.style.transition = 'height 0.3s cubic-bezier(0.4,0,0.2,1), bottom 0.3s cubic-bezier(0.4,0,0.2,1)';
+  
+  // 清除内联样式的模式类影响
+  mp.classList.remove('mode-float', 'mode-fullscreen', 'mode-collapsed', 'mode-normal');
   // normal 模式不添加额外类
 
   // 确保面板显示
@@ -2433,24 +2463,31 @@ function setPanelHeightPercent(percent){
   var panel = $('mainPanel');
   if(!panel) return;
 
-  // 移除模式类
-  panel.classList.remove('mode-float', 'mode-fullscreen', 'mode-collapsed');
-
-  // 应用新高度
-  if(percent <= panelMinHeight / window.innerHeight * 100 + 5){
-    panel.classList.add('mode-collapsed');
+  // 实时设置面板高度（拖拽时直接应用）
+  var viewportHeight = window.innerHeight;
+  var navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
+  var newHeight = (percent / 100) * viewportHeight;
+  
+  // 限制高度范围
+  newHeight = Math.max(panelMinHeight, Math.min(viewportHeight - 10, newHeight));
+  
+  // 直接设置高度（不使用模式类）
+  panel.style.height = newHeight + 'px';
+  panel.style.bottom = navHeight + 'px';
+  
+  // 移除所有模式类（拖拽时不应用预设模式）
+  panel.classList.remove('mode-float', 'mode-fullscreen', 'mode-collapsed', 'mode-normal');
+  
+  // 计算当前模式用于按钮状态
+  var newPercent = (newHeight / viewportHeight) * 100;
+  if(newPercent <= panelMinHeight / viewportHeight * 100 + 5){
     currentPanelMode = 'collapsed';
-  } else if(percent < panelFloatHeight + 10){
-    panel.classList.add('mode-float');
+  } else if(newPercent < panelFloatHeight + 10){
     currentPanelMode = 'float';
-  } else if(percent > panelFullHeight - 5){
-    panel.classList.add('mode-fullscreen');
+  } else if(newPercent >= panelFullHeight - 5){
     currentPanelMode = 'fullscreen';
-  } else if(percent < panelNormalHeight + 10){
-    currentPanelMode = 'normal';
   } else {
-    panel.classList.add('mode-fullscreen');
-    currentPanelMode = 'fullscreen';
+    currentPanelMode = 'normal';
   }
 
   // 更新模式按钮状态
