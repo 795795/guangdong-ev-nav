@@ -373,16 +373,56 @@ body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
 /* 标准态 */
 .main-panel.mode-normal { bottom: var(--nav-h); height: 65%; }
 @keyframes slideUpPanel { from { transform: translateY(100%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
-.drag-handle { height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; flex-shrink: 0; transition: background var(--anim-fast); gap: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }
-.drag-handle:active, .drag-handle.dragging { cursor: grabbing; background: var(--bg-soft); }
+/* 拖拽handle：增大点击区域到48px，确保安卓触控友好 */
+.drag-handle { 
+  height: 48px; 
+  min-height: 48px;
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  cursor: grab; 
+  flex-shrink: 0; 
+  transition: background var(--anim-fast); 
+  gap: 8px; 
+  touch-action: none; 
+  user-select: none; 
+  -webkit-user-select: none;
+  /* 扩大点击区域 */
+  padding: 8px 0;
+  margin: -8px 0;
+}
+.drag-handle:active, .drag-handle.dragging { 
+  cursor: grabbing; 
+  background: var(--primary-light); 
+}
 .drag-handle:hover { background: var(--bg-soft); }
-.drag-bar { width: 44px; height: 5px; background: var(--border); border-radius: 3px; transition: all var(--anim-fast); }
-.drag-handle:active .drag-bar { width: 50px; background: var(--primary); }
-.panel-collapse-btn { font-size: 12px; color: var(--text-3); padding: 4px 12px; background: var(--bg-soft); border-radius: 10px; cursor: pointer; transition: all var(--anim-fast); }
+/* 拖拽条：增大尺寸使其更明显 */
+.drag-bar { 
+  width: 48px; 
+  height: 6px; 
+  background: var(--text-3); 
+  border-radius: 3px; 
+  transition: all var(--anim-fast); 
+  opacity: 0.6;
+}
+.drag-handle:active .drag-bar { 
+  width: 56px; 
+  height: 6px;
+  background: var(--primary); 
+  opacity: 1;
+}
+/* 拖拽提示文字 */
+.drag-hint {
+  font-size: 11px;
+  color: var(--text-4);
+  letter-spacing: 0.5px;
+}
+.panel-collapse-btn { font-size: 12px; color: var(--text-3); padding: 6px 14px; background: var(--bg-soft); border-radius: 12px; cursor: pointer; transition: all var(--anim-fast); min-height: 32px; }
 .panel-collapse-btn:active { background: var(--primary-light); color: var(--primary); transform: scale(0.95); }
 /* 面板形态切换按钮 */
-.panel-modes { display: flex; gap: 6px; padding: 6px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.panel-mode-btn { flex: 1; padding: 6px 8px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; background: var(--bg-soft); color: var(--text-3); border: 1.5px solid transparent; transition: all var(--anim-fast); cursor: pointer; font-family: inherit; text-align: center; }
+.panel-modes { display: flex; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.panel-mode-btn { flex: 1; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; background: var(--bg-soft); color: var(--text-3); border: 1.5px solid transparent; transition: all var(--anim-fast); cursor: pointer; font-family: inherit; text-align: center; min-height: 40px; }
 .panel-mode-btn:active { transform: scale(0.96); }
 .panel-mode-btn.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); font-weight: 600; }
 .panel-content { padding: 0 16px 24px 16px; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; box-sizing: border-box; flex: 1; }
@@ -1147,7 +1187,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 <div class="main-panel" id="mainPanel">
   <div class="drag-handle" id="panelDragHandle">
     <div class="drag-bar"></div>
-    <div class="panel-collapse-btn" id="panelCollapseBtn" onclick="togglePanel()">▼ 点击收起</div>
+    <div class="drag-hint">↑↓ 拖拽调整高度</div>
   </div>
   <div class="panel-modes" id="panelModes">
     <button class="panel-mode-btn active" data-mode="normal" onclick="setPanelMode('normal')">📋 标准</button>
@@ -2379,15 +2419,29 @@ function initPanelDrag(){
   var panel = $('mainPanel');
   if(!handle || !panel) return;
 
-  // 触摸事件
-  handle.addEventListener('touchstart', handleDragStart, { passive: true });
+  // 触摸事件 - 使用 passive: false 以便正确阻止默认行为
+  handle.addEventListener('touchstart', handleDragStart, { passive: false });
   handle.addEventListener('touchmove', handleDragMove, { passive: false });
-  handle.addEventListener('touchend', handleDragEnd);
+  handle.addEventListener('touchend', handleDragEnd, { passive: true });
 
   // 鼠标事件
   handle.addEventListener('mousedown', handleDragStart);
   document.addEventListener('mousemove', handleMouseMove);
   document.addEventListener('mouseup', handleDragEnd);
+  
+  // 添加拖拽handle的视觉反馈
+  handle.addEventListener('touchstart', function(){
+    this.classList.add('dragging');
+  });
+  handle.addEventListener('touchend', function(){
+    this.classList.remove('dragging');
+  });
+  handle.addEventListener('mousedown', function(){
+    this.classList.add('dragging');
+  });
+  handle.addEventListener('mouseup', function(){
+    this.classList.remove('dragging');
+  });
 }
 
 function handleDragStart(e){
@@ -2395,15 +2449,21 @@ function handleDragStart(e){
   var clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
   dragStartY = clientY;
   lastDragY = clientY;
-  dragStartHeight = getCurrentPanelHeightPercent();
+  // 获取当前实际高度百分比
+  var panel = $('mainPanel');
+  if(panel){
+    var currentHeight = panel.offsetHeight;
+    dragStartHeight = (currentHeight / window.innerHeight) * 100;
+  } else {
+    dragStartHeight = panelNormalHeight;
+  }
   dragVelocity = 0;
 
   // 添加拖拽状态样式
-  var panel = $('mainPanel');
   if(panel) panel.classList.add('dragging');
 
-  // 防止滚动穿透
-  e.preventDefault ? e.preventDefault() : (e.returnValue = false);
+  // 防止滚动穿透 - 必须在 passive: false 时才能生效
+  if(e.cancelable) e.preventDefault();
 }
 
 function handleDragMove(e){
@@ -2419,14 +2479,15 @@ function handleDragMove(e){
   var deltaPercent = (deltaY / viewportHeight) * 100;
   var newHeightPercent = dragStartHeight + deltaPercent;
 
-  // 限制高度范围
-  newHeightPercent = Math.max(panelMinHeight / viewportHeight * 100, Math.min(panelFullHeight, newHeightPercent));
+  // 限制高度范围：最小60px，最大92%
+  var minPercent = (panelMinHeight / viewportHeight) * 100;
+  newHeightPercent = Math.max(minPercent, Math.min(panelFullHeight, newHeightPercent));
 
-  // 直接设置面板高度（不触发吸附）
+  // 直接设置面板高度（实时跟随手指）
   setPanelHeightPercent(newHeightPercent);
 
-  // 防止页面滚动
-  e.preventDefault ? e.preventDefault() : (e.returnValue = false);
+  // 防止页面滚动 - 必须在 passive: false 时才能生效
+  if(e.cancelable) e.preventDefault();
 }
 
 function handleMouseMove(e){
@@ -2439,20 +2500,30 @@ function handleDragEnd(){
   isDragging = false;
 
   var panel = $('mainPanel');
+  var handle = $('panelDragHandle');
   if(panel) panel.classList.remove('dragging');
+  if(handle) handle.classList.remove('dragging');
 
-  var currentHeight = getCurrentPanelHeightPercent();
-  var targetHeight = snapToNearestMode(currentHeight);
+  // 获取当前实际高度百分比
+  var currentHeight = panel ? panel.offsetHeight : 0;
+  var currentPercent = (currentHeight / window.innerHeight) * 100;
+  var targetHeight = snapToNearestMode(currentPercent);
 
-  // 平滑过渡到目标高度
-  animatePanelHeight(currentHeight, targetHeight);
+  // 平滑过渡到目标高度（300ms弹性动画）
+  animatePanelHeight(currentPercent, targetHeight);
 }
 
 function getCurrentPanelHeightPercent(){
   var panel = $('mainPanel');
   if(!panel) return panelNormalHeight;
 
-  // 检查当前模式
+  // 获取实际高度百分比（优先使用offsetHeight）
+  var actualHeight = panel.offsetHeight;
+  if(actualHeight > 0){
+    return (actualHeight / window.innerHeight) * 100;
+  }
+
+  // 检查当前模式类作为备用
   if(panel.classList.contains('mode-collapsed')) return panelMinHeight / window.innerHeight * 100;
   if(panel.classList.contains('mode-float')) return panelFloatHeight;
   if(panel.classList.contains('mode-fullscreen')) return panelFullHeight;
