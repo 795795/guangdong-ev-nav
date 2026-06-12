@@ -275,21 +275,105 @@ body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
 .clear-all-filters-btn { padding: 4px 12px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 500; background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); cursor: pointer; transition: all var(--anim-fast); }
 .clear-all-filters-btn:active { transform: scale(0.95); background: var(--danger); color: #fff; }
 
+/* 快速筛选按钮 */
+.quick-filter-btn { 
+  padding: 8px 16px; 
+  border-radius: var(--radius-pill); 
+  font-size: 13px; 
+  font-weight: 500; 
+  background: var(--bg-soft); 
+  color: var(--text-2); 
+  border: 1.5px solid transparent; 
+  transition: all var(--anim-normal); 
+  cursor: pointer; 
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.quick-filter-btn:active { 
+  transform: scale(0.96); 
+  opacity: 0.9;
+}
+.quick-filter-btn:hover { 
+  border-color: var(--primary); 
+  color: var(--primary); 
+}
+.quick-filter-btn.active { 
+  background: var(--primary-light); 
+  color: var(--primary); 
+  border-color: var(--primary); 
+  font-weight: 600; 
+  box-shadow: 0 2px 8px rgba(22,119,255,0.2);
+}
+.quick-filter-btn.active:hover { 
+  background: var(--primary); 
+  color: #fff; 
+}
+
+/* 快捷筛选行 */
+.quick-filter-row { display: flex; gap: 8px; padding: 8px 0; flex-wrap: wrap; }
+
 /* 高级筛选行 */
 .advanced-filter-row { display: flex; gap: 6px; padding: 0 0 8px 0; flex-wrap: wrap; }
 
+/* 加载更多指示器 */
+.load-more-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 16px;
+  color: var(--text-3);
+  font-size: 14px;
+  animation: fadeIn 0.3s ease;
+}
+.load-more-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+.no-more-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: var(--text-4);
+  font-size: 13px;
+  animation: fadeIn 0.3s ease;
+}
+.no-more-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--success);
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
 /* ====== 主结果面板 ====== */
-.main-panel { position: absolute; bottom: var(--nav-h); left: 0; right: 0; background: var(--bg); z-index: 102; max-height: 72vh; display: none; overflow: hidden; flex-direction: column; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.10); transition: max-height 0.3s ease, bottom 0.3s ease; }
+.main-panel { position: absolute; bottom: var(--nav-h); left: 0; right: 0; background: var(--bg); z-index: 102; max-height: 65vh; display: none; overflow: hidden; flex-direction: column; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.10); transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), bottom 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease; }
 .main-panel.show { display: flex; animation: slideUpPanel var(--anim-slow) cubic-bezier(0.4,0,0.2,1); }
+.main-panel.dragging { box-shadow: 0 -8px 32px rgba(0,0,0,0.15); transition: none; }
 /* 悬浮态：保留底部地图可视区域 */
-.main-panel.mode-float { bottom: calc(var(--nav-h) + 35vh); max-height: 55vh; }
+.main-panel.mode-float { bottom: calc(var(--nav-h) + 55vh); max-height: 45vh; }
 /* 全屏态：几乎占满屏幕 */
-.main-panel.mode-fullscreen { bottom: 0; max-height: calc(100vh - var(--safe-top) - 20px); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+.main-panel.mode-fullscreen { bottom: 0; max-height: 92vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
 /* 折叠态：仅显示标题栏 */
 .main-panel.mode-collapsed { max-height: 60px; }
 @keyframes slideUpPanel { from { transform: translateY(100%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
-.drag-handle { height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; flex-shrink: 0; transition: background var(--anim-fast); gap: 6px; }
-.drag-handle:active { cursor: grabbing; background: var(--bg-soft); }
+.drag-handle { height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; flex-shrink: 0; transition: background var(--anim-fast); gap: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.drag-handle:active, .drag-handle.dragging { cursor: grabbing; background: var(--bg-soft); }
+.drag-handle:hover { background: var(--bg-soft); }
 .drag-bar { width: 44px; height: 5px; background: var(--border); border-radius: 3px; transition: all var(--anim-fast); }
 .drag-handle:active .drag-bar { width: 50px; background: var(--primary); }
 .panel-collapse-btn { font-size: 12px; color: var(--text-3); padding: 4px 12px; background: var(--bg-soft); border-radius: 10px; cursor: pointer; transition: all var(--anim-fast); }
@@ -323,9 +407,9 @@ body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
 .poi-card { 
   background: var(--bg); 
   border: 1.5px solid var(--border); 
-  border-radius: 14px; 
-  padding: 16px; 
-  margin-bottom: 12px; 
+  border-radius: 16px; 
+  padding: 18px; 
+  margin-bottom: 16px; 
   cursor: pointer; 
   transition: all var(--anim-normal); 
   position: relative; 
@@ -364,56 +448,56 @@ body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
 .poi-card.hl { animation: cardFlash 1.8s ease; }
 @keyframes cardFlash { 0%,100%{background:var(--bg)} 30%{background:var(--primary-light)} 60%{background:var(--bg)} }
 
-.poi-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; width: 100%; }
-.poi-name-wrap { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 10px; }
+.poi-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; width: 100%; }
+.poi-name-wrap { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 12px; }
 .fav-icon { 
-  font-size: 18px; 
+  font-size: 20px; 
   color: var(--text-4); 
   cursor: pointer; 
   transition: all var(--anim-fast); 
   flex-shrink: 0; 
   margin-top: 2px;
-  padding: 4px;
+  padding: 6px;
 }
 .fav-icon:active { transform: scale(1.4); }
 .fav-icon.favorited { color: var(--warning); animation: starPop 0.3s ease; }
 @keyframes starPop { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
 .poi-name { 
-  font-size: 15px; 
+  font-size: 16px; 
   font-weight: 600; 
   color: var(--text-1); 
   flex: 1; 
   min-width: 0; 
   word-break: break-word; 
-  line-height: 1.45;
+  line-height: 1.5;
   margin-top: 2px;
 }
 .poi-dist { 
-  font-size: 15px; 
+  font-size: 16px; 
   color: var(--primary); 
   font-weight: 700; 
   flex-shrink: 0; 
   white-space: nowrap; 
   text-align: right; 
   line-height: 1.5; 
-  padding-left: 8px;
+  padding-left: 12px;
 }
 .poi-addr { 
-  font-size: 12px; 
+  font-size: 13px; 
   color: var(--text-3); 
-  margin-top: 10px; 
-  line-height: 1.6; 
+  margin-top: 12px; 
+  line-height: 1.7; 
   word-break: break-all; 
   display: flex; 
   align-items: flex-start; 
-  gap: 6px;
-  padding-bottom: 8px;
+  gap: 8px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
 
 /* ====== POI 标签 ====== */
-.poi-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; width: 100%; }
-.poi-tag { font-size: 11px; padding: 3px 9px; border-radius: 6px; font-weight: 600; line-height: 1.5; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
+.poi-tags { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; width: 100%; }
+.poi-tag { font-size: 12px; padding: 4px 11px; border-radius: 7px; font-weight: 600; line-height: 1.5; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
 .poi-tag.tag-blue { background: var(--primary-light); color: var(--primary); }
 .poi-tag.tag-orange { background: var(--orange-bg); color: var(--orange); }
 .poi-tag.tag-green { background: var(--success-bg); color: var(--success); }
@@ -425,22 +509,22 @@ body.dark .poi-tag.tag-orange { background: rgba(250,140,22,0.2); color: #ffb366
 body.dark .poi-tag.tag-blue { background: rgba(22,119,255,0.2); color: #69b1ff; }
 
 /* 额外信息行 */
-.poi-extra-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding: 6px 0; border-top: 1px dashed var(--border); }
-.poi-extra-info { font-size: 11px; color: var(--text-2); display: inline-flex; align-items: center; gap: 3px; }
+.poi-extra-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; padding: 10px 0; border-top: 1px dashed var(--border); }
+.poi-extra-info { font-size: 12px; color: var(--text-2); display: inline-flex; align-items: center; gap: 4px; }
 .poi-extra-info.fast-charge { color: var(--primary); font-weight: 600; }
 .poi-extra-info.warn { color: var(--warning); }
 
 /* ====== POI 操作按钮 ====== */
-.poi-action { margin-top: 12px; width: 100%; display: flex; gap: 10px; }
+.poi-action { margin-top: 16px; width: 100%; display: flex; gap: 12px; }
 .poi-nav-btn { 
   flex: 1.5; 
-  min-height: 46px; 
-  padding: 12px 16px; 
+  min-height: 48px; 
+  padding: 14px 18px; 
   background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
   color: #fff; 
   border: none; 
-  border-radius: 12px; 
-  font-size: 14px; 
+  border-radius: 14px; 
+  font-size: 15px; 
   font-weight: 600; 
   cursor: pointer; 
   transition: all var(--anim-normal); 
@@ -451,7 +535,7 @@ body.dark .poi-tag.tag-blue { background: rgba(22,119,255,0.2); color: #69b1ff; 
   white-space: nowrap; 
   position: relative; 
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(22,119,255,0.3);
+  box-shadow: 0 4px 14px rgba(22,119,255,0.35);
 }
 .poi-nav-btn::before { 
   content: ''; 
@@ -470,11 +554,13 @@ body.dark .poi-tag.tag-blue { background: rgba(22,119,255,0.2); color: #69b1ff; 
 }
 .poi-nav-btn.secondary { 
   flex: 1;
-  min-height: 46px;
-  padding: 12px 16px;
+  min-height: 48px;
+  padding: 14px 18px;
   background: var(--bg-soft); 
   color: var(--text-2); 
   border: 1.5px solid var(--border); 
+  border-radius: 14px;
+  font-size: 15px;
   box-shadow: none;
 }
 .poi-nav-btn.secondary:hover { 
@@ -508,9 +594,30 @@ body.dark .bottom-nav { background: rgba(30,30,30,0.98); border-color: var(--bor
 .nav-item .nav-icon { font-size: 24px; margin-bottom: 4px; line-height: 1; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--text-3); transition: all var(--anim-normal); border-radius: 8px; }
 .nav-item .nav-label { font-size: 11px; color: var(--text-3); transition: all var(--anim-normal); white-space: nowrap; text-align: center; line-height: 1.2; font-weight: 500; }
 .nav-item:active .nav-icon { transform: scale(0.9); }
-.nav-item.active .nav-icon { color: var(--primary); transform: translateY(-3px) scale(1.1); background: var(--primary-light); }
-.nav-item.active .nav-label { color: var(--primary); font-weight: 700; }
-.nav-item.active::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-dark)); border-radius: 0 0 4px 4px; animation: indicatorPulse 1.5s ease infinite; }
+.nav-item.active .nav-icon { 
+  color: var(--primary); 
+  transform: translateY(-3px) scale(1.1); 
+  background: var(--primary-light); 
+  box-shadow: 0 4px 12px rgba(22,119,255,0.3);
+}
+.nav-item.active .nav-label { 
+  color: var(--primary); 
+  font-weight: 700; 
+  transform: scale(1.05);
+}
+.nav-item.active::before { 
+  content: ''; 
+  position: absolute; 
+  top: 0; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  width: 28px; 
+  height: 4px; 
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark)); 
+  border-radius: 0 0 4px 4px; 
+  animation: indicatorPulse 1.5s ease infinite; 
+  box-shadow: 0 2px 8px rgba(22,119,255,0.4);
+}
 @keyframes indicatorPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
 /* ====== POI 详情弹窗 ====== */
@@ -708,6 +815,54 @@ body.dark .bottom-nav { background: rgba(30,30,30,0.98); border-color: var(--bor
 body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
 .loading-overlay.show { display: flex; animation: fadeInLoading 0.3s ease; }
 @keyframes fadeInLoading { from { opacity: 0; } to { opacity: 1; } }
+
+/* 按钮涟漪效果 */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+.btn-ripple:active::after {
+  width: 200px;
+  height: 200px;
+  opacity: 1;
+}
+
+/* 按钮缩放反馈 */
+.btn-scale:active {
+  transform: scale(0.95);
+  transition: transform 0.15s ease;
+}
+
+/* 列表条目交错动画延迟 */
+.poi-card:nth-child(6) { animation-delay: 0.3s; }
+.poi-card:nth-child(7) { animation-delay: 0.35s; }
+.poi-card:nth-child(8) { animation-delay: 0.4s; }
+.poi-card:nth-child(9) { animation-delay: 0.45s; }
+.poi-card:nth-child(10) { animation-delay: 0.5s; }
+
+/* 面板形态切换过渡 */
+.main-panel.mode-float,
+.main-panel.mode-fullscreen,
+.main-panel.mode-collapsed {
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease,
+              opacity 0.3s ease;
+}
+
 .loading-spinner { width: 48px; height: 48px; border: 4px solid rgba(22,119,255,0.15); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 16px; position: relative; }
 .loading-spinner::before { content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px; border: 4px solid transparent; border-top-color: rgba(22,119,255,0.3); border-radius: 50%; animation: spin 1.2s linear infinite reverse; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -961,7 +1116,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 </div>
 
 <div class="main-panel" id="mainPanel">
-  <div class="drag-handle" ontouchstart="handleDragStart(event)" ontouchmove="handleDragMove(event)" ontouchend="handleDragEnd(event)">
+  <div class="drag-handle" id="panelDragHandle">
     <div class="drag-bar"></div>
     <div class="panel-collapse-btn" id="panelCollapseBtn" onclick="togglePanel()">▼ 点击收起</div>
   </div>
@@ -1599,6 +1754,7 @@ function loadAmapSDK(){
     'AMap.Geolocation',
     'AMap.ToolBar',
     'AMap.Scale',
+    'AMap.Compass',
     'AMap.Geocoder',
     'AMap.PlaceSearch',
     'AMap.Driving',
@@ -1678,6 +1834,7 @@ function afterAmapLoad(){
   try { satelliteLayer = new AMap.TileLayer.Satellite(); } catch(e){}
   try { new AMap.ToolBar({ position: 'RB' }); } catch(e){}
   try { new AMap.Scale({ position: 'LB' }); } catch(e){}
+  try { new AMap.Compass({ position: 'RT' }); } catch(e){}
 
   // 定位：WGS84 → GCJ02 → 地图中心 → 请求数据
   try {
@@ -1963,6 +2120,11 @@ function fetchParkingAndChargingPage(center, page){
         isLoadingMore = false;
         hideLoadingMoreIndicator();
 
+        // 如果没有更多数据，显示"已加载全部"提示
+        if(!hasMorePages){
+          showNoMoreIndicator();
+        }
+
         var processed = processPOIs(combined, center);
         currentPOIs = processed;
         renderPOIPanel(processed, currentKeyword);
@@ -2054,11 +2216,13 @@ function showLoadingMoreIndicator(){
   // 移除旧的加载更多指示器
   var old = pc.querySelector('.load-more-indicator');
   if(old) old.remove();
+  var oldEnd = pc.querySelector('.no-more-indicator');
+  if(oldEnd) oldEnd.remove();
 
   var indicator = document.createElement('div');
   indicator.className = 'load-more-indicator';
   indicator.innerHTML = '<div class="load-more-spinner"></div><span>加载更多...</span>';
-  indicator.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:16px;color:var(--text-3);font-size:14px;';
+  indicator.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:20px 16px;color:var(--text-3);font-size:14px;';
   pc.appendChild(indicator);
 
   // 滚动到底部
@@ -2069,6 +2233,23 @@ function showLoadingMoreIndicator(){
 function hideLoadingMoreIndicator(){
   var old = document.querySelector('.load-more-indicator');
   if(old) old.remove();
+}
+
+// 显示"已加载全部"提示
+function showNoMoreIndicator(){
+  var pc = $('panelContent');
+  if(!pc) return;
+  // 移除旧的加载更多指示器
+  var old = pc.querySelector('.load-more-indicator');
+  if(old) old.remove();
+  var oldEnd = pc.querySelector('.no-more-indicator');
+  if(oldEnd) oldEnd.remove();
+
+  var indicator = document.createElement('div');
+  indicator.className = 'no-more-indicator';
+  indicator.innerHTML = '<span class="no-more-icon">✓</span><span>已加载全部结果</span>';
+  indicator.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;color:var(--text-4);font-size:13px;';
+  pc.appendChild(indicator);
 }
 
 function showPanel(){
@@ -2120,6 +2301,205 @@ function setPanelMode(mode){
 
   // 确保面板显示
   mp.classList.add('show');
+}
+
+/* =========================================================================
+ * 面板拖拽功能（支持触摸和鼠标）
+ * ======================================================================== */
+var isDragging = false;
+var dragStartY = 0;
+var dragStartHeight = 0;
+var panelMinHeight = 60;      // 折叠状态高度
+var panelFloatHeight = 45;     // 悬浮状态高度百分比
+var panelNormalHeight = 65;    // 标准状态高度百分比
+var panelFullHeight = 92;      // 全屏状态高度百分比
+var dragVelocity = 0;
+var lastDragY = 0;
+
+function initPanelDrag(){
+  var handle = $('panelDragHandle');
+  var panel = $('mainPanel');
+  if(!handle || !panel) return;
+
+  // 触摸事件
+  handle.addEventListener('touchstart', handleDragStart, { passive: true });
+  handle.addEventListener('touchmove', handleDragMove, { passive: false });
+  handle.addEventListener('touchend', handleDragEnd);
+
+  // 鼠标事件
+  handle.addEventListener('mousedown', handleDragStart);
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseup', handleDragEnd);
+}
+
+function handleDragStart(e){
+  isDragging = true;
+  var clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+  dragStartY = clientY;
+  lastDragY = clientY;
+  dragStartHeight = getCurrentPanelHeightPercent();
+  dragVelocity = 0;
+
+  // 添加拖拽状态样式
+  var panel = $('mainPanel');
+  if(panel) panel.classList.add('dragging');
+
+  // 防止滚动穿透
+  e.preventDefault ? e.preventDefault() : (e.returnValue = false);
+}
+
+function handleDragMove(e){
+  if(!isDragging) return;
+  var clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+  // 计算速度（用于惯性判断）
+  dragVelocity = clientY - lastDragY;
+  lastDragY = clientY;
+
+  var deltaY = dragStartY - clientY;
+  var viewportHeight = window.innerHeight;
+  var deltaPercent = (deltaY / viewportHeight) * 100;
+  var newHeightPercent = dragStartHeight + deltaPercent;
+
+  // 限制高度范围
+  newHeightPercent = Math.max(panelMinHeight / viewportHeight * 100, Math.min(panelFullHeight, newHeightPercent));
+
+  // 直接设置面板高度（不触发吸附）
+  setPanelHeightPercent(newHeightPercent);
+
+  // 防止页面滚动
+  e.preventDefault ? e.preventDefault() : (e.returnValue = false);
+}
+
+function handleMouseMove(e){
+  if(!isDragging) return;
+  handleDragMove(e);
+}
+
+function handleDragEnd(){
+  if(!isDragging) return;
+  isDragging = false;
+
+  var panel = $('mainPanel');
+  if(panel) panel.classList.remove('dragging');
+
+  var currentHeight = getCurrentPanelHeightPercent();
+  var targetHeight = snapToNearestMode(currentHeight);
+
+  // 平滑过渡到目标高度
+  animatePanelHeight(currentHeight, targetHeight);
+}
+
+function getCurrentPanelHeightPercent(){
+  var panel = $('mainPanel');
+  if(!panel) return panelNormalHeight;
+
+  // 检查当前模式
+  if(panel.classList.contains('mode-collapsed')) return panelMinHeight / window.innerHeight * 100;
+  if(panel.classList.contains('mode-float')) return panelFloatHeight;
+  if(panel.classList.contains('mode-fullscreen')) return panelFullHeight;
+  return panelNormalHeight;
+}
+
+function setPanelHeightPercent(percent){
+  var panel = $('mainPanel');
+  if(!panel) return;
+
+  // 移除模式类
+  panel.classList.remove('mode-float', 'mode-fullscreen', 'mode-collapsed');
+
+  // 应用新高度
+  if(percent <= panelMinHeight / window.innerHeight * 100 + 5){
+    panel.classList.add('mode-collapsed');
+    currentPanelMode = 'collapsed';
+  } else if(percent < panelFloatHeight + 10){
+    panel.classList.add('mode-float');
+    currentPanelMode = 'float';
+  } else if(percent > panelFullHeight - 5){
+    panel.classList.add('mode-fullscreen');
+    currentPanelMode = 'fullscreen';
+  } else if(percent < panelNormalHeight + 10){
+    currentPanelMode = 'normal';
+  } else {
+    panel.classList.add('mode-fullscreen');
+    currentPanelMode = 'fullscreen';
+  }
+
+  // 更新模式按钮状态
+  var btns = document.querySelectorAll('.panel-mode-btn');
+  for(var i = 0; i < btns.length; i++){
+    btns[i].classList.remove('active');
+    if(btns[i].getAttribute('data-mode') === currentPanelMode){
+      btns[i].classList.add('active');
+    }
+  }
+}
+
+function snapToNearestMode(currentPercent){
+  // 根据速度和当前位置决定吸附目标
+  var snapThreshold = 15; // 速度阈值
+
+  // 如果拖拽速度很快，直接跳转到目标
+  if(Math.abs(dragVelocity) > snapThreshold){
+    if(dragVelocity > 0){
+      // 向上拖拽（缩小面板）
+      if(currentPercent < panelNormalHeight) return panelFloatHeight;
+      return panelNormalHeight;
+    } else {
+      // 向下拖拽（放大面板）
+      if(currentPercent > panelNormalHeight) return panelFullHeight;
+      return panelNormalHeight;
+    }
+  }
+
+  // 速度较慢，根据距离判断
+  var distances = [
+    { mode: 'collapsed', height: panelMinHeight / window.innerHeight * 100 },
+    { mode: 'float', height: panelFloatHeight },
+    { mode: 'normal', height: panelNormalHeight },
+    { mode: 'fullscreen', height: panelFullHeight }
+  ];
+
+  var minDistance = Infinity;
+  var targetHeight = panelNormalHeight;
+
+  for(var i = 0; i < distances.length; i++){
+    var dist = Math.abs(currentPercent - distances[i].height);
+    if(dist < minDistance){
+      minDistance = dist;
+      targetHeight = distances[i].height;
+    }
+  }
+
+  return targetHeight;
+}
+
+function animatePanelHeight(fromPercent, toPercent){
+  var duration = 300;
+  var startTime = Date.now();
+  var panel = $('mainPanel');
+  if(!panel) return;
+
+  function animate(){
+    var elapsed = Date.now() - startTime;
+    var progress = Math.min(elapsed / duration, 1);
+
+    // 使用缓动函数
+    progress = easeOutCubic(progress);
+
+    var currentPercent = fromPercent + (toPercent - fromPercent) * progress;
+    setPanelHeightPercent(currentPercent);
+
+    if(progress < 1){
+      requestAnimationFrame(animate);
+    }
+  }
+
+  animate();
+}
+
+function easeOutCubic(t){
+  return 1 - Math.pow(1 - t, 3);
 }
 
 /* =========================================================================
@@ -2383,7 +2763,14 @@ function renderMapMarkers(pois){
         content: '<div style="background:'+color+';color:#fff;width:30px;height:34px;border-radius:8px 8px 8px 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;"><span style="transform:rotate(45deg);">'+iconText+'</span></div>',
         title: po.name, extData: po
       });
-      m.on('click', (function(poi){ return function(){ showPOIDetail(poi); highlightCard(poi.name); }; })(po));
+      m.on('click', (function(poi){ return function(){ 
+  if(map && poi && poi.lngLat){
+    map.setCenter(poi.lngLat);
+    map.setZoom(16, true, 500);
+  }
+  showPOIDetail(poi); 
+  highlightCard(poi.name); 
+}; })(po));
       mkrs.push(m);
     } catch(e){}
   }
@@ -2755,11 +3142,24 @@ function highlightMapMarker(poi){
     var m = markers[i];
     var data = m.getExtData();
     if(data && data.id === poi.id){
-      // 高亮效果：放大 + 动画
+      // 高亮效果：放大 + 动画 + 光晕
       m.setTop(true);
+      // 添加脉冲动画效果
+      animateMarker(m);
       break;
     }
   }
+}
+
+// marker脉冲动画
+function animateMarker(marker){
+  if(!marker) return;
+  var originContent = marker.getContent();
+  var pulseContent = originContent.replace('</div>', '<div style="position:absolute;top:50%;left:50%;width:100%;height:100%;border-radius:8px 8px 8px 0;background:inherit;opacity:0.4;animation:pulse 1s ease-out infinite;"></div></div>');
+  marker.setContent(pulseContent);
+  setTimeout(function(){
+    marker.setContent(originContent);
+  }, 2000);
 }
 
 // 取消高亮地图 marker
@@ -2774,12 +3174,33 @@ function unhighlightMapMarkers(){
 function highlightCard(name){
   var list = document.querySelectorAll('.poi-card');
   for(var i = 0; i < list.length; i++){
+    list[i].classList.remove('selected', 'hl');
     if(list[i].getAttribute('data-name') === name){
-      list[i].classList.add('hl');
-      try{ list[i].scrollIntoView({ behavior:'smooth', block:'nearest' }); }catch(e){}
+      list[i].classList.add('selected', 'hl');
+      try{ 
+        list[i].scrollIntoView({ behavior:'smooth', block:'center', inline:'nearest' }); 
+      }catch(e){
+        list[i].scrollIntoView();
+      }
       setTimeout(function(el){ el.classList.remove('hl'); }.bind(null, list[i]), 1800);
       break;
     }
+  }
+}
+
+function highlightCardByIdx(idx){
+  var list = document.querySelectorAll('.poi-card');
+  if(list[idx]){
+    for(var i = 0; i < list.length; i++){
+      list[i].classList.remove('selected', 'hl');
+    }
+    list[idx].classList.add('selected', 'hl');
+    try{ 
+      list[idx].scrollIntoView({ behavior:'smooth', block:'center', inline:'nearest' }); 
+    }catch(e){
+      list[idx].scrollIntoView();
+    }
+    setTimeout(function(el){ el.classList.remove('hl'); }.bind(null, list[idx]), 1800);
   }
 }
 
@@ -4325,6 +4746,9 @@ function init(){
   setupVisibilityHandler();
 
   bindEvents();
+
+  // 初始化面板拖拽功能
+  initPanelDrag();
 }
 
 // 页面卸载清理
@@ -4332,6 +4756,28 @@ window.addEventListener('beforeunload', function(){
   stopAutoRefresh();
   if(naviInterval) clearInterval(naviInterval);
   try{ if(naviMap) naviMap.destroy(); }catch(e){}
+  
+  // 清理地图相关
+  try{ if(markerClusterer){ markerClusterer.setMap(null); markerClusterer = null; } }catch(e){}
+  try{ if(map){ map.destroy(); map = null; } }catch(e){}
+  if(trafficLayer){ trafficLayer = null; }
+  if(satelliteLayer){ satelliteLayer = null; }
+  if(radiusCircle){ radiusCircle = null; }
+  
+  // 清理定时器
+  if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+  if(trafficRefreshTimer) clearInterval(trafficRefreshTimer);
+  if(dragTimer) clearTimeout(dragTimer);
+  
+  // 清理事件监听器
+  var pc = $('panelContent');
+  if(pc && pc.removeEventListener) pc.removeEventListener('scroll', scrollLoadBound);
+  
+  // 清理定位监听
+  if(watchId !== null){
+    try{ navigator.geolocation.clearWatch(watchId); }catch(e){}
+    watchId = null;
+  }
 });
 
 // 暴露到 window
