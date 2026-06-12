@@ -269,13 +269,15 @@ body.dark .top-right-btns { background: rgba(42,42,42,0.95); }
 .filter-tag .tag-close:hover { opacity: 1; }
 
 /* ====== 主结果面板 ====== */
-.main-panel { position: absolute; bottom: var(--nav-h); left: 0; right: 0; background: var(--bg); z-index: 99; max-height: 72vh; display: none; overflow: hidden; flex-direction: column; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.10); transition: max-height 0.3s ease; }
+.main-panel { position: absolute; bottom: var(--nav-h); left: 0; right: 0; background: var(--bg); z-index: 102; max-height: 72vh; display: none; overflow: hidden; flex-direction: column; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.10); transition: max-height 0.3s ease; }
 .main-panel.show { display: flex; animation: slideUpPanel var(--anim-slow) cubic-bezier(0.4,0,0.2,1); }
 @keyframes slideUpPanel { from { transform: translateY(100%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
-.drag-handle { height: 32px; display: flex; align-items: center; justify-content: center; cursor: grab; flex-shrink: 0; transition: background var(--anim-fast); }
+.drag-handle { height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; flex-shrink: 0; transition: background var(--anim-fast); gap: 6px; }
 .drag-handle:active { cursor: grabbing; background: var(--bg-soft); }
 .drag-bar { width: 44px; height: 5px; background: var(--border); border-radius: 3px; transition: all var(--anim-fast); }
 .drag-handle:active .drag-bar { width: 50px; background: var(--primary); }
+.panel-collapse-btn { font-size: 12px; color: var(--text-3); padding: 4px 12px; background: var(--bg-soft); border-radius: 10px; cursor: pointer; transition: all var(--anim-fast); }
+.panel-collapse-btn:active { background: var(--primary-light); color: var(--primary); transform: scale(0.95); }
 .panel-content { padding: 0 16px 24px 16px; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; box-sizing: border-box; flex: 1; }
 .panel-title { font-size: 17px; font-weight: 700; color: var(--text-1); padding: 8px 0 10px 0; display: flex; align-items: center; gap: 8px; letter-spacing: 0.5px; }
 .panel-count { font-size: 13px; color: var(--text-3); margin: 2px 0 12px 0; line-height: 1.5; font-weight: 500; display: flex; align-items: center; gap: 6px; }
@@ -838,7 +840,10 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
 </div>
 
 <div class="main-panel" id="mainPanel">
-  <div class="drag-handle"><div class="drag-bar"></div></div>
+  <div class="drag-handle" ontouchstart="handleDragStart(event)" ontouchmove="handleDragMove(event)" ontouchend="handleDragEnd(event)">
+    <div class="drag-bar"></div>
+    <div class="panel-collapse-btn" id="panelCollapseBtn" onclick="togglePanel()">▼ 点击收起</div>
+  </div>
   <div class="panel-content" id="panelContent"></div>
 </div>
 
@@ -1710,6 +1715,19 @@ function showPanel(){
   var mp = $('mainPanel'); if(mp) mp.classList.add('show');
 }
 
+function hidePanel(){
+  var mp = $('mainPanel'); if(mp) mp.classList.remove('show');
+}
+
+function togglePanel(){
+  var mp = $('mainPanel'); if(!mp) return;
+  if(mp.classList.contains('show')){
+    hidePanel();
+  } else {
+    showPanel();
+  }
+}
+
 /* =========================================================================
  * 附近搜索（通用，可选关键字）
  * ======================================================================== */
@@ -2005,18 +2023,43 @@ function renderPOIPanel(pois, kw){
     + '<button class="quick-filter-btn" id="btnExpandRadius">🔍 扩大半径</button>'
     + '</div>';
 
+  // 根据筛选条件过滤 poi 列表
+  var filteredPois = pois.filter(function(p){
+    if(p.isParking && !preferences.showPark) return false;
+    if(p.isCharging && !preferences.showCharge) return false;
+    return true;
+  });
+  var filteredCount = filteredPois.length;
+
+  // 更新标题显示
+  var titleText = '';
+  if(kw === '停车场 & 充电站'){
+    titleText = '找到 ' + filteredCount + ' 个附近停车场/充电站';
+  } else if(kw === '停车场'){
+    titleText = '找到 ' + filteredCount + ' 个附近停车场';
+  } else if(kw === '充电站'){
+    titleText = '找到 ' + filteredCount + ' 个附近充电站';
+  } else {
+    titleText = '「' + escapeHtml(kw||'搜索') + '」找到 ' + filteredCount + ' 个结果';
+  }
+  // 更新标题
+  var titleEl = box.querySelector('.panel-title');
+  if(titleEl) titleEl.textContent = titleText;
+
   html += '<div class="poi-list">';
-  for(var i = 0; i < count; i++){
-    var p = pois[i];
+  for(var i = 0; i < filteredCount; i++){
+    var p = filteredPois[i];
+    // 找到在实际 currentPOIs 数组中的索引
+    var actualIdx = currentPOIs.indexOf(p);
     var isPark = p.isParking, isCharge = p.isCharging;
     var statusTag = '';
     if(isPark && p.parkingInfo) statusTag = '<span class="poi-tag tag-'+p.parkingInfo.status+'">'+escapeHtml(p.parkingInfo.statusText||'')+'</span>';
     else if(isCharge && p.chargingInfo) statusTag = '<span class="poi-tag tag-'+p.chargingInfo.status+'">空闲 '+p.chargingInfo.freePiles+'</span>';
 
-    html += '<div class="poi-card" data-idx="'+i+'" data-name="'+escapeHtml(p.name)+'">'
+    html += '<div class="poi-card" data-idx="'+actualIdx+'" data-name="'+escapeHtml(p.name)+'">'
       + '<div class="poi-main">'
       +   '<div class="poi-name-wrap">'
-      +     '<span class="fav-icon" data-idx="'+i+'">'+(isFavorited(p) ? '⭐' : '☆')+'</span>'
+      +     '<span class="fav-icon" data-idx="'+actualIdx+'">'+(isFavorited(p) ? '⭐' : '☆')+'</span>'
       +     '<span class="poi-name">'+escapeHtml(p.name)+'</span>'
       +   '</div>'
       +   '<span class="poi-dist">'+formatDistance(p.distance)+'</span>'
@@ -2027,8 +2070,8 @@ function renderPOIPanel(pois, kw){
       + '</div>'
       + '<div class="poi-addr">'+escapeHtml(p.address)+'</div>'
       + '<div class="poi-action">'
-      +   '<button class="poi-nav-btn" onclick="window.navTo && window.navTo('+i+')">🚗 导航</button>'
-      +   '<button class="poi-nav-btn secondary" onclick="window.setAsRouteEnd && window.setAsRouteEnd('+i+')">加入路线</button>'
+      +   '<button class="poi-nav-btn" onclick="window.navTo && window.navTo('+actualIdx+')">🚗 导航</button>'
+      +   '<button class="poi-nav-btn secondary" onclick="window.setAsRouteEnd && window.setAsRouteEnd('+actualIdx+')">加入路线</button>'
       + '</div>'
       + '</div>';
   }
@@ -2448,6 +2491,116 @@ function exitNavi(){
 }
 
 /* =========================================================================
+ * POI 导航功能（核心P0修复）
+ * ======================================================================== */
+function navTo(poiIdx){
+  var poi = currentPOIs[poiIdx];
+  if(!poi){ toast('未找到该点位信息'); return; }
+  
+  var loc = poi.location;
+  if(!loc || typeof loc !== 'string'){ toast('该点位缺少位置信息'); return; }
+  
+  var parts = loc.split(',');
+  if(parts.length < 2){ toast('位置坐标格式错误'); return; }
+  
+  var destLng = parseFloat(parts[0]);
+  var destLat = parseFloat(parts[1]);
+  if(isNaN(destLng) || isNaN(destLat)){ toast('位置坐标解析失败'); return; }
+  
+  routeEnd = [destLng, destLat];
+  routeStart = myPos || [113.2644, 23.1291];
+  
+  // 显示路线规划面板
+  showRoutePanel();
+  
+  // 启动路线规划
+  planDrivingRoute();
+}
+
+// 路线规划函数
+function planDrivingRoute(){
+  if(!routeStart || !routeEnd){ toast('起点或终点无效'); return; }
+  
+  showLoading('正在规划路线...');
+  
+  // 使用高德驾车路线规划
+  if(!window.AMap){ hideLoading(); toast('地图未加载'); return; }
+  
+  var driving = new AMap.Driving({
+    map: map,
+    panel: null,  // 不使用内置面板
+    policy: AMap.DrivingPolicy.LEAST_TIME,
+    extensions: 'all'
+  });
+  
+  driving.search(routeStart, routeEnd, function(status, result){
+    hideLoading();
+    
+    if(status === 'complete' && result && result.routes && result.routes.length){
+      var route = result.routes[0];
+      routeResults = [{ 
+        distance: route.distance, 
+        duration: route.time,
+        polyline: '',
+        steps: []
+      }];
+      
+      // 绘制路线
+      if(routeOverview){
+        try { map.remove(routeOverview); } catch(e){}
+      }
+      var path = route.steps.reduce(function(acc, step){
+        if(step.path) return acc.concat(step.path);
+        return acc;
+      }, []);
+      
+      routeOverview = new AMap.Polyline({
+        path: path,
+        strokeColor: '#1677ff',
+        strokeWeight: 7,
+        strokeOpacity: 0.85,
+        showDir: true,
+        lineJoin: 'round'
+      });
+      map.add(routeOverview);
+      map.setFitView(routeOverview, false, [50, 50, 50, 100]);
+      
+      // 保存路线信息
+      routeResults[0].steps = route.steps.map(function(s){
+        return {
+          instruction: s.instruction || '',
+          distance: s.distance || 0,
+          duration: s.time || 0
+        };
+      });
+      routeResults[0].polyline = path;
+      
+      routeSelectedIdx = 0;
+      toast('路线规划成功，已显示路线');
+      
+      // 隐藏列表面板，显示地图
+      hidePanel();
+      
+    } else {
+      toast('路线规划失败，请重试');
+      console.error('Driving search failed:', status, result);
+    }
+  });
+}
+
+// 显示路线面板
+function showRoutePanel(){
+  var rp = $('routePanel');
+  if(rp) rp.classList.add('show');
+}
+
+// 隐藏路线面板
+function hideRoutePanel(){
+  var rp = $('routePanel');
+  if(rp) rp.classList.remove('show');
+}
+
+/* =========================================================================
  * 定时刷新
  * ======================================================================== */
 function startAutoRefresh(){
@@ -2461,6 +2614,45 @@ function startAutoRefresh(){
 }
 function stopAutoRefresh(){
   if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+}
+
+// 页面可见性变化时刷新定位（P1修复）
+function setupVisibilityHandler(){
+  if(typeof document.addEventListener === 'undefined') return;
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible'){
+      // 页面重新可见，刷新定位
+      if(map && mapReady && searchMode === 'nearby'){
+        // 延迟执行，避免频繁刷新
+        clearTimeout(window._visibilityTimer);
+        window._visibilityTimer = setTimeout(function(){
+          if(window.AMap && AMap.Geolocation){
+            var geo = new AMap.Geolocation({ enableHighAccuracy: true, convert: true });
+            geo.getCurrentPosition(function(status, result){
+              if(status === 'complete' && result.position){
+                var pos = [result.position.lng, result.position.lat];
+                // 如果位置变化超过50米，刷新数据
+                if(!myPos || getDistance(myPos, pos) > 50){
+                  myPos = pos;
+                  placeUserMarker(pos);
+                  searchParkingAndCharging(pos);
+                  toast('已刷新位置', 1500);
+                }
+              }
+            });
+          }
+        }, 1000);
+      }
+    }
+  });
+}
+
+// 计算两点间距离（米）
+function getDistance(p1, p2){
+  if(!p1 || !p2) return Infinity;
+  var dx = p1[0] - p2[0];
+  var dy = p1[1] - p2[1];
+  return Math.sqrt(dx*dx + dy*dy) * 111000; // 粗略估算
 }
 
 /* =========================================================================
@@ -2800,6 +2992,9 @@ function init(){
   // 加载高德地图 SDK
   loadAmapSDK();
 
+  // 设置页面可见性变化处理器（定位刷新）
+  setupVisibilityHandler();
+
   bindEvents();
 }
 
@@ -2812,6 +3007,11 @@ window.addEventListener('beforeunload', function(){
 
 // 暴露到 window
 window.navTo = navTo;
+window.planDrivingRoute = planDrivingRoute;
+window.showRoutePanel = showRoutePanel;
+window.hideRoutePanel = hideRoutePanel;
+window.hidePanel = hidePanel;
+window.togglePanel = togglePanel;
 window.setAsRouteEnd = setAsRouteEnd;
 window.navFromDetail = navFromDetail;
 window.addToRouteFromDetail = addToRouteFromDetail;
