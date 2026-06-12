@@ -39,11 +39,13 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 body.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
 
-/* ====== 地图容器：修复高度问题 ====== */
+/* ====== 地图容器：修复高度问题，确保地图正常显示 ====== */
+html, body { height: 100%; width: 100%; margin: 0; padding: 0; }
 #map {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%;
+  top: 0; left: 0;
+  width: 100%;
+  height: calc(100vh - 60px);
   z-index: 1;
   background: #e8f0f8;
 }
@@ -522,13 +524,16 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
  * 环境检测：本地开发（/api/ 可用）vs GitHub Pages（直接调高德）
  * ======================================================================== */
 (function(){
-  var isLocal = /^(localhost|127\.0\.0\.1|\:\:1|\d+\.\d+\.\d+\.\d+)$/.test(location.hostname)
-                || location.hostname === location.hostname; // fallback
+  // 本地开发环境：localhost、127.0.0.1、IPv6 ::1、或纯 IP（如 192.168.x.x）
+  // GitHub Pages（795795.github.io）不会匹配，isLocal 为 false
+  var isLocal = /^(localhost|127\.0\.0\.1|\:\:1|0\.0\.0\.0|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.test(location.hostname)
+                || location.protocol === 'file:';
   window._env = {
-    // REST API 基地址
+    // REST API 基地址：本地走 /api/amap 代理，生产直连高德
     apiBase: isLocal ? '/api/amap' : 'https://restapi.amap.com/v3',
-    // 高德 JS API Key（前端必须可见，Referer 白名单保护）
+    // 高德 JS API Key（GitHub Pages 环境下前端必须可见，依赖 Referer 白名单保护）
     amapJsKey: 'faf78a1b9d57c1e1a88fd9f50c795032',
+    // 高德安全密钥（JS API v2.0 必须配置 _AMapSecurityConfig）
     amapSecCode: '6bd6ab656be75d5fc632bca3a68059c9',
     isLocal: isLocal
   };
@@ -693,37 +698,70 @@ function speak(text){
 }
 
 /* =========================================================================
- * 高德 REST API 请求
+ * 高德 REST API 请求（带超时、断网检测、友好错误提示）
  * 本地开发走 /api/amap/ 代理（Key 在后端），GitHub Pages 直接调高德（Referer 白名单保护）
  * ======================================================================== */
 function amapFetch(alias, params){
   var env = window._env || {};
   var base = env.apiBase || 'https://restapi.amap.com/v3';
-  var qs = '';
+
+  // 断网快速失败
+  if(navigator.onLine === false){
+    return Promise.reject(new Error('网络已断开'));
+  }
+
+  // 组装参数
+  var parts = [];
   if(params){
-    var parts = [];
     for(var k in params){
       if(params[k] === undefined || params[k] === null || params[k] === '') continue;
       parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
     }
-    if(parts.length) qs = '?' + parts.join('&');
   }
+  var qs = parts.length ? '?' + parts.join('&') : '';
   var url = base + '/' + alias + qs;
-  // GitHub Pages 直接请求高德，需要带上 key；本地代理则后端注入
+
+  // GitHub Pages 直接请求高德，需附带 key；本地代理则由后端注入 key
   if(!env.isLocal){
     url += (qs ? '&' : '?') + 'key=' + env.amapJsKey;
   }
-  return fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } })
+
+  // 10 秒超时 + 标准 fetch
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timeoutId = null;
+  if(ctrl){
+    timeoutId = setTimeout(function(){ ctrl.abort(); }, 10000);
+  }
+
+  var fetchOpts = { method: 'GET', headers: { 'Accept': 'application/json' } };
+  if(ctrl) fetchOpts.signal = ctrl.signal;
+
+  return fetch(url, fetchOpts)
     .then(function(r){
-      if(!r.ok) throw new Error('请求失败 HTTP ' + r.status);
+      if(timeoutId) clearTimeout(timeoutId);
+      if(!r.ok) throw new Error('HTTP ' + r.status + ' ' + (r.statusText || ''));
       return r.json();
     })
     .then(function(j){
-      if(!j) throw new Error('代理无响应');
-      if(String(j.status) !== '1') throw new Error(j.info || j.msg || '高德接口异常 status=' + j.status);
+      if(!j) throw new Error('响应为空');
+      if(String(j.status) !== '1'){
+        var info = j.info || j.msg || ('status=' + j.status);
+        // 高德常见错误码提示
+        if(info.indexOf('INVALID_USER_SCODE') !== -1 || info.indexOf('INVALID_USER_KEY') !== -1){
+          throw new Error('高德 Key 校验失败，请检查 Key 与安全密钥配置');
+        }
+        if(info.indexOf('QUOTA_PLAN_RUN_OUT') !== -1 || info.indexOf('DAILY_QUERY_OVER_LIMIT') !== -1){
+          throw new Error('今日查询次数已达上限，请稍后再试');
+        }
+        throw new Error(info);
+      }
       return j;
     })
     .catch(function(err){
+      if(timeoutId) clearTimeout(timeoutId);
+      if(err && err.name === 'AbortError'){
+        throw new Error('请求超时，请检查网络后重试');
+      }
       throw err;
     });
 }
@@ -751,29 +789,37 @@ function loadAmapSDK(){
     'AMap.Circle',
   ];
 
-  // 安全验证脚本 + 地图主脚本
-  var secUrl = 'https://webapi.amap.com/security?xtoken=' + encodeURIComponent(env.amapSecCode || '');
-  var mapUrl = 'https://webapi.amap.com/maps?v=2.0&key=' + env.amapJsKey + '&plugin=' + plugins.join(',');
+  // 高德 JS API v2.0 安全配置：必须先设置 _AMapSecurityConfig，再加载地图脚本
+  // 详见：https://lbs.amap.com/api/jsapi-v2/guide/abc/prepare
+  window._AMapSecurityConfig = {
+    securityJsCode: env.amapSecCode || ''
+  };
 
-  // 先加载安全验证（防风控拦截）
-  loadScript(secUrl, function(){
-    // 再加载地图主脚本
-    loadScript(mapUrl, afterAmapLoad, function(){
-      showMapError('⚠️ 地图加载失败，请检查网络连接\n若长期如此请联系管理员');
-      toast('地图加载失败，请检查网络');
-    });
+  // 地图主脚本（HTTPS，带 key + plugins + jscode）
+  var mapUrl = 'https://webapi.amap.com/maps?v=2.0&key=' + env.amapJsKey
+             + '&plugin=' + plugins.join(',')
+             + '&jscode=' + encodeURIComponent(env.amapSecCode || '');
+
+  loadScript(mapUrl, function(){
+    // 地图脚本加载成功
+    if(window.AMap){
+      afterAmapLoad();
+    } else {
+      showMapError('⚠️ 地图脚本加载异常，请刷新重试');
+      toast('地图加载失败，请刷新页面');
+    }
   }, function(){
-    // 安全脚本加载失败也继续（部分环境可能不需要）
-    loadScript(mapUrl, afterAmapLoad, function(){
-      showMapError('⚠️ 地图加载失败，请检查网络连接\n若长期如此请联系管理员');
-      toast('地图加载失败，请检查网络');
-    });
+    // 地图脚本加载失败（网络问题、CDN 阻塞等）
+    showMapError('⚠️ 地图脚本加载失败，请检查网络连接\n或稍后刷新页面重试');
+    toast('地图加载失败，请检查网络');
   });
 }
 
 function loadScript(src, onload, onerror){
   var s = document.createElement('script');
   s.src = src;
+  s.charset = 'utf-8';
+  s.async = true;
   s.onload = onload || function(){};
   s.onerror = onerror || function(){};
   document.head.appendChild(s);
@@ -898,79 +944,111 @@ function searchParkingAndCharging(centerPos){
 
   var locStr = center[0] + ',' + center[1];
 
-  // 并行请求两个接口，带防抖
-  Promise.all([
+  // 使用 Promise.allSettled：任一接口失败仍可展示部分数据
+  // 停车场：place/around types=停车场；充电站：station/electric
+  var requests = [
     amapFetch('place/around', {
-      location: locStr,
-      types: '停车场',
-      radius: 5000,
-      extensions: 'all',
-      offset: 1,
-      page_size: 30,
-      sort: 'distance'
+      location: locStr, types: '停车场',
+      radius: 5000, extensions: 'all',
+      offset: 1, page_size: 30, sort: 'distance'
     }),
     amapFetch('station/electric', {
-      location: locStr,
-      radius: 5000,
-      extensions: 'all',
-      offset: 1,
-      page_size: 30
+      location: locStr, radius: 5000, extensions: 'all',
+      offset: 1, page_size: 30
     })
-  ]).then(function(results){
-    hideLoading();
-    var rawParking = (results[0] && results[0].pois) || [];
-    var rawCharging = (results[1] && (results[1].stations || results[1].pois || [])) || [];
+  ];
 
-    // 标记类型
-    for(var i = 0; i < rawParking.length; i++) rawParking[i]._type = 'parking';
-    for(var j = 0; j < rawCharging.length; j++){
-      rawCharging[j]._type = 'charging';
-      // station/electric 字段对齐
-      if(!rawCharging[j].location && rawCharging[j].longitude !== undefined){
-        rawCharging[j].location = rawCharging[j].longitude + ',' + rawCharging[j].latitude;
-      }
-      if(!rawCharging[j].name && rawCharging[j].station_name){
-        rawCharging[j].name = rawCharging[j].station_name;
-      }
-      if(!rawCharging[j].address){
-        rawCharging[j].address = [
-          rawCharging[j].province || '',
-          rawCharging[j].city || '',
-          rawCharging[j].district || '',
-          rawCharging[j].address_detail || ''
-        ].join('');
-      }
-    }
+  if(typeof Promise.allSettled === 'function'){
+    Promise.allSettled(requests).then(function(results){
+      hideLoading();
+      var rawParking = (results[0].status === 'fulfilled' && results[0].value && results[0].value.pois) || [];
+      var rawCharging = (results[1].status === 'fulfilled' && results[1].value
+        && (results[1].value.stations || results[1].value.pois || [])) || [];
 
-    var combined = rawParking.concat(rawCharging);
-    if(combined.length === 0){
-      currentPOIs = [];
-      renderPOIPanel([], currentKeyword);
-      renderMapMarkers([]);
-      toast('附近未查询到停车场与充电站，可尝试扩大半径');
+      // 任一接口失败时记录错误信息（用于 toast 提示，但不阻塞渲染）
+      var hasAnyFailure = (results[0].status === 'rejected') || (results[1].status === 'rejected');
+
+      // 标记类型 + 充电站字段对齐
+      for(var i = 0; i < rawParking.length; i++) rawParking[i]._type = 'parking';
+      for(var j = 0; j < rawCharging.length; j++){
+        rawCharging[j]._type = 'charging';
+        if(!rawCharging[j].location && rawCharging[j].longitude !== undefined){
+          rawCharging[j].location = rawCharging[j].longitude + ',' + rawCharging[j].latitude;
+        }
+        if(!rawCharging[j].name && rawCharging[j].station_name){
+          rawCharging[j].name = rawCharging[j].station_name;
+        }
+        if(!rawCharging[j].address){
+          rawCharging[j].address = [
+            rawCharging[j].province || '', rawCharging[j].city || '',
+            rawCharging[j].district || '', rawCharging[j].address_detail || ''
+          ].join('');
+        }
+      }
+
+      var combined = rawParking.concat(rawCharging);
+      if(combined.length === 0){
+        currentPOIs = [];
+        renderPOIPanel([], currentKeyword);
+        renderMapMarkers([]);
+        if(hasAnyFailure) toast('接口请求失败，可稍后重试');
+        else toast('附近未查询到停车场与充电站，可尝试扩大半径');
+        showPanel();
+        return;
+      }
+
+      var processed = processPOIs(combined, center);
+      currentPOIs = processed;
+      offlineCache = { pois: processed, kw: currentKeyword, center: center, radius: 5000, ts: Date.now() };
+      saveLS('offline_cache', offlineCache);
+      renderPOIPanel(processed, currentKeyword);
+      renderMapMarkers(processed);
+      if(hasAnyFailure) showMapError('部分数据获取失败，已显示可用结果');
       showPanel();
-      return;
-    }
-
-    var processed = processPOIs(combined, center);
-    currentPOIs = processed;
-    offlineCache = { pois: processed, kw: currentKeyword, center: center, radius: 5000, ts: Date.now() };
-    saveLS('offline_cache', offlineCache);
-    renderPOIPanel(processed, currentKeyword);
-    renderMapMarkers(processed);
-    showPanel();
-  }).catch(function(err){
-    hideLoading();
-    toast('搜索失败：' + (err && err.message ? err.message : String(err)));
-    // 尝试显示缓存
-    if(offlineCache && offlineCache.pois && offlineCache.pois.length){
-      currentPOIs = offlineCache.pois;
-      renderPOIPanel(offlineCache.pois, offlineCache.kw);
-      renderMapMarkers(offlineCache.pois);
-      showMapError('📡 网络异常，显示上次缓存数据');
-    }
-    showPanel();
-  });
+    });
+  } else {
+    // 旧浏览器 fallback：用 Promise.all + 单个请求时各自捕获
+    Promise.all([
+      requests[0].catch(function(){ return null; }),
+      requests[1].catch(function(){ return null; })
+    ]).then(function(results){
+      hideLoading();
+      var rawParking = (results[0] && results[0].pois) || [];
+      var rawCharging = (results[1] && (results[1].stations || results[1].pois || [])) || [];
+      for(var i = 0; i < rawParking.length; i++) rawParking[i]._type = 'parking';
+      for(var j = 0; j < rawCharging.length; j++){
+        rawCharging[j]._type = 'charging';
+        if(!rawCharging[j].location && rawCharging[j].longitude !== undefined){
+          rawCharging[j].location = rawCharging[j].longitude + ',' + rawCharging[j].latitude;
+        }
+        if(!rawCharging[j].name && rawCharging[j].station_name){
+          rawCharging[j].name = rawCharging[j].station_name;
+        }
+      }
+      var combined = rawParking.concat(rawCharging);
+      if(combined.length === 0){
+        if(offlineCache && offlineCache.pois && offlineCache.pois.length){
+          currentPOIs = offlineCache.pois;
+          renderPOIPanel(offlineCache.pois, offlineCache.kw);
+          renderMapMarkers(offlineCache.pois);
+          showMapError('📡 网络异常，显示上次缓存数据');
+        } else {
+          renderPOIPanel([], currentKeyword);
+          renderMapMarkers([]);
+          toast('附近未查询到停车场与充电站');
+        }
+        showPanel();
+        return;
+      }
+      var processed = processPOIs(combined, center);
+      currentPOIs = processed;
+      offlineCache = { pois: processed, kw: currentKeyword, center: center, radius: 5000, ts: Date.now() };
+      saveLS('offline_cache', offlineCache);
+      renderPOIPanel(processed, currentKeyword);
+      renderMapMarkers(processed);
+      showPanel();
+    });
+  }
 }
 
 function showPanel(){
