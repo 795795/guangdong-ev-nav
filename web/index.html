@@ -764,18 +764,17 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.92); }
  * 环境检测：本地开发（/api/ 可用）vs GitHub Pages（直接调高德）
  * ======================================================================== */
 (function(){
-  // 本地开发环境：localhost、127.0.0.1、IPv6 ::1、或纯 IP（如 192.168.x.x）
-  // GitHub Pages（795795.github.io）不会匹配，isLocal 为 false
-  var isLocal = /^(localhost|127\.0\.0\.1|\:\:1|0\.0\.0\.0|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.test(location.hostname)
-                || location.protocol === 'file:';
+  // 统一配置：所有 REST API 请求都走后端代理 /api/amap/...
+  // 后端代理负责注入 Web服务 Key，前端不暴露任何密钥
   window._env = {
-    // REST API 基地址：本地走 /api/amap 代理，生产直连高德
-    apiBase: isLocal ? '/api/amap' : 'https://restapi.amap.com/v3',
-    // 高德 JS API Key（GitHub Pages 环境下前端必须可见，依赖 Referer 白名单保护）
+    // REST API 基地址：统一走后端代理
+    apiBase: '/api/amap',
+    // 高德 JS API Key（仅用于地图加载，不走 REST API）
     amapJsKey: 'faf78a1b9d57c1e1a88fd9f50c795032',
     // 高德安全密钥（JS API v2.0 必须配置 _AMapSecurityConfig）
     amapSecCode: '6bd6ab656be75d5fc632bca3a68059c9',
-    isLocal: isLocal
+    // 是否本地开发（用于调试）
+    isLocal: /^(localhost|127\.0\.0\.1|\:\:1|0\.0\.0\.0|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.test(location.hostname) || location.protocol === 'file:'
   };
 })();
 
@@ -939,11 +938,11 @@ function speak(text){
 
 /* =========================================================================
  * 高德 REST API 请求（带超时、断网检测、友好错误提示）
- * 本地开发走 /api/amap/ 代理（Key 在后端），GitHub Pages 直接调高德（Referer 白名单保护）
+ * 所有请求都走后端代理 /api/amap/...，后端负责注入 Web服务 Key
  * ======================================================================== */
 function amapFetch(alias, params){
   var env = window._env || {};
-  var base = env.apiBase || 'https://restapi.amap.com/v3';
+  var base = env.apiBase || '/api/amap';
 
   // 断网快速失败
   if(navigator.onLine === false){
@@ -961,10 +960,7 @@ function amapFetch(alias, params){
   var qs = parts.length ? '?' + parts.join('&') : '';
   var url = base + '/' + alias + qs;
 
-  // GitHub Pages 直接请求高德，需附带 key；本地代理则由后端注入 key
-  if(!env.isLocal){
-    url += (qs ? '&' : '?') + 'key=' + env.amapJsKey;
-  }
+  // 后端代理会自动注入 Web服务 Key，前端不需要处理
 
   // 10 秒超时 + 标准 fetch
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
