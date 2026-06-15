@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#1677ff">
-<meta name="description" content="广东新能源导航 - 充电桩 / 停车场 / 加油站查询">
+<meta name="description" content="广东新能源导航 - 充电桩 / 停车场查询">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>广东新能源导航</title>
 <style>
@@ -215,8 +215,25 @@ body { background: var(--bg-soft); color: var(--text-1); }
   width: 100%; height: 100%;
   z-index: 1;
   background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
-  transition: opacity 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
 }
+
+/* 任务三-1: POI标记样式 */
+.poi-marker {
+  width: 28px; height: 28px;
+  background: #fff;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; line-height: 1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transform: translate(0, 0);
+}
+.poi-marker.charge { border-color: #1677ff; }
+.poi-marker.parking { border-color: #52c41a; }
+.poi-marker.gas { border-color: #faad14; }
+
+#map { transition: opacity 0.3s ease; }
 #map.map-loading { opacity: 0.7; }
 
 /* 地图内部 loading */
@@ -425,7 +442,7 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
   .filter-scroll { padding-bottom: 2px; }
 }
 .filter-tag-btn {
-  flex-shrink: 0; padding: 8px 14px; height: 36px;
+  flex-shrink: 0; padding: 8px 14px; height: var(--touch-min);  /* 任务一-3: 热区44px */
   min-width: var(--touch-min);
   border-radius: var(--radius-pill);
   font-size: 13px; font-weight: 600;
@@ -615,6 +632,8 @@ body.keyboard-open .bottom-panel {
   padding: 10px 14px calc(var(--safe-bottom) + 10px) 14px;
   overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;      /* 任务一-1: 防止滚动穿透到底层 */
+  overscroll-behavior-y: contain;
   box-sizing: border-box;
   min-height: 0;
   touch-action: pan-y;           /* 列表内部滚动，与面板拖拽互不冲突 */
@@ -640,7 +659,7 @@ body.keyboard-open .bottom-panel {
 }
 .quick-filter-row::-webkit-scrollbar { display: none; }
 .quick-filter-btn {
-  flex-shrink: 0; padding: 8px 14px; height: 36px;
+  flex-shrink: 0; padding: 8px 14px; height: var(--touch-min);  /* 任务一-3: 热区44px */
   min-width: var(--touch-min);
   border-radius: var(--radius-pill);
   font-size: 13px; font-weight: 600;
@@ -1101,6 +1120,14 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
 .detail-data-value.warning { color: var(--warning); }
 .detail-data-value.danger { color: var(--danger); }
 .detail-data-value.small { font-size: 13px; font-weight: 700; }
+/* 任务二-3: 快充醒目橙色，慢充醒目绿色 */
+.detail-data-value.orange { color: #ff6b00; }
+.detail-data-value.green { color: #52c41a; }
+.detail-data-item.highlight-fast { background: rgba(255,107,0,0.08); border-left: 3px solid #ff6b00; }
+.detail-data-item.highlight-slow { background: rgba(82,196,26,0.08); border-left: 3px solid #52c41a; }
+/* 任务二-2/二-3: 标签行 */
+.detail-tags-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.detail-tag { background: var(--bg-gray); color: var(--text-2); padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
 
 .detail-ext-row { background: var(--bg-soft); border-radius: var(--radius-sm);
   padding: 10px 14px; margin-top: 10px; }
@@ -1154,6 +1181,19 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
   box-shadow: 0 2px 10px rgba(22,119,255,0.3);
 }
 .detail-action-btn.primary:hover { box-shadow: 0 4px 16px rgba(22,119,255,0.4); transform: translateY(-1px); }
+/* 任务三-2: 醒目的导航按钮 */
+.detail-nav-section { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.detail-nav-btn {
+  width: 100%; padding: 14px 20px; border-radius: var(--radius-md);
+  font-size: 15px; font-weight: 800;
+  background: linear-gradient(135deg, #1677ff, #0958d9);
+  color: #fff; border: none;
+  box-shadow: 0 4px 16px rgba(22,119,255,0.4);
+  transition: all var(--anim-fast);
+  min-height: 48px;
+}
+.detail-nav-btn:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(22,119,255,0.3); }
+.detail-nav-btn:hover { box-shadow: 0 6px 20px rgba(22,119,255,0.5); transform: translateY(-2px); }
 
 /* ---- 导航覆盖层（完整路线） ---- */
 .navi-overlay {
@@ -1501,11 +1541,17 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 }
 
 </style>
-<script src="https://webapi.amap.com/maps?v=2.0&key=b99f0a6e2eb5f0a6a0f9fe724703f750&plugin=AMap.PlaceSearch,AMap.Driving,AMap.AutoComplete,AMap.Geocoder,AMap.Geolocation,AMap.ToolBar,AMap.Scale,AMap.PolyEditor,AMap.CircleEditor"></script>
+<script>
+    // 高德安全密钥配置（必须在引入地图JS前配置）
+    window._AMapSecurityConfig = { 
+        securityJsCode: '6bd6ab656be75d5fc632bca3a68059c9' 
+    };
+</script>
+<script src="https://webapi.amap.com/maps?v=2.0&key=faf78a1b9d57c1e1a88fd9f50c795032&plugin=AMap.PlaceSearch,AMap.Driving,AMap.AutoComplete,AMap.Geocoder,AMap.Geolocation,AMap.ToolBar,AMap.Scale,AMap.PolyEditor,AMap.CircleEditor,AMap.MarkerClusterer,AMap.TileLayer.Traffic"></script>
 <script src="gcj02.js"></script>
 </head>
 <body>
-<span id="mapDesc" class="sr-only">广东新能源导航地图，显示充电站、停车场、加油站位置</span>
+<span id="mapDesc" class="sr-only">广东新能源导航地图，显示充电站、停车场位置</span>
 
 
 <!-- ======== LAYER 0: 全屏地图容器 (最底层) ======== -->
@@ -1538,13 +1584,11 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         <button type="button" class="filter-tag" data-filter="nearby" data-mode="charge">📍 附近充电</button>
         <button type="button" class="filter-tag" data-filter="fastCharge" data-mode="charge">⚡ 快充</button>
         <button type="button" class="filter-tag" data-filter="parking" data-mode="parking">🅿️ 停车场</button>
-        <button type="button" class="filter-tag" data-filter="gas" data-mode="gas">⛽ 加油站</button>
+
     </div>
     <div class="filter-tags-bar" id="sortBar" style="display:none; margin-top:0px;">
-        <button type="button" class="filter-tag sort-tag" data-sort="distance">按距离</button>
+        <button type="button" class="filter-tag sort-tag active" data-sort="distance">按距离</button>
         <button type="button" class="filter-tag sort-tag" data-sort="price">按价格</button>
-        <button type="button" class="filter-tag sort-tag" data-sort="available">按空闲</button>
-        <button type="button" class="filter-tag sort-tag" data-sort="name">按名称</button>
     </div>
 </div>
 
@@ -1555,6 +1599,9 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     </button>
     <button type="button" class="map-tool-btn" id="btnZoomIn" aria-label="放大">+</button>
     <button type="button" class="map-tool-btn" id="btnZoomOut" aria-label="缩小">−</button>
+    <button type="button" class="map-tool-btn" id="btnTraffic" aria-label="实时路况">
+        <span style="font-size:16px;">🚥</span>
+    </button>
     <button type="button" class="map-tool-btn" id="btnRefresh" aria-label="刷新">
         <span style="font-size:16px;">↻</span>
     </button>
@@ -1576,7 +1623,6 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     <div class="panel-modes" id="panelModes">
         <button type="button" class="panel-mode-btn active" data-mode="charge">🔋 充电</button>
         <button type="button" class="panel-mode-btn" data-mode="parking">🅿️ 停车</button>
-        <button type="button" class="panel-mode-btn" data-mode="gas">⛽ 加油</button>
     </div>
 
     <!-- 滚动内容区 -->
@@ -1596,13 +1642,10 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             <select class="filter-select" id="sortSelect">
                 <option value="distance">按距离排序</option>
                 <option value="price">按价格排序</option>
-                <option value="available">按空闲数量</option>
-                <option value="name">按名称排序</option>
             </select>
             <select class="filter-select" id="filterSelect">
                 <option value="all">全部类型</option>
                 <option value="fastCharge">仅快充</option>
-                <option value="slowCharge">仅慢充</option>
                 <option value="available">空闲可用</option>
             </select>
         </div>
@@ -1620,27 +1663,19 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     </div>
 </div>
 
-<!-- ======== LAYER 3: 底部导航栏 ======== -->
+<!-- ======== LAYER 3: 底部导航栏（精简版）======= -->
 <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="底部导航">
     <div class="nav-items">
         <button type="button" class="nav-item active" data-nav="map" role="tab" aria-selected="true" aria-label="地图">
             <div class="nav-icon">🗺️</div>
             <div class="nav-label">地图</div>
-        </div>
-        <button type="button" class="nav-item" data-nav="favorites" role="tab" aria-selected="false" aria-label="我的收藏">
-            <div class="nav-icon">⭐</div>
-            <div class="nav-label">收藏</div>
-        </div>
+        </button>
         <button type="button" class="nav-item" data-nav="route" role="tab" aria-selected="false" aria-label="路线规划">
             <div class="nav-icon">🧭</div>
             <div class="nav-label">路线</div>
-        </div>
-        <button type="button" class="nav-item" data-nav="settings" role="tab" aria-selected="false" aria-label="设置">
-            <div class="nav-icon">⚙️</div>
-            <div class="nav-label">设置</button>
-        </div>
-    </nav>
-</div>
+        </button>
+    </div>
+</nav>
 
 <!-- ======== LAYER 4: 路线规划面板 ======== -->
 <div class="route-panel" id="routePanel">
@@ -1747,9 +1782,16 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     const S = {
         map: null, geo: null, ps: null, ac: null, driving: null, geocoder: null,
         markers: [], polylines: [], user: null, userMarker: null,
-        mode: 'charge', sort: 'distance', extraFilter: null,
-        panelState: 'mini', pois: [], filtered: [], displayed: 0, pageSize: 15,
-        loading: false, kw: '', selected: -1, drag: null, lpTimer: null, firstLoad: true
+        markerCluster: null, renderTimer: null,  /* 任务三: 点聚合和懒加载 */
+        trafficLayer: null, trafficOn: false,   /* 任务二-1: 实时路况 */
+        mode: 'charge', sort: 'distance', extraFilters: [], extraFilter: null,  /* 任务二-2: 支持多重筛选 */
+        panelState: 'mini', pois: [], filtered: [], displayed: 0, pageSize: 20,
+        loading: false, kw: '', selected: -1, drag: null, lpTimer: null, firstLoad: true,
+        // 搜索相关状态
+        searchPageIndex: 1,    /* 当前页码 */
+        searchCenter: null,    /* 搜索中心点 */
+        searchLoading: false,  /* 是否正在搜索 */
+        debounceTimer: null    /* 触底防抖定时器 */
     };
 
     // ---------- 数据生成 ----------
@@ -1765,11 +1807,6 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             totalSpots: total, availableSpots: av, pricePerHour: price, priceType: '按时计费',
             type: '停车', distance: 0, _fav: false };
     }
-    function mGS(name, addr, lng, lat, p92, p95, p0) {
-        return { id: 'G' + Math.random().toString(36).substr(2, 9), name, address: addr, lng, lat,
-            price92: p92, price95: p95, price0: p0, type: '加油', distance: 0, _fav: false };
-    }
-
     const STATIONS = [
         mCS('国家电网广州天河充电站','广州市天河区天河路208号',113.3239,23.1352,12,8,1.45),
         mCS('特来电广州体育中心站','广州市天河区体育西路103号',113.3259,23.1390,10,6,1.52),
@@ -1811,15 +1848,6 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         mPK('东莞南城会展中心停车场','东莞市南城区会展北路',113.7520,23.0250,700,8),
         mPK('佛山岭南天地停车场','佛山市禅城区祖庙路',113.1250,23.0250,500,10),
         mPK('惠州西湖景区停车场','惠州市惠城区环城西路',114.4000,23.1000,400,8),
-    ];
-    const GAS = [
-        mGS('中石化广州天河加油站','广州市天河区天河路198号',113.3240,23.1360,7.52,8.03,7.18),
-        mGS('中石油广州白云加油站','广州市白云区机场路33号',113.2500,23.1700,7.48,7.98,7.15),
-        mGS('中石化深圳福田加油站','深圳市福田区深南大道6008号',114.0650,22.5400,7.68,8.21,7.32),
-        mGS('中石化东莞南城加油站','东莞市南城区莞太路200号',113.7500,23.0200,7.45,7.95,7.12),
-        mGS('中石油佛山禅城加油站','佛山市禅城区同济东路',113.1250,23.0200,7.49,7.99,7.16),
-        mGS('中石化珠海香洲加油站','珠海市香洲区凤凰南路',113.5500,22.2700,7.55,8.06,7.22),
-        mGS('中石化中山石岐加油站','中山市石岐区康华路',113.3800,22.5200,7.48,7.98,7.15),
     ];
     // ------------------------------------------------------------------
 
@@ -1937,8 +1965,18 @@ function initMap() {
                 S.geo = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 10000, buttonPosition: 'RB', showCircle: false, showMarker: false, zoomToAccuracy: false });
                 S.map.addControl(S.geo);
             } catch (e) {}
-            try { S.ps = new AMap.PlaceSearch({ city: '全国', pageSize: 10); S.ac = new AMap.AutoComplete({ city: '全国' }); } catch (e) {}
-            try { S.driving = new AMap.Driving({ policy: AMap.DrivingPolicy.LEAST_TIME); } catch (e) {}
+            // 任务二-1: 初始化实时路况图层
+            try {
+                S.trafficLayer = new AMap.TileLayer.Traffic({ zIndex: 10 });
+                S.trafficLayer.setMap(S.map);
+                S.trafficLayer.hide(); // 默认隐藏
+            } catch (e) { console.warn('路况图层初始化失败:', e); }
+            try { S.ps = new AMap.PlaceSearch({ city: '全国', pageSize: 10 }); S.ac = new AMap.AutoComplete({ city: '全国' }); } catch (e) {}
+            try { S.driving = new AMap.Driving({ 
+                policy: AMap.DrivingPolicy.LEAST_TIME,
+                model: 'EV_NOVEL',  // 任务三-3: 新能源绿牌策略
+                extensions: 'all'
+            }); } catch (e) {}
             try { S.geocoder = new AMap.Geocoder({ city: '全国' }); } catch (e) {}
 
             S.map.on('complete', function () {
@@ -1972,12 +2010,27 @@ function initMap() {
                     if (showHint) toast('定位成功', 'success');
                     refreshCurrent();
                 } else {
+                    // 任务二-1: 定位失败友好提示
+                    const errType = result && result.error && result.error.info;
+                    let msg = '定位失败，请刷新重试';
+                    if (errType === 'PERMISSION_DENIED' || errType === 'Geolocation permission denied') {
+                        msg = '定位权限被拒绝，请在系统设置或浏览器中开启定位权限';
+                    } else if (errType === 'TIME_OUT' || errType === 'Geolocation time out') {
+                        msg = '定位超时，请检查网络后重试';
+                    } else if (errType === 'POSITION_UNAVAILABLE') {
+                        msg = '无法获取位置信息，请检查GPS是否开启';
+                    }
                     setUserLocation(113.264, 23.129, '广州默认位置');
-                    if (showHint) toast('定位失败，使用默认位置', 'warning');
+                    toast(msg, 'error', 4000);  // 任务二-1: 更长的提示时间
                     refreshCurrent();
                 }
             });
-        } catch (e) { hideLoading(); setUserLocation(113.264, 23.129, '广州默认位置'); refreshCurrent(); }
+        } catch (e) { 
+            hideLoading(); 
+            toast('定位服务异常，请在浏览器设置中开启定位权限', 'error', 4000);
+            setUserLocation(113.264, 23.129, '广州默认位置'); 
+            refreshCurrent(); 
+        }
     }
     function setUserLocation(lng, lat, label) {
         S.user = { lng: lng, lat: lat, label: label || '当前位置' };
@@ -2002,32 +2055,331 @@ function initMap() {
         else setPanelState('mini');
     }
     // ---------- 数据加载 ----------
-    function loadChargeData() { S.mode = 'charge'; S.pois = STATIONS.slice(); refreshCurrent(); setPanelState('mini'); }
-    function loadParkingData() { S.mode = 'parking'; S.pois = PARKINGS.slice(); refreshCurrent(); setPanelState('mini'); }
-    function loadGasData() { S.mode = 'gas'; S.pois = GAS.slice(); refreshCurrent(); setPanelState('mini'); }
+    // ---------- 使用高德API搜索数据 ----------
+    
+    // 解析POI数据
+    function parsePoi(poi) {
+        const result = {
+            id: poi.id || 'P' + Math.random().toString(36).substr(2, 9),
+            name: poi.name || '未知名称',
+            address: poi.address || poi.location || '暂无地址',
+            lng: poi.location && poi.location.lng || 0,
+            lat: poi.location && poi.location.lat || 0,
+            distance: poi.distance || 0,
+            type: '',
+            _fav: false
+        };
+        
+        const typeName = poi.type || poi.business_type || '';
+        if (typeName.includes('停车') || typeName.includes('停车场')) {
+            result.type = '停车';
+            result.totalSpots = 0;
+            result.availableSpots = 0;
+            if (poi.biz_ext && poi.biz_ext.cost) {
+                result.pricePerHour = parseFloat(poi.biz_ext.cost.replace(/[^0-9.]/g, ''));
+            }
+            if (poi.entrance) {
+                result.entrance = poi.entrance;
+            }
+        } else if (typeName.includes('充电') || typeName.includes('充电站') || typeName.includes('充电桩')) {
+            result.type = '充电';
+            result.fastChargePiles = 0;
+            result.slowChargePiles = 0;
+            result.availablePiles = 0;
+            if (poi.extension && poi.extension.district) {
+                const desc = poi.extension.district || '';
+                const fastMatch = desc.match(/快充[\u4e00-\u9fa5]*(\d+)/);
+                const slowMatch = desc.match(/慢充[\u4e00-\u9fa5]*(\d+)/);
+                if (fastMatch) result.fastChargePiles = parseInt(fastMatch[1], 10);
+                if (slowMatch) result.slowChargePiles = parseInt(slowMatch[1], 10);
+            }
+            if (poi.biz_ext && poi.biz_ext.cost) {
+                result.pricePerKwh = parseFloat(poi.biz_ext.cost.replace(/[^0-9.]/g, ''));
+            }
+            if (poi.extension && poi.extension.operator) {
+                result.operator = poi.extension.operator;
+            }
+            if (poi.extension && poi.extension.type) {
+                result.stationType = poi.extension.type.includes('地下') ? '地下' : '地面';
+            }
+        }
+        
+        return result;
+    }
+    
+    // 并发搜索停车场和充电桩
+    function searchAroundLocation(center, callback) {
+        if (!S.ps) {
+            try {
+                S.ps = new AMap.PlaceSearch({
+                    extensions: 'all',
+                    pageSize: 20,
+                    pageIndex: 1,
+                    autoFitView: false
+                });
+            } catch (e) {
+                console.error('PlaceSearch初始化失败:', e);
+                callback && callback([]);
+                return;
+            }
+        }
+        
+        const centerPoint = [center.lng, center.lat];
+        S.searchCenter = center;
+        S.searchPageIndex = 1;
+        
+        let completed = 0;
+        const allResults = [];
+        
+        S.ps.searchNearBy({
+            keywords: '停车场',
+            location: centerPoint,
+            radius: 5000
+        }, function(status, result) {
+            completed++;
+            if (status === 'complete' && result.poiList && result.poiList.pois) {
+                result.poiList.pois.forEach(function(poi) {
+                    const parsed = parsePoi(poi);
+                    if (parsed.type === '停车') {
+                        allResults.push(parsed);
+                    }
+                });
+            }
+            checkComplete();
+        });
+        
+        S.ps.searchNearBy({
+            keywords: '电动汽车充电站|充电桩',
+            location: centerPoint,
+            radius: 5000
+        }, function(status, result) {
+            completed++;
+            if (status === 'complete' && result.poiList && result.poiList.pois) {
+                result.poiList.pois.forEach(function(poi) {
+                    const parsed = parsePoi(poi);
+                    if (parsed.type === '充电') {
+                        allResults.push(parsed);
+                    }
+                });
+            }
+            checkComplete();
+        });
+        
+        function checkComplete() {
+            if (completed >= 2) {
+                allResults.sort(function(a, b) {
+                    return a.distance - b.distance;
+                });
+                callback && callback(allResults);
+            }
+        }
+    }
+    
+    // 加载下一页数据（带300ms防抖）
+    function loadNextPage(callback) {
+        if (!S.ps || !S.searchCenter || S.searchLoading) {
+            callback && callback([]);
+            return;
+        }
+        
+        S.searchLoading = true;
+        S.searchPageIndex++;
+        
+        const centerPoint = [S.searchCenter.lng, S.searchCenter.lat];
+        let completed = 0;
+        const newResults = [];
+        
+        S.ps.searchNearBy({
+            keywords: '停车场',
+            location: centerPoint,
+            radius: 5000
+        }, function(status, result) {
+            completed++;
+            if (status === 'complete' && result.poiList && result.poiList.pois) {
+                result.poiList.pois.forEach(function(poi) {
+                    const parsed = parsePoi(poi);
+                    if (parsed.type === '停车') {
+                        newResults.push(parsed);
+                    }
+                });
+            }
+            checkComplete();
+        });
+        
+        S.ps.searchNearBy({
+            keywords: '电动汽车充电站|充电桩',
+            location: centerPoint,
+            radius: 5000
+        }, function(status, result) {
+            completed++;
+            if (status === 'complete' && result.poiList && result.poiList.pois) {
+                result.poiList.pois.forEach(function(poi) {
+                    const parsed = parsePoi(poi);
+                    if (parsed.type === '充电') {
+                        newResults.push(parsed);
+                    }
+                });
+            }
+            checkComplete();
+        });
+        
+        function checkComplete() {
+            if (completed >= 2) {
+                S.searchLoading = false;
+                callback && callback(newResults);
+            }
+        }
+    }
+    
+    // 触底加载防抖
+    function debounceLoadMore() {
+        if (S.debounceTimer) clearTimeout(S.debounceTimer);
+        S.debounceTimer = setTimeout(function() {
+            if (!S.searchLoading && S.filtered.length > 0) {
+                loadNextPage(function(newPois) {
+                    if (newPois.length > 0) {
+                        const allPois = S.pois.concat(newPois);
+                        allPois.sort(function(a, b) {
+                            return a.distance - b.distance;
+                        });
+                        S.pois = allPois;
+                        refreshCurrent();
+                        toast('已加载 ' + newPois.length + ' 个新地点', 'success');
+                    } else {
+                        toast('已加载全部数据', 'warning');
+                    }
+                });
+            }
+        }, 300);
+    }
+    
+    function loadChargeData() {
+        if (!S.user) {
+            doLocate(true);
+            return;
+        }
+        showLoading('搜索中...', '正在查找附近充电桩', false);
+        if (!S.ps) {
+            try {
+                S.ps = new AMap.PlaceSearch({
+                    extensions: 'all',
+                    pageSize: 20,
+                    pageIndex: 1,
+                    autoFitView: false
+                });
+            } catch (e) {
+                hideLoading();
+                toast('搜索服务不可用', 'error');
+                return;
+            }
+        }
+        const centerPoint = [S.user.lng, S.user.lat];
+        S.mode = 'charge';
+        S.searchCenter = S.user;
+        S.searchPageIndex = 1;
+        
+        S.ps.searchNearBy({
+            keywords: '电动汽车充电站|充电桩',
+            location: centerPoint,
+            radius: 5000
+        }, function(status, result) {
+            hideLoading();
+            if (status === 'complete' && result.poiList && result.poiList.pois) {
+                S.pois = result.poiList.pois.map(function(poi) {
+                    return parsePoi(poi);
+                }).filter(function(p) { return p.type === '充电'; });
+                S.pois.sort(function(a, b) { return a.distance - b.distance; });
+                refreshCurrent();
+                setPanelState('mini');
+                toast('找到 ' + S.pois.length + ' 个充电桩', 'success');
+            } else {
+                S.pois = [];
+                refreshCurrent();
+                toast('未找到充电桩', 'warning');
+            }
+        });
+    }
+    function loadParkingData() {
+        if (!S.user) {
+            doLocate(true);
+            return;
+        }
+        showLoading('搜索中...', '正在查找附近停车场', false);
+        if (!S.ps) {
+            try {
+                S.ps = new AMap.PlaceSearch({
+                    extensions: 'all',
+                    pageSize: 20,
+                    pageIndex: 1,
+                    autoFitView: false
+                });
+            } catch (e) {
+                hideLoading();
+                toast('搜索服务不可用', 'error');
+                return;
+            }
+        }
+        const centerPoint = [S.user.lng, S.user.lat];
+        S.mode = 'parking';
+        S.searchCenter = S.user;
+        S.searchPageIndex = 1;
+        
+        S.ps.searchNearBy({
+            keywords: '停车场',
+            location: centerPoint,
+            radius: 5000
+        }, function(status, result) {
+            hideLoading();
+            if (status === 'complete' && result.poiList && result.poiList.pois) {
+                S.pois = result.poiList.pois.map(function(poi) {
+                    return parsePoi(poi);
+                }).filter(function(p) { return p.type === '停车'; });
+                S.pois.sort(function(a, b) { return a.distance - b.distance; });
+                refreshCurrent();
+                setPanelState('mini');
+                toast('找到 ' + S.pois.length + ' 个停车场', 'success');
+            } else {
+                S.pois = [];
+                refreshCurrent();
+                toast('未找到停车场', 'warning');
+            }
+        });
+    }
     function loadAllData() {
-        S.mode = 'all'; S.pois = [];
-        STATIONS.forEach(function (s) { S.pois.push(s); });
-        PARKINGS.forEach(function (p) { S.pois.push(p); });
-        GAS.forEach(function (g) { S.pois.push(g); });
-        refreshCurrent(); setPanelState('mini');
+        if (!S.user) {
+            doLocate(true);
+            return;
+        }
+        showLoading('搜索中...', '正在查找附近设施', false);
+        S.mode = 'all';
+        S.searchCenter = S.user;
+        S.searchPageIndex = 1;
+        
+        searchAroundLocation(S.user, function(results) {
+            hideLoading();
+            S.pois = results;
+            refreshCurrent();
+            setPanelState('mini');
+            toast('找到 ' + results.length + ' 个地点', 'success');
+        });
     }
     function refreshCurrent() {
         if (S.user) S.pois.forEach(function (p) { p.distance = hav(S.user.lng, S.user.lat, p.lng, p.lat); });
         let list = S.pois.slice();
-        if (S.extraFilter === 'available') list = list.filter(function (p) { return (p.availablePiles || p.availableSpots || 0) > 0; });
-        if (S.extraFilter === 'fastCharge') list = list.filter(function (p) { return (p.fastChargePiles || 0) > 0; });
+        // 任务二-2: 多重筛选取交集
+        if (S.extraFilters && S.extraFilters.length > 0) {
+            S.extraFilters.forEach(function(f) {
+                if (f === 'available') list = list.filter(function (p) { return (p.availablePiles || p.availableSpots || 0) > 0; });
+                if (f === 'fastCharge') list = list.filter(function (p) { return (p.fastChargePiles || 0) > 0; });
+            });
+        }
         if (S.kw) { const k = S.kw.toLowerCase(); list = list.filter(function (p) { return (p.name + ' ' + p.address).toLowerCase().indexOf(k) >= 0; }); }
         if (S.sort === 'distance') list.sort(function (a, b) { return a.distance - b.distance; });
         else if (S.sort === 'price') list.sort(function (a, b) {
-            const pa = a.pricePerKwh || a.pricePerHour || a.price92 || 0;
-            const pb = b.pricePerKwh || b.pricePerHour || b.price92 || 0;
+            const pa = a.pricePerKwh || a.pricePerHour || 0;
+            const pb = b.pricePerKwh || b.pricePerHour || 0;
             return pa - pb;
         });
-        else if (S.sort === 'available') list.sort(function (a, b) {
-            return (b.availablePiles || b.availableSpots || 0) - (a.availablePiles || a.availableSpots || 0);
-        });
-        else if (S.sort === 'name') list.sort(function (a, b) { return a.name.localeCompare(b.name); });
         S.filtered = list;
         renderPanel(); renderMapMarkers();
     }
@@ -2035,13 +2387,13 @@ function initMap() {
     
     function renderPanel() {
         const list = S.filtered, count = list.length;
-        const ml = S.mode === 'charge' ? '充电站' : S.mode === 'parking' ? '停车场' : S.mode === 'gas' ? '加油站' : '地点';
+        const ml = S.mode === 'charge' ? '充电站' : S.mode === 'parking' ? '停车场' : '地点';
         $('summaryCount').textContent = String(count);
         $('summaryLabel').textContent = '个' + ml;
         $('panelCount').textContent = '共找到 ' + count + ' 个' + ml;
         $('panelTitle').textContent = '附近' + ml;
         if (S.panelState === 'mini') $('summaryHint').textContent = '（上滑查看）';
-        const showFilter = S.mode === 'charge' || S.mode === 'parking' || S.mode === 'gas';
+        const showFilter = S.mode === 'charge' || S.mode === 'parking';
         $('quickFilterRow').style.display = showFilter ? 'flex' : 'none';
         $('filterSortContainer').style.display = showFilter ? 'flex' : 'none';
 
@@ -2087,16 +2439,62 @@ function initMap() {
 
 
 function renderMapMarkers() {
+        // 任务三-1: Marker Clustering点聚合
+        // 清理旧的聚合器和标记
+        if (S.markerCluster) try { S.markerCluster.setMap(null); S.markerCluster = null; } catch (e) {}
         if (S.markers && S.markers.length) try { S.map.remove(S.markers); } catch (e) {}
         S.markers = [];
         const list = S.filtered;
-        for (let i = 0; i < Math.min(list.length, 50); i++) (function (idx) {
+        
+        // 根据数据量决定渲染策略
+        if (list.length === 0) return;
+        
+        // 创建标记（不直接添加到地图，由Clusterer管理）
+        for (let i = 0; i < list.length; i++) (function (idx) {
             const p = list[idx];
             try {
-                const m = new AMap.Marker({ position: [p.lng, p.lat], map: S.map, offset: new AMap.Pixel(-12, -32), zIndex: 50 });
-                m.on('click', function () { selectPoi(idx); }); S.markers.push(m);
+                const iconType = p.type === '充电' ? 'charge' : 'parking';
+                const m = new AMap.Marker({ 
+                    position: [p.lng, p.lat], 
+                    offset: new AMap.Pixel(-12, -32), 
+                    zIndex: 50,
+                    extData: { idx: idx, type: iconType },
+                    content: '<div class="poi-marker ' + iconType + '">' + 
+                             (p.type === '充电' ? '⚡' : '🅿️') + '</div>'
+                });
+                m.on('click', function () { 
+                    // Cluster点击时获取实际索引
+                    const actualIdx = m.getExtData().idx;
+                    selectPoi(actualIdx); 
+                }); 
+                S.markers.push(m);
             } catch (e) {}
         })(i);
+        
+        // 任务三-1: 使用MarkerClusterer进行点聚合
+        if (typeof AMap.MarkerClusterer !== 'undefined' && S.markers.length > 0) {
+            try {
+                S.markerCluster = new AMap.MarkerClusterer(S.map, S.markers, {
+                    gridSize: 60,           // 聚合网格大小
+                    maxZoom: 16,            // 最大缩放级别，超过则不聚合
+                    minClusterSize: 3,      // 最少聚合点数
+                    averageCenter: true,    // 聚合点居中
+                    styles: [
+                        { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="18" fill="#1677ff" opacity="0.9"/><text x="20" y="25" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">c</text></svg>'), size: new AMap.Size(40, 40), offset: new AMap.Pixel(-20, -20), textColor: '#fff' },
+                        { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><circle cx="25" cy="25" r="22" fill="#1677ff" opacity="0.9"/><text x="25" y="30" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold">c</text></svg>'), size: new AMap.Size(50, 50), offset: new AMap.Pixel(-25, -25), textColor: '#fff' },
+                        { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><circle cx="30" cy="30" r="28" fill="#0958d9" opacity="0.9"/><text x="30" y="36" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">c</text></svg>'), size: new AMap.Size(60, 60), offset: new AMap.Pixel(-30, -30), textColor: '#fff' }
+                    ]
+                });
+            } catch (e) {
+                // 降级：不使用聚合，直接添加标记
+                S.markers.forEach(function(m) { m.setMap(S.map); });
+            }
+        } else {
+            // 标记直接添加到地图
+            S.markers.forEach(function(m) { m.setMap(S.map); });
+        }
+        
+        // 视野适应
         if (S.markers.length) {
             try {
                 const all = S.markers.slice();
@@ -2105,6 +2503,7 @@ function renderMapMarkers() {
             } catch (e) {}
         }
     }
+    // 任务三-1: 地图联动 - 点击列表项平滑移至中心
     function selectPoi(idx) {
         const list = S.filtered; if (idx < 0 || idx >= list.length) return;
         S.selected = idx;
@@ -2112,9 +2511,18 @@ function renderMapMarkers() {
         cards.forEach(function (c) { c.classList.remove('selected'); });
         if (cards[idx]) cards[idx].classList.add('selected');
         const poi = list[idx];
-        if (S.map) { try { S.map.setCenter([poi.lng, poi.lat]); } catch (e) {} try { const z = S.map.getZoom(); if (z < 15) S.map.setZoom(15); } catch (e) {} }
-        if (S.panelState === 'mini') setPanelState('half');
-        else try { if (cards[idx]) cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        // 任务三-1: 使用panTo平滑移至中心
+        if (S.map) { 
+            try { S.map.panTo([poi.lng, poi.lat]); } catch (e) {} 
+            try { const z = S.map.getZoom(); if (z < 15) S.map.setZoom(15); } catch (e) {} 
+        }
+        // 展开面板并显示详情
+        setPanelState('half');
+        setTimeout(function() {
+            if (cards[idx]) cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+        // 任务三-2: 自动显示详情卡片
+        showPoiDetail(idx);
     }
     // ------------------------------------------------------------------
 
@@ -2122,29 +2530,44 @@ function renderMapMarkers() {
     // ---------- POI 详情 ----------
     function showPoiDetail(idx) {
         const list = S.filtered; if (idx < 0 || idx >= list.length) return;
-        const poi = list[idx], icon = poi.type === '充电' ? '🔋' : poi.type === '停车' ? '🅿️' : '⛽';
+        const poi = list[idx], icon = poi.type === '充电' ? '🔋' : '🅿️';
         let d = '';
+        // 任务二-2/二-3: 完善停车场和充电桩数据展示
         if (poi.type === '充电') {
+            const fastPiles = poi.fastChargePiles || 0;
+            const slowPiles = poi.slowChargePiles || 0;
+            const availPiles = poi.availablePiles || 0;
+            const price = poi.pricePerKwh ? '¥' + poi.pricePerKwh.toFixed(2) + '/度' : '暂无价格信息';
+            const operator = poi.operator || '运营商未知';
+            const stationType = poi.stationType || '地面';
             d = '<div class="detail-grid">' +
-                '<div class="detail-data-item"><div class="detail-data-label">快充桩</div><div class="detail-data-value primary">' + (poi.fastChargePiles || 0) + '</div></div>' +
-                '<div class="detail-data-item"><div class="detail-data-label">慢充桩</div><div class="detail-data-value">' + (poi.slowChargePiles || 0) + '</div></div>' +
-                '<div class="detail-data-item"><div class="detail-data-label">空闲</div><div class="detail-data-value ' + ((poi.availablePiles || 0) > 0 ? 'success' : 'danger') + '">' + (poi.availablePiles || 0) + '</div></div>' +
-                '<div class="detail-data-item"><div class="detail-data-label">电价</div><div class="detail-data-value">¥' + (poi.pricePerKwh || 0).toFixed(2) + '</div></div>' +
+                // 任务二-3: 快充枪醒目橙色，慢充枪醒目绿色
+                '<div class="detail-data-item highlight-fast"><div class="detail-data-label">⚡ 快充</div><div class="detail-data-value primary orange">' + fastPiles + ' 把</div></div>' +
+                '<div class="detail-data-item highlight-slow"><div class="detail-data-label">🔌 慢充</div><div class="detail-data-value green">' + slowPiles + ' 把</div></div>' +
+                '<div class="detail-data-item"><div class="detail-data-label">空闲</div><div class="detail-data-value ' + (availPiles > 0 ? 'success' : 'danger') + '">' + availPiles + ' 个</div></div>' +
+                '<div class="detail-data-item"><div class="detail-data-label">电价</div><div class="detail-data-value">' + price + '</div></div>' +
+                '</div>' +
+                '<div class="detail-tags-row">' +
+                '<span class="detail-tag">' + stationType + '</span>' +
+                '<span class="detail-tag">' + operator + '</span>' +
                 '</div>';
         } else if (poi.type === '停车') {
+            const total = poi.totalSpots || 0;
+            const avail = poi.availableSpots || 0;
+            const price = poi.pricePerHour ? '¥' + poi.pricePerHour.toFixed(2) + '/小时' : '暂无价格信息';
+            const entrance = poi.entrance || poi.address || '暂无入口信息';
             d = '<div class="detail-grid">' +
-                '<div class="detail-data-item"><div class="detail-data-label">总车位</div><div class="detail-data-value primary">' + (poi.totalSpots || 0) + '</div></div>' +
-                '<div class="detail-data-item"><div class="detail-data-label">空闲</div><div class="detail-data-value ' + ((poi.availableSpots || 0) > 5 ? 'success' : 'warning') + '">' + (poi.availableSpots || 0) + '</div></div>' +
-                '<div class="detail-data-item"><div class="detail-data-label">价格</div><div class="detail-data-value">¥' + (poi.pricePerHour || 0).toFixed(2) + '</div></div></div>';
-        } else {
-            d = '<div class="detail-grid">' +
-                '<div class="detail-data-item"><div class="detail-data-label">92#</div><div class="detail-data-value primary">¥' + (poi.price92 || 0).toFixed(2) + '</div></div>' +
-                '<div class="detail-data-item"><div class="detail-data-label">95#</div><div class="detail-data-value">¥' + (poi.price95 || 0).toFixed(2) + '</div></div>' +
-                '<div class="detail-data-item"><div class="detail-data-label">0#</div><div class="detail-data-value">¥' + (poi.price0 || 0).toFixed(2) + '</div></div></div>';
+                '<div class="detail-data-item"><div class="detail-data-label">总车位</div><div class="detail-data-value primary">' + total + ' 个</div></div>' +
+                '<div class="detail-data-item"><div class="detail-data-label">空闲</div><div class="detail-data-value ' + (avail > 5 ? 'success' : 'warning') + '">' + avail + ' 个</div></div>' +
+                '<div class="detail-data-item"><div class="detail-data-label">价格</div><div class="detail-data-value">' + price + '</div></div>' +
+                '</div>' +
+                '<div class="detail-tags-row">' +
+                '<span class="detail-tag">入口: ' + entrance + '</span>' +
+                '</div>';
         }
         $('detailContent').innerHTML =
             '<div class="detail-title"><span class="detail-icon">' + icon + '</span><span>' + poi.name + '</span></div>' +
-            '<div class="detail-addr">' + poi.address + '</div>' +
+            '<div class="detail-addr">📍 ' + poi.address + '</div>' +
             '<div class="detail-divider"></div>' + d +
             '<div class="detail-divider"></div>' +
             '<div class="detail-section-title">坐标与操作</div>' +
@@ -2152,7 +2575,10 @@ function renderMapMarkers() {
             '<div class="detail-action-row">' +
                 '<button type="button" class="detail-action-btn" id="detailFavBtn">' + (poi._fav ? '★ 已收藏' : '☆ 收藏') + '</button>' +
                 '<button type="button" class="detail-action-btn" id="detailShareBtn">分享</button>' +
-                '<button type="button" class="detail-action-btn primary" id="detailNavBtn">🚗 开始导航</button>' +
+            '</div>' +
+            // 任务三-2: 醒目的蓝色导航按钮
+            '<div class="detail-nav-section">' +
+                '<button type="button" class="detail-nav-btn primary" id="detailNavBtn">🧭 导航去这里</button>' +
             '</div>';
         $('detailOverlay').classList.add('show');
         $('detailOverlay').style.display = 'flex';
@@ -2166,12 +2592,26 @@ function renderMapMarkers() {
     }
     // ---------- 路线规划 ----------
     function planRoute(sLng, sLat, eLng, eLat) {
+        // 任务二-3: 起点终点相同校验
+        if (Math.abs(sLng - eLng) < 0.0001 && Math.abs(sLat - eLat) < 0.0001) {
+            toast('起点和终点不能相同，请重新选择', 'error');
+            return;
+        }
         if (!S.driving) { toast('路线服务不可用', 'error'); return; }
         showLoading('规划路线...', '请稍候', false);
         try {
             S.driving.search([sLng, sLat], [eLng, eLat], function (status, result) {
                 hideLoading();
-                if (status !== 'complete' || !result.routes || !result.routes.length) { toast('路线规划失败', 'error'); return; }
+                if (status !== 'complete' || !result.routes || !result.routes.length) { 
+                    toast('未找到合理路线，请重新规划', 'error');  // 任务二-3: 更友好的提示
+                    return; 
+                }
+                // 任务二-3: 路线距离为0拦截
+                const firstRoute = result.routes[0];
+                if (!firstRoute || !firstRoute.distance || firstRoute.distance <= 0) {
+                    toast('未找到合理路线，请重新规划', 'error');
+                    return;
+                }
                 try { S.polylines.forEach(function (pl) { try { pl.setMap(null); } catch (e) {} }); } catch (e) {}
                 S.polylines = [];
                 result.routes.forEach(function (route, idx) {
@@ -2211,7 +2651,7 @@ function renderMapMarkers() {
         if (!S.user) { toast('请先定位', 'warning'); return; }
         closePoiDetail();
         $('naviOverlay').style.display = 'flex'; $('naviTop').style.display = 'block';
-        const tl = poi.type === '充电' ? '充电站' : poi.type === '停车' ? '停车场' : '加油站';
+        const tl = poi.type === '充电' ? '充电站' : '停车场';
         $('naviInstruction').textContent = '前往' + tl + '：' + poi.name;
         $('naviDistNext').textContent = fmtDist(poi.distance || 0) + ' · 预计 ' + Math.max(1, Math.round((poi.distance || 0) / 800)) + ' 分钟';
         $('naviTotalDist').textContent = fmtDist(poi.distance || 0);
@@ -2280,6 +2720,29 @@ function renderMapMarkers() {
     }
     function closeLongPressMenu() { const m = $('longpressMenu'); if (m) m.style.display = 'none'; }
     // ---------- 地图移动后刷新 ----------
+    // 任务三-2: 获取地图视野边界
+    function getMapBounds() {
+        try {
+            const bounds = S.map.getBounds();
+            if (bounds) {
+                const sw = bounds.getSouthWest();
+                const ne = bounds.getNorthEast();
+                return { 
+                    minLng: sw.lng, maxLng: ne.lng,
+                    minLat: sw.lat, maxLat: ne.lat
+                };
+            }
+        } catch (e) {}
+        return null;
+    }
+    
+    // 任务三-2: 判断点是否在视野内
+    function isInBounds(lng, lat) {
+        const b = getMapBounds();
+        if (!b) return true;
+        return lng >= b.minLng && lng <= b.maxLng && lat >= b.minLat && lat <= b.maxLat;
+    }
+    
     function onMapMoveEnd() {
         if (!S.map || S.loading) return;
         try {
@@ -2292,7 +2755,44 @@ function renderMapMarkers() {
                     toast('已更新为地图中心附近', 'success');
                 }
             } else if (c) { S.user = { lng: c.lng, lat: c.lat, label: '地图中心' }; refreshCurrent(); }
+            
+            // 任务三-2: 懒加载 - 只渲染视野内的标记
+            const zoom = S.map.getZoom();
+            if (zoom >= 12) {
+                // 高缩放级别：精细过滤
+                const bounds = getMapBounds();
+                if (bounds) {
+                    const visibleList = S.filtered.filter(function(p) {
+                        return p.lng >= bounds.minLng && p.lng <= bounds.maxLng &&
+                               p.lat >= bounds.minLat && p.lat <= bounds.maxLat;
+                    });
+                    // 只更新标记，不重新渲染整个列表
+                    renderVisibleMarkers(visibleList);
+                }
+            }
         } catch (e) {}
+    }
+    
+    // 任务三-2: 只渲染视野内的标记
+    function renderVisibleMarkers(visibleList) {
+        // 只在缩放级别>=14时精细控制标记显示
+        const zoom = S.map.getZoom();
+        if (zoom < 14) return; // 低缩放下依赖聚合
+        
+        // 临时：延迟渲染以提高性能
+        if (S.renderTimer) clearTimeout(S.renderTimer);
+        S.renderTimer = setTimeout(function() {
+            // 更新聚合器或直接更新标记
+            if (S.markerCluster) {
+                // 重新设置标记（只显示视野内的）
+                S.markerCluster.setMarkers(visibleList.map(function(p, i) {
+                    return S.markers.find(function(m) {
+                        const ed = m.getExtData();
+                        return ed && ed.idx === S.filtered.indexOf(p);
+                    });
+                }).filter(Boolean));
+            }
+        }, 100);
     }
     // ------------------------------------------------------------------
 
@@ -2330,11 +2830,11 @@ function renderMapMarkers() {
         } catch (e) { toast('读取收藏失败', 'error'); }
     }
     function showSettingsPanel() {
-        const modeText = S.mode === 'charge' ? '充电' : S.mode === 'parking' ? '停车' : S.mode === 'gas' ? '加油' : '综合';
+        const modeText = S.mode === 'charge' ? '充电' : S.mode === 'parking' ? '停车' : '综合';
         $('sideTitle').textContent = '设置';
         $('sideContent').innerHTML =
             '<div class="pref-section-title">显示设置</div>' +
-            '<div class="pref-row"><div><div class="pref-row-title">默认视图</div><div class="pref-row-sub">充电站/停车场/加油站</div></div><span class="pref-value">' + modeText + '</span></div>' +
+            '<div class="pref-row"><div><div class="pref-row-title">默认视图</div><div class="pref-row-sub">充电站/停车场</div></div><span class="pref-value">' + modeText + '</span></div>' +
             '<div class="pref-row"><div><div class="pref-row-title">地图缩放</div><div class="pref-row-sub">刷新时自动调整</div></div><span class="pref-value">自动</span></div>' +
             '<div class="pref-section-title">数据管理</div>' +
             '<div class="pref-row"><button type="button" class="pref-badge" id="clearFavBtn">清空收藏</button></div>';
@@ -2440,6 +2940,20 @@ function renderMapMarkers() {
             if (S.kw) { S.kw = ''; if (si) si.value = ''; }
             refreshCurrent(); toast('数据已刷新', 'success');
         });
+        // 任务二-1: 实时路况切换
+        const bt = $('btnTraffic');
+        if (bt) bt.addEventListener('click', function () {
+            S.trafficOn = !S.trafficOn;
+            if (S.trafficOn) {
+                S.trafficLayer.show();
+                bt.classList.add('active');
+                toast('已开启实时路况', 'success');
+            } else {
+                S.trafficLayer.hide();
+                bt.classList.remove('active');
+                toast('已关闭实时路况', 'success');
+            }
+        });
 
         // 筛选按钮
         document.querySelectorAll('.filter-tag[data-filter]').forEach(function (btn) {
@@ -2450,37 +2964,69 @@ function renderMapMarkers() {
                 if (f === 'all') loadAllData();
                 else if (f === 'nearby' || f === 'fastCharge') loadChargeData();
                 else if (f === 'parking') loadParkingData();
-                else if (f === 'gas') loadGasData();
             });
         });
         // 排序按钮
         document.querySelectorAll('.filter-tag.sort-tag').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                document.querySelectorAll('.filter-tag.sort-tag').forEach(function (b) { b.style.background = ''; b.style.color = ''; b.style.fontWeight = ''; });
+                document.querySelectorAll('.filter-tag.sort-tag').forEach(function (b) { b.classList.remove('active'); b.style.background = ''; b.style.color = ''; b.style.fontWeight = ''; });
+                btn.classList.add('active');
                 btn.style.background = '#52c41a'; btn.style.color = '#fff'; btn.style.fontWeight = '700';
                 S.sort = btn.dataset.sort || 'distance';
                 refreshCurrent();
-                const label = S.sort === 'distance' ? '距离' : S.sort === 'price' ? '价格' : S.sort === 'available' ? '空闲' : '名称';
+                const label = S.sort === 'distance' ? '距离' : '价格';
                 toast('按' + label + '排序', 'success');
             });
         });
         // 快捷筛选（面板内）
         document.querySelectorAll('.quick-filter-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
+                // 任务二-2: 多重筛选逻辑 - 取交集
                 const f = btn.dataset.extraFilter;
-                if (S.extraFilter === f) { S.extraFilter = null; btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; toast('取消筛选', 'success'); }
-                else {
-                    S.extraFilter = f;
-                    document.querySelectorAll('.quick-filter-btn').forEach(function (b) { b.style.background = ''; b.style.color = ''; b.style.borderColor = ''; });
-                    btn.style.background = '#e6f4ff'; btn.style.color = '#1677ff'; btn.style.borderColor = '#1677ff';
-                    toast('筛选: ' + (f === 'available' ? '空闲优先' : f === 'fastCharge' ? '仅快充' : '最近'), 'success');
+                if (!S.extraFilters) S.extraFilters = [];
+                const idx = S.extraFilters.indexOf(f);
+                if (idx >= 0) {
+                    // 已选中，取消该项
+                    S.extraFilters.splice(idx, 1);
+                    btn.classList.remove('active');
+                    btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
+                    toast('已取消: ' + (f === 'available' ? '空闲优先' : '仅快充'), 'success');
+                } else {
+                    // 未选中，添加（取交集）
+                    S.extraFilters.push(f);
+                    btn.classList.add('active');
+                    btn.style.background = 'var(--primary-light)'; btn.style.color = 'var(--primary)'; btn.style.borderColor = 'var(--primary)';
+                    const filterNames = S.extraFilters.map(function(x) { return x === 'available' ? '空闲' : '快充'; }).join('+');
+                    toast('筛选: ' + filterNames, 'success');
                 }
                 refreshCurrent();
             });
         });
         // 排序下拉
         const ss = $('sortSelect'); if (ss) ss.addEventListener('change', function () { S.sort = this.value; refreshCurrent(); });
-        const fs = $('filterSelect'); if (fs) fs.addEventListener('change', function () { S.extraFilter = this.value === 'all' ? null : this.value; refreshCurrent(); });
+        const fs = $('filterSelect'); if (fs) fs.addEventListener('change', function () { 
+            // 任务二-2: 全部类型时重置所有筛选条件
+            if (this.value === 'all') {
+                S.extraFilters = [];
+                document.querySelectorAll('.quick-filter-btn').forEach(function (b) { 
+                    b.classList.remove('active'); 
+                    b.style.background = ''; b.style.color = ''; b.style.borderColor = ''; 
+                });
+            } else {
+                // 其他类型单选（互斥）
+                S.extraFilters = [this.value];
+                document.querySelectorAll('.quick-filter-btn').forEach(function (b) { 
+                    if (b.dataset.extraFilter === this.value) {
+                        b.classList.add('active');
+                        b.style.background = 'var(--primary-light)'; b.style.color = 'var(--primary)'; b.style.borderColor = 'var(--primary)';
+                    } else {
+                        b.classList.remove('active');
+                        b.style.background = ''; b.style.color = ''; b.style.borderColor = ''; 
+                    }
+                }.bind(this));
+            }
+            refreshCurrent(); 
+        });
         // 模式按钮
         document.querySelectorAll('.panel-mode-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -2489,7 +3035,6 @@ function renderMapMarkers() {
                 const m = btn.dataset.mode;
                 if (m === 'charge') loadChargeData();
                 else if (m === 'parking') loadParkingData();
-                else if (m === 'gas') loadGasData();
             });
         });
         // POI列表点击
@@ -2529,7 +3074,12 @@ function renderMapMarkers() {
                     const container = $('poiList');
                     for (let i = S.displayed; i < end; i++) container.appendChild(renderPoiCard(S.filtered[i], i));
                     S.displayed = end;
-                    if (S.displayed >= S.filtered.length) { $('loadMoreIndicator').style.display = 'none'; $('noMoreIndicator').style.display = 'flex'; }
+                    if (S.displayed >= S.filtered.length) { 
+                        $('loadMoreIndicator').style.display = 'none'; 
+                        $('noMoreIndicator').style.display = 'flex'; 
+                        // 任务: 触底时请求下一页数据（带300ms防抖）
+                        debounceLoadMore();
+                    }
                 }
             }, 250));
         }
