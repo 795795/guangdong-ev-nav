@@ -220,7 +220,7 @@ body { background: var(--bg-soft); color: var(--text-1); }
 /* ====== LAYER 1: MAP ====== */
 #map {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%;
+  width: 100vw !important; height: 100vh !important;
   z-index: 1;
   background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
   -webkit-tap-highlight-color: transparent;
@@ -228,18 +228,18 @@ body { background: var(--bg-soft); color: var(--text-1); }
 
 /* 任务三-1: POI标记样式 */
 .poi-marker {
-  width: 28px; height: 28px;
+  width: 32px; height: 32px;
   background: #fff;
   border: 2px solid var(--primary);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; line-height: 1;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transform: translate(0, 0);
+  font-size: 16px; line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transform: translate(-50%, -50%);
 }
-.poi-marker.charge { border-color: #1677ff; }
-.poi-marker.parking { border-color: #52c41a; }
-.poi-marker.gas { border-color: #faad14; }
+.poi-marker.charge { border-color: #1a73e8; background: #fff; }
+.poi-marker.parking { border-color: #52c41a; background: #fff; }
+.poi-marker.gas { border-color: #faad14; background: #fff; }
 
 #map { transition: opacity 0.3s ease; }
 #map.map-loading { opacity: 0.7; }
@@ -2266,9 +2266,9 @@ function initMap() {
         try {
             if (typeof AMap === 'undefined') { setTimeout(initMap, 1500); return; }
             S.map = new AMap.Map('map', {
-                zoom: 12, center: [113.2644, 23.1292],
-                viewMode: '2D', mapStyle: 'amap://styles/normal',
-                features: ['bg', 'road', 'building', 'point']
+                zoom: 13,
+                center: [113.2644, 23.1292],
+                viewMode: '2D'
             });
             try { S.map.addControl(new AMap.Scale()); } catch (e) {}
             try {
@@ -2281,7 +2281,7 @@ function initMap() {
                 S.trafficLayer.setMap(S.map);
                 S.trafficLayer.hide(); // 默认隐藏
             } catch (e) { console.warn('路况图层初始化失败:', e); }
-            try { S.ps = new AMap.PlaceSearch({ city: '全国', pageSize: 10 }); S.ac = new AMap.AutoComplete({ city: '全国' }); } catch (e) {}
+            try { S.ps = new AMap.PlaceSearch({ extensions: 'all', pageSize: 20, pageIndex: 1, autoFitView: false }); S.ac = new AMap.AutoComplete({ city: '全国' }); console.log('PlaceSearch 初始化成功'); } catch (e) { console.error('PlaceSearch 初始化失败:', e); }
             try { S.driving = new AMap.Driving({ 
                 policy: AMap.DrivingPolicy.LEAST_TIME,
                 model: 'EV_NOVEL',  // 任务三-3: 新能源绿牌策略
@@ -2308,14 +2308,16 @@ function initMap() {
         } catch (err) { console.error('地图初始化失败:', err); }
     }
     function doLocate(showHint) {
-        if (!S.geo) { setUserLocation(113.264, 23.129, '广州默认位置'); if (showHint) toast('定位服务不可用，使用默认', 'warning'); return; }
+        if (!S.geo) { setUserLocation(113.264, 23.129, '广州默认位置'); if (showHint) toast('定位服务不可用，使用默认位置', 'warning'); return; }
         if (showHint) showLoading('正在定位...', '获取当前位置', true);
+        console.log('开始定位...');
         try {
             S.geo.getCurrentPosition(function (status, result) {
                 hideLoading();
+                console.log('定位结果:', status, result);
                 if (status === 'complete') {
+                    // AMap Geolocation 返回的已经是 GCJ02 坐标，无需转换
                     let lng = result.position.lng, lat = result.position.lat;
-                    try { if (window.wgs84ToGcj02) { const c = window.wgs84ToGcj02(lng, lat); if (c && c.lng) { lng = c.lng; lat = c.lat; } } } catch (e) {}
                     setUserLocation(lng, lat, '您的位置');
                     if (showHint) toast('定位成功', 'success');
                     refreshCurrent();
@@ -2393,8 +2395,9 @@ function initMap() {
             _fav: false
         };
         
-        const typeName = poi.type || poi.business_type || '';
-        if (typeName.includes('停车') || typeName.includes('停车场')) {
+        const typeName = (poi.type || poi.business_type || poi.name || '') + '|' + (poi.name || '');
+        // 停车场类型识别
+        if (typeName.includes('停车') || typeName.includes('停车场') || typeName.includes('P') || typeName.includes('p') ) {
             result.type = '停车';
             result.totalSpots = 0;
             result.availableSpots = 0;
@@ -2404,7 +2407,7 @@ function initMap() {
             if (poi.entrance) {
                 result.entrance = poi.entrance;
             }
-        } else if (typeName.includes('充电') || typeName.includes('充电站') || typeName.includes('充电桩')) {
+        } else if (typeName.includes('充电') || typeName.includes('充电站') || typeName.includes('充电桩') || typeName.includes('换电')) {
             result.type = '充电';
             result.fastChargePiles = 0;
             result.slowChargePiles = 0;
@@ -2580,10 +2583,11 @@ function initMap() {
     }
     
     function loadChargeData() {
+        // 如果没有用户位置，使用默认位置（广州）
         if (!S.user) {
-            doLocate(true);
-            return;
+            setUserLocation(113.264, 23.129, '广州');
         }
+        console.log('搜索充电桩，中心点:', S.user);
         showLoading('搜索中...', '正在查找附近充电桩', false);
         if (!S.ps) {
             try {
@@ -2610,11 +2614,16 @@ function initMap() {
             radius: 5000
         }, function(status, result) {
             hideLoading();
+            console.log('充电桩搜索结果:', status, result);
             if (status === 'complete' && result.poiList && result.poiList.pois) {
+                // 直接使用默认类型标记，避免识别失败
                 S.pois = result.poiList.pois.map(function(poi) {
-                    return parsePoi(poi);
-                }).filter(function(p) { return p.type === '充电'; });
+                    const p = parsePoi(poi);
+                    if (!p.type) p.type = '充电';
+                    return p;
+                });
                 S.pois.sort(function(a, b) { return a.distance - b.distance; });
+                console.log('充电桩解析后数量:', S.pois.length);
                 refreshCurrent();
                 setPanelState('mini');
                 toast('找到 ' + S.pois.length + ' 个充电桩', 'success');
@@ -2626,10 +2635,11 @@ function initMap() {
         });
     }
     function loadParkingData() {
+        // 如果没有用户位置，使用默认位置
         if (!S.user) {
-            doLocate(true);
-            return;
+            setUserLocation(113.264, 23.129, '广州');
         }
+        console.log('搜索停车场，中心点:', S.user);
         showLoading('搜索中...', '正在查找附近停车场', false);
         if (!S.ps) {
             try {
@@ -2656,11 +2666,15 @@ function initMap() {
             radius: 5000
         }, function(status, result) {
             hideLoading();
+            console.log('停车场搜索结果:', status, result);
             if (status === 'complete' && result.poiList && result.poiList.pois) {
                 S.pois = result.poiList.pois.map(function(poi) {
-                    return parsePoi(poi);
-                }).filter(function(p) { return p.type === '停车'; });
+                    const p = parsePoi(poi);
+                    if (!p.type) p.type = '停车';
+                    return p;
+                });
                 S.pois.sort(function(a, b) { return a.distance - b.distance; });
+                console.log('停车场解析后数量:', S.pois.length);
                 refreshCurrent();
                 setPanelState('mini');
                 toast('找到 ' + S.pois.length + ' 个停车场', 'success');
