@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no, email=no, address=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -17,6 +17,9 @@
     securityJsCode: '6bd6ab656be75d5fc632bca3a68059c9'
   };
 </script>
+
+<!-- === 高德地图 JS SDK（纯前端核心） === -->
+<script src="https://webapi.amap.com/maps?v=2.0&key=faf78a1b9d57c1e1a88fd9f50c795032&plugin=AMap.PlaceSearch,AMap.Driving,AMap.AutoComplete,AMap.Geocoder,AMap.Geolocation,AMap.ToolBar,AMap.Scale,AMap.PolyEditor,AMap.CircleEditor,AMap.MarkerClusterer,AMap.TileLayer.Traffic"></script>
 
 <style>
 
@@ -219,8 +222,14 @@ body { background: var(--bg-soft); color: var(--text-1); }
 
 /* ====== LAYER 1: MAP ====== */
 #map {
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  width: 100vw !important; height: 100vh !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  height: 100%;
   z-index: 1;
   background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
   -webkit-tap-highlight-color: transparent;
@@ -241,8 +250,7 @@ body { background: var(--bg-soft); color: var(--text-1); }
 .poi-marker.parking { border-color: #52c41a; background: #fff; }
 .poi-marker.gas { border-color: #faad14; background: #fff; }
 
-#map { transition: opacity 0.3s ease; }
-#map.map-loading { opacity: 0.7; }
+#map.map-loading { opacity: 0.7; transition: opacity 0.3s ease; }
 
 /* 地图内部 loading */
 .map-init-loading {
@@ -1856,13 +1864,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 }
 
 </style>
-<script>
-    // 高德安全密钥配置（必须在引入地图JS前配置）
-    window._AMapSecurityConfig = { 
-        securityJsCode: '6bd6ab656be75d5fc632bca3a68059c9' 
-    };
-</script>
-<script src="https://webapi.amap.com/maps?v=2.0&key=faf78a1b9d57c1e1a88fd9f50c795032&plugin=AMap.PlaceSearch,AMap.Driving,AMap.AutoComplete,AMap.Geocoder,AMap.Geolocation,AMap.ToolBar,AMap.Scale,AMap.PolyEditor,AMap.CircleEditor,AMap.MarkerClusterer,AMap.TileLayer.Traffic"></script>
+
 <script src="gcj02.js"></script>
 </head>
 <body>
@@ -2262,14 +2264,65 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     }
 
 
-function initMap() {
+/* =========================================================================
+ * 纯前端直接调用高德 REST API（无需后端代理）
+ * ========================================================================= */
+    const AMAP_KEY = '8429788d2971b1eb0b278b878180ce92';   // Web服务Key（用于 REST API / amapFetch）
+
+    function amapFetch(alias, params) {
+        let url = '';
+        const baseParams = { key: AMAP_KEY, ...params };
+
+        switch (alias) {
+            case 'suggest':
+                url = 'https://restapi.amap.com/v3/assistant/inputtips';
+                break;
+            case 'around':
+            case 'place/around':
+                url = 'https://restapi.amap.com/v3/place/around';
+                break;
+            case 'route':
+            case 'driving':
+                url = 'https://restapi.amap.com/v3/direction/driving';
+                break;
+            case 'regeo':
+                url = 'https://restapi.amap.com/v3/geocode/regeo';
+                break;
+            default:
+                url = 'https://restapi.amap.com/v3/' + alias;
+        }
+
+        const qs = Object.keys(baseParams)
+            .map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(baseParams[k]); })
+            .join('&');
+
+        return fetch(url + '?' + qs)
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                if (String(j.status) !== '1') throw new Error(j.info || j.msg || '高德接口异常');
+                return j;
+            });
+    }
+
+    function initMap() {
         try {
-            if (typeof AMap === 'undefined') { setTimeout(initMap, 1500); return; }
+            if (!window.AMap) {
+                toast('高德地图 SDK 加载失败，请刷新页面或检查网络');
+                setTimeout(initMap, 1500);
+                return;
+            }
+            // Key 有效性提醒（占位符时提示用户替换）
+            if (AMAP_KEY.includes('你的高德KEY') || AMAP_KEY.includes('PLACEHOLDER')) {
+                toast('请确认已替换真实高德 Key', 'warning');
+            }
+            console.log('开始初始化地图...');
             S.map = new AMap.Map('map', {
                 zoom: 13,
                 center: [113.2644, 23.1292],
-                viewMode: '2D'
+                viewMode: '2D',
+                resizeEnable: true
             });
+            console.log('地图实例创建成功');
             try { S.map.addControl(new AMap.Scale()); } catch (e) {}
             try {
                 S.geo = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 10000, buttonPosition: 'RB', showCircle: false, showMarker: false, zoomToAccuracy: false });
@@ -2290,7 +2343,16 @@ function initMap() {
             try { S.geocoder = new AMap.Geocoder({ city: '全国' }); } catch (e) {}
 
             S.map.on('complete', function () {
-                if (S.firstLoad) { S.firstLoad = false; setTimeout(function () { doLocate(true); }, 500); }
+                console.log('地图瓦片加载完成');
+                hideMapLoading();
+                if (S.firstLoad) {
+                    S.firstLoad = false;
+                    setTimeout(function () { doLocate(true); }, 500);
+                }
+            });
+            S.map.on('error', function (e) {
+                console.warn('地图错误:', e);
+                hideMapLoading();
             });
             S.map.on('moveend', throttle(onMapMoveEnd, 900));
             S.map.on('zoomend', throttle(onMapMoveEnd, 1200));
@@ -2303,9 +2365,20 @@ function initMap() {
             S.map.on('touchend', function () { clearTimeout(S.lpTimer); });
             S.map.on('touchmove', function () { clearTimeout(S.lpTimer); });
             setTimeout(function () {
-                toast('广东新能源导航就绪'); loadChargeData();
+                toast('广东新能源导航就绪');
+                loadChargeData();
             }, 800);
-        } catch (err) { console.error('地图初始化失败:', err); }
+
+            showMapLoading('地图加载中...');
+        } catch (err) {
+            console.error('地图初始化致命错误:', err);
+            hideMapLoading();
+            toast('地图初始化失败: ' + (err.message || '请刷新重试'), 'error');
+            var mapDom = document.getElementById('map');
+            if (mapDom) {
+                mapDom.innerHTML = '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;padding:20px;"><div style="font-size:48px;">🗺️</div><div style="margin-top:10px;font-size:16px;">地图加载失败</div><div style="margin-top:5px;font-size:12px;color:#999;">请检查网络或刷新页面</div></div>';
+            }
+        }
     }
     function doLocate(showHint) {
         if (!S.geo) { setUserLocation(113.264, 23.129, '广州默认位置'); if (showHint) toast('定位服务不可用，使用默认位置', 'warning'); return; }
@@ -3304,6 +3377,10 @@ function renderMapMarkers() {
         const handle = $('drawerHandle'), drawer = $('bottomDrawer');
         if (!handle || !drawer) return;
         let startY = 0, startH = 0, dragging = false, lastH = 0;
+        // 阻止抽屉区域的触摸事件冒泡到地图
+        ['touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove', 'mouseup', 'wheel'].forEach(function (evtName) {
+            drawer.addEventListener(evtName, function (e) { e.stopPropagation(); }, { passive: false });
+        });
         function getH() {
             const vh = window.innerHeight || 480;
             return { mini: 80, half: Math.max(200, Math.min(vh * 0.45, 450)), full: Math.max(300, Math.min(vh * 0.8, 650)) };
@@ -3356,7 +3433,7 @@ function renderMapMarkers() {
         handle.addEventListener('click', function (e) { if (!clickMoved) togglePanel(); });
 
         // 软键盘监听
-        let lastH = window.innerHeight;
+        lastH = window.innerHeight;
         window.addEventListener('resize', function () {
             const nh = window.innerHeight;
             if (Math.abs(nh - lastH) > 80) {
