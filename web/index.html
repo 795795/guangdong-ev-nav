@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no, email=no, address=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#1677ff">
 <meta name="description" content="广东新能源导航 - 充电桩 / 停车场查询">
@@ -2336,7 +2336,7 @@ function initMap() {
     }
     function setUserLocation(lng, lat, label) {
         S.user = { lng: lng, lat: lat, label: label || '当前位置' };
-        if (S.userMarker) { try { S.userMarker.setPosition([lng, lat); } catch (e) {} }
+        if (S.userMarker) { try { S.userMarker.setPosition([lng, lat]); } catch (e) {} }
         else { try { S.userMarker = new AMap.Marker({ position: [lng, lat], map: S.map, zIndex: 100 }); } catch (e) {} }
         if (S.map) { try { S.map.setCenter([lng, lat]); try { const z = S.map.getZoom(); if (z < 13) S.map.setZoom(13); } catch (e) {} } catch (e) {} }
     }
