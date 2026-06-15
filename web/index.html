@@ -10,6 +10,14 @@
 <meta name="description" content="广东新能源导航 - 充电桩 / 停车场查询">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>广东新能源导航</title>
+
+<!-- 高德地图安全配置 -->
+<script>
+  window._AMapSecurityConfig = {
+    securityJsCode: '6bd6ab656be75d5fc632bca3a68059c9'
+  };
+</script>
+
 <style>
 
 /* ====== 通用组件样式（抽离复用） ====== */
@@ -2498,7 +2506,7 @@ function initMap() {
         }
         
         S.searchLoading = true;
-        S.searchPageIndex++;
+        const currentPage = S.searchPageIndex + 1;
         
         const centerPoint = [S.searchCenter.lng, S.searchCenter.lat];
         let completed = 0;
@@ -2507,7 +2515,8 @@ function initMap() {
         S.ps.searchNearBy({
             keywords: '停车场',
             location: centerPoint,
-            radius: 5000
+            radius: 5000,
+            pageIndex: currentPage
         }, function(status, result) {
             completed++;
             if (status === 'complete' && result.poiList && result.poiList.pois) {
@@ -2524,7 +2533,8 @@ function initMap() {
         S.ps.searchNearBy({
             keywords: '电动汽车充电站|充电桩',
             location: centerPoint,
-            radius: 5000
+            radius: 5000,
+            pageIndex: currentPage
         }, function(status, result) {
             completed++;
             if (status === 'complete' && result.poiList && result.poiList.pois) {
@@ -2541,6 +2551,7 @@ function initMap() {
         function checkComplete() {
             if (completed >= 2) {
                 S.searchLoading = false;
+                S.searchPageIndex = currentPage;
                 callback && callback(newResults);
             }
         }
