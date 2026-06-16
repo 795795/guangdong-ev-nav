@@ -866,6 +866,68 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
   box-shadow: 0 2px 10px rgba(22,119,255,0.4);
 }
 
+/* ---- 附近搜索快捷按钮（阶段2）---- */
+.nearby-search-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0 10px 0;
+  overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; white-space: nowrap;
+}
+.nearby-search-row::-webkit-scrollbar { display: none; }
+.nearby-btn {
+  flex-shrink: 0; padding: 8px 14px; height: var(--touch-min);
+  min-width: var(--touch-min); border-radius: var(--radius-pill);
+  font-size: 13px; font-weight: 700;
+  border: 1.5px solid transparent;
+  transition: all var(--anim-fast);
+  cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 5px;
+  white-space: nowrap; box-shadow: var(--shadow-xs);
+}
+.nearby-btn.charge {
+  background: linear-gradient(135deg, var(--success), #2d8a3e);
+  color: #fff; border-color: var(--success);
+  box-shadow: 0 2px 8px rgba(82,196,26,0.25);
+}
+.nearby-btn.charge:hover { box-shadow: 0 4px 14px rgba(82,196,26,0.35); transform: translateY(-1px); }
+.nearby-btn.charge:active { transform: scale(0.96); }
+.nearby-btn.parking {
+  background: linear-gradient(135deg, var(--primary), #0958d9);
+  color: #fff; border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(22,119,255,0.25);
+}
+.nearby-btn.parking:hover { box-shadow: 0 4px 14px rgba(22,119,255,0.35); transform: translateY(-1px); }
+.nearby-btn.parking:active { transform: scale(0.96); }
+.radius-control {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0; padding: 4px 10px;
+  background: var(--bg-soft); border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border);
+  min-height: var(--touch-min);
+}
+.radius-label { font-size: 12px; color: var(--text-3); font-weight: 700; white-space: nowrap; }
+.radius-value { font-size: 13px; color: var(--primary); font-weight: 800; min-width: 30px; white-space: nowrap; }
+#radiusSlider {
+  -webkit-appearance: none; appearance: none;
+  width: 80px; height: 4px;
+  background: var(--border); border-radius: 2px;
+  outline: none; cursor: pointer;
+}
+#radiusSlider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--primary); cursor: pointer;
+  box-shadow: 0 1px 4px rgba(22,119,255,0.3);
+}
+#radiusSlider::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--primary); cursor: pointer;
+  border: none; box-shadow: 0 1px 4px rgba(22,119,255,0.3);
+}
+body.dark .radius-control { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); }
+body.dark #radiusSlider { background: rgba(255,255,255,0.2); }
+
 /* ---- 过滤选择器 ---- */
 .filter-sort-container { display: flex; gap: 8px; margin: 4px 0 8px 0; flex-wrap: wrap; align-items: center; }
 .filter-select {
@@ -1369,6 +1431,40 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
 .detail-data-value.green { color: #52c41a; }
 .detail-data-item.highlight-fast { background: rgba(255,107,0,0.08); border-left: 3px solid #ff6b00; }
 .detail-data-item.highlight-slow { background: rgba(82,196,26,0.08); border-left: 3px solid #52c41a; }
+/* ---- 详情面板增强（阶段2）---- */
+/* 实时状态标签 */
+.detail-status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.detail-status-tag {
+  padding: 4px 12px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.detail-status-tag.available { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+.detail-status-tag.busy { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning); }
+.detail-status-tag.closed { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+.detail-status-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulseDot 1.5s ease infinite; }
+/* 营业时间行 */
+.detail-hours-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-soft); border-radius: var(--radius-sm); margin-top: 8px; }
+.detail-hours-row .hours-icon { font-size: 14px; }
+.detail-hours-row .hours-text { font-size: 13px; color: var(--text-2); font-weight: 600; }
+.detail-hours-row .hours-text.open { color: var(--success); }
+.detail-hours-row .hours-text.closed { color: var(--danger); }
+/* 详情页内附近搜索快捷 */
+.detail-nearby-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.detail-nearby-btn {
+  flex: 1; min-height: var(--touch-min); padding: 10px 12px;
+  border-radius: var(--radius-sm); font-size: 13px; font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--bg-soft); color: var(--text-2);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all var(--anim-fast); cursor: pointer; font-family: inherit;
+}
+.detail-nearby-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+.detail-nearby-btn:active { transform: scale(0.97); }
+.detail-nearby-btn.charge { border-color: var(--success); color: var(--success); background: var(--success-bg); }
+.detail-nearby-btn.charge:hover { background: var(--success); color: #fff; }
+.detail-nearby-btn.parking { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+.detail-nearby-btn.parking:hover { background: var(--primary); color: #fff; }
+
 /* 任务二-2/二-3: 标签行 */
 .detail-tags-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .detail-tag { background: var(--bg-gray); color: var(--text-2); padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
@@ -1936,6 +2032,21 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             <button type="button" class="quick-filter-btn" data-extra-filter="nearby">距离最近</button>
         </div>
 
+        <!-- 附近搜索快捷按钮（阶段2） -->
+        <div class="nearby-search-row" id="nearbySearchRow" style="display:none;">
+            <button type="button" class="nearby-btn charge" id="btnSearchCharge">
+                <span>⚡</span><span>附近充电</span>
+            </button>
+            <button type="button" class="nearby-btn parking" id="btnSearchParking">
+                <span>🅿️</span><span>附近停车</span>
+            </button>
+            <div class="radius-control">
+                <span class="radius-label">半径</span>
+                <input type="range" id="radiusSlider" min="1" max="10" value="3" step="1">
+                <span class="radius-value" id="radiusValue">3km</span>
+            </div>
+        </div>
+
         <!-- POI 列表 -->
         <div class="poi-list" id="poiList"></div>
         
@@ -2085,7 +2196,9 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         searchPageIndex: 1,    /* 当前页码 */
         searchCenter: null,    /* 搜索中心点 */
         searchLoading: false,  /* 是否正在搜索 */
-        debounceTimer: null    /* 触底防抖定时器 */
+        debounceTimer: null,   /* 触底防抖定时器 */
+        searchRadius: 3,       /* 附近搜索半径（km，阶段2） */
+        detailFromPOI: null    /* 详情面板关联的 POI（阶段2: 附近搜索用） */
     };
 
     // ---------- 数据生成 ----------
@@ -2480,7 +2593,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         const content = $('drawerContent');
         const detail = $('drawerDetail');
         const action = $('drawerAction');
-        
+
         if (state === 'mini') {
             if (content) content.style.display = 'none';
             if (detail) detail.style.display = 'none';
@@ -2490,6 +2603,8 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             if (content) content.style.display = 'block';
             if ($('summaryHint')) $('summaryHint').textContent = '';
         }
+        // 阶段2: 控制附近搜索行显示
+        updateNearbySearchVisibility();
     }
     function togglePanel() {
         if (S.panelState === 'mini') setPanelState('half');
@@ -2853,6 +2968,10 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         const showFilter = S.mode === 'charge' || S.mode === 'parking';
         $('quickFilterRow').style.display = showFilter ? 'flex' : 'none';
         $('filterSortContainer').style.display = showFilter ? 'flex' : 'none';
+        // 阶段2: 附近搜索行在非 mini 态时显示
+        if ($('nearbySearchRow')) {
+            $('nearbySearchRow').style.display = (S.panelState === 'half' || S.panelState === 'full') ? 'flex' : 'none';
+        }
 
         const container = $('poiList'); container.innerHTML = '';
         if (list.length === 0) {
@@ -3066,6 +3185,7 @@ function renderMapMarkers() {
         }
     }
     // 任务三-1: 地图联动 - 点击列表项平滑移至中心
+    // 同时处理 Marker 点击 → 高亮列表 + 弹出详情
     function selectPoi(idx) {
         const list = S.filtered; if (idx < 0 || idx >= list.length) return;
         S.selected = idx;
@@ -3073,17 +3193,20 @@ function renderMapMarkers() {
         cards.forEach(function (c) { c.classList.remove('selected'); });
         if (cards[idx]) cards[idx].classList.add('selected');
         const poi = list[idx];
+        // Marker 脉冲效果（地图联动时也触发）
+        try {
+            if (S.markers[idx]) showMarkerPulse(S.markers[idx]);
+        } catch (e) {}
         // 任务三-1: 使用panTo平滑移至中心
-        if (S.map) { 
-            try { S.map.panTo([poi.lng, poi.lat]); } catch (e) {} 
-            try { const z = S.map.getZoom(); if (z < 15) S.map.setZoom(15); } catch (e) {} 
+        if (S.map) {
+            try { S.map.panTo([poi.lng, poi.lat]); } catch (e) {}
+            try { const z = S.map.getZoom(); if (z < 15) S.map.setZoom(15); } catch (e) {}
         }
-        // 展开面板并显示详情
-        setPanelState('half');
-        setTimeout(function() {
-            if (cards[idx]) cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
-        // 任务三-2: 自动显示详情卡片
+        // Marker 点击 → 高亮列表对应项并滚动
+        if (cards[idx]) {
+            cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // 自动显示详情卡片（Marker 点击和列表点击都走这里）
         showPoiDetail(idx);
     }
     // ------------------------------------------------------------------
@@ -3093,6 +3216,10 @@ function renderMapMarkers() {
     function showPoiDetail(idx) {
         const list = S.filtered; if (idx < 0 || idx >= list.length) return;
         const poi = list[idx], icon = poi.type === '充电' ? '🔋' : '🅿️';
+
+        // 保存当前 POI 供附近搜索使用（阶段2）
+        S.detailFromPOI = poi;
+
         let d = '';
         // 任务二-2/二-3: 完善停车场和充电桩数据展示
         if (poi.type === '充电') {
@@ -3102,14 +3229,18 @@ function renderMapMarkers() {
             const price = poi.pricePerKwh ? '¥' + poi.pricePerKwh.toFixed(2) + '/度' : '暂无价格信息';
             const operator = poi.operator || '运营商未知';
             const stationType = poi.stationType || '地面';
+            // 阶段2: 实时状态（根据空闲数量估算）
+            const statusClass = availPiles > 3 ? 'available' : (availPiles > 0 ? 'busy' : 'closed');
+            const statusText = availPiles > 3 ? '空闲' : (availPiles > 0 ? '部分空闲' : '已满');
             d = '<div class="detail-grid">' +
-                // 任务二-3: 快充枪醒目橙色，慢充枪醒目绿色
                 '<div class="detail-data-item highlight-fast"><div class="detail-data-label">⚡ 快充</div><div class="detail-data-value primary orange">' + fastPiles + ' 把</div></div>' +
                 '<div class="detail-data-item highlight-slow"><div class="detail-data-label">🔌 慢充</div><div class="detail-data-value green">' + slowPiles + ' 把</div></div>' +
                 '<div class="detail-data-item"><div class="detail-data-label">空闲</div><div class="detail-data-value ' + (availPiles > 0 ? 'success' : 'danger') + '">' + availPiles + ' 个</div></div>' +
                 '<div class="detail-data-item"><div class="detail-data-label">电价</div><div class="detail-data-value">' + price + '</div></div>' +
                 '</div>' +
-                '<div class="detail-tags-row">' +
+                // 阶段2: 实时状态标签
+                '<div class="detail-status-row">' +
+                '<span class="detail-status-tag ' + statusClass + '"><span class="dot"></span>' + statusText + '</span>' +
                 '<span class="detail-tag">' + stationType + '</span>' +
                 '<span class="detail-tag">' + operator + '</span>' +
                 '</div>';
@@ -3118,19 +3249,45 @@ function renderMapMarkers() {
             const avail = poi.availableSpots || 0;
             const price = poi.pricePerHour ? '¥' + poi.pricePerHour.toFixed(2) + '/小时' : '暂无价格信息';
             const entrance = poi.entrance || poi.address || '暂无入口信息';
+            // 阶段2: 实时状态
+            const statusClass = avail > 10 ? 'available' : (avail > 0 ? 'busy' : 'closed');
+            const statusText = avail > 10 ? '车位充足' : (avail > 0 ? '部分空闲' : '已满');
             d = '<div class="detail-grid">' +
                 '<div class="detail-data-item"><div class="detail-data-label">总车位</div><div class="detail-data-value primary">' + total + ' 个</div></div>' +
                 '<div class="detail-data-item"><div class="detail-data-label">空闲</div><div class="detail-data-value ' + (avail > 5 ? 'success' : 'warning') + '">' + avail + ' 个</div></div>' +
                 '<div class="detail-data-item"><div class="detail-data-label">价格</div><div class="detail-data-value">' + price + '</div></div>' +
                 '</div>' +
+                // 阶段2: 实时状态标签
+                '<div class="detail-status-row">' +
+                '<span class="detail-status-tag ' + statusClass + '"><span class="dot"></span>' + statusText + '</span>' +
+                '</div>' +
                 '<div class="detail-tags-row">' +
                 '<span class="detail-tag">入口: ' + entrance + '</span>' +
                 '</div>';
         }
+
+        // 阶段2: 营业时间（mock: 假设 24h 开放）
+        const hoursHtml = '<div class="detail-hours-row"><span class="hours-icon">🕐</span><span class="hours-text open">24 小时营业</span></div>';
+
+        // 阶段2: 电话按钮（优先用 POI 数据，缺失则尝试从 regeo 获取）
+        var telHtml = '';
+        if (poi.tel || poi.phone || poi.telephone) {
+            var tel = poi.tel || poi.phone || poi.telephone;
+            telHtml = '<div class="detail-tel-row"><a href="tel:' + tel + '" class="detail-call-btn" id="detailCallBtn">📞 ' + tel + '</a></div>';
+        }
+
+        // 阶段2: 详情页内附近搜索快捷按钮
+        var nearbyHtml = '<div class="detail-nearby-row">' +
+            '<button type="button" class="detail-nearby-btn charge" id="detailNearChargeBtn">⚡ 附近充电</button>' +
+            '<button type="button" class="detail-nearby-btn parking" id="detailNearParkingBtn">🅿️ 附近停车</button>' +
+            '</div>';
+
         $('detailContent').innerHTML =
             '<div class="detail-title"><span class="detail-icon">' + icon + '</span><span>' + poi.name + '</span></div>' +
             '<div class="detail-addr">📍 ' + poi.address + '</div>' +
+            telHtml +
             '<div class="detail-divider"></div>' + d +
+            hoursHtml +
             '<div class="detail-divider"></div>' +
             '<div class="detail-section-title">坐标与操作</div>' +
             '<div class="detail-coord-row"><span class="detail-coord-label">经纬度</span><span class="detail-coord-value">' + poi.lng.toFixed(6) + ', ' + poi.lat.toFixed(6) + '</span></div>' +
@@ -3138,19 +3295,41 @@ function renderMapMarkers() {
                 '<button type="button" class="detail-action-btn" id="detailFavBtn">' + (poi._fav ? '★ 已收藏' : '☆ 收藏') + '</button>' +
                 '<button type="button" class="detail-action-btn" id="detailShareBtn">分享</button>' +
             '</div>' +
-            // 任务三-2: 醒目的蓝色导航按钮
+            nearbyHtml +
             '<div class="detail-nav-section">' +
                 '<button type="button" class="detail-nav-btn primary" id="detailNavBtn">🧭 导航去这里</button>' +
             '</div>';
+
+        // 展开抽屉面板到半态
+        setPanelState('half');
         $('detailOverlay').classList.add('show');
         $('detailOverlay').style.display = 'flex';
         $('detailFavBtn').onclick = function () { poi._fav = !poi._fav; updateFavorite(poi); showPoiDetail(idx); renderPanel(); };
         $('detailShareBtn').onclick = function () { sharePoi(poi); };
         $('detailNavBtn').onclick = function () { startNavigation(poi); };
+
+        // 阶段2: 详情页内附近搜索按钮
+        var nearChargeBtn = $('detailNearChargeBtn');
+        if (nearChargeBtn) nearChargeBtn.onclick = function () {
+            closePoiDetail();
+            searchNearby('charge');
+        };
+        var nearParkingBtn = $('detailNearParkingBtn');
+        if (nearParkingBtn) nearParkingBtn.onclick = function () {
+            closePoiDetail();
+            searchNearby('parking');
+        };
     }
     function closePoiDetail() {
         $('detailOverlay').classList.remove('show');
         setTimeout(function () { $('detailOverlay').style.display = 'none'; }, 250);
+    }
+    function backToList() {
+        // 阶段2: 返回按钮 → 关闭详情，返回列表（保留地图状态）
+        closePoiDetail();
+        S.detailFromPOI = null; // 清除详情关联 POI
+        setPanelState('half');
+        if (S.filtered.length > 0) renderPanel();
     }
     // ---------- 路线规划 ----------
     function planRoute(sLng, sLat, eLng, eLat) {
@@ -3490,6 +3669,83 @@ function renderMapMarkers() {
             setTimeout(function () { try { S.map.invalidateSize && S.map.invalidateSize(); } catch (e) {} }, 300);
         });
     }
+
+    // ---------- 阶段2: 附近搜索统一函数 ----------
+    function initNearBySearch() {
+        // 初始化半径滑块
+        var slider = $('radiusSlider');
+        var valueEl = $('radiusValue');
+        if (slider && valueEl) {
+            // 同步显示初始值
+            valueEl.textContent = slider.value + 'km';
+            S.searchRadius = parseInt(slider.value, 10);
+            slider.addEventListener('input', function () {
+                S.searchRadius = parseInt(this.value, 10);
+                valueEl.textContent = this.value + 'km';
+            });
+            slider.addEventListener('change', function () {
+                toast('搜索半径已调整为 ' + this.value + 'km', 'success');
+            });
+        }
+        // 显示/隐藏附近搜索行（根据模式）
+        updateNearbySearchVisibility();
+    }
+
+    function updateNearbySearchVisibility() {
+        var row = $('nearbySearchRow');
+        if (!row) return;
+        row.style.display = (S.panelState === 'half' || S.panelState === 'full') ? 'flex' : 'none';
+    }
+
+    // 统一附近搜索入口（阶段2）
+    function searchNearby(type) {
+        // 确定搜索中心：优先用详情页关联的 POI，否则用当前位置
+        var center;
+        if (S.detailFromPOI && S.detailFromPOI.lng && S.detailFromPOI.lat) {
+            center = S.detailFromPOI;
+            toast('以 ' + S.detailFromPOI.name + ' 为中心搜索附近' + (type === 'charge' ? '充电' : '停车'), 'success');
+        } else if (S.user) {
+            center = S.user;
+            toast('搜索附近' + (type === 'charge' ? '充电桩' : '停车场') + '（' + S.searchRadius + 'km 内）', 'success');
+        } else {
+            toast('请先定位后再搜索', 'warning');
+            return;
+        }
+        var radiusM = S.searchRadius * 1000; // km → m
+        showLoading('搜索中...', '正在查找附近设施', false);
+        if (!S.ps) {
+            try { S.ps = new AMap.PlaceSearch({ extensions: 'all', pageSize: 20, pageIndex: 1, autoFitView: false }); }
+            catch (e) { hideLoading(); toast('搜索服务不可用', 'error'); return; }
+        }
+        S.mode = type;
+        S.searchCenter = center;
+        S.searchPageIndex = 1;
+        var keywords = type === 'charge' ? '电动汽车充电站|充电桩' : '停车场';
+        S.ps.searchNearBy({
+            keywords: keywords,
+            location: [center.lng, center.lat],
+            radius: radiusM,
+            pageIndex: 1
+        }, function (status, result) {
+            hideLoading();
+            if (status === 'complete' && result.poiList && result.poiList.pois) {
+                S.pois = result.poiList.pois.map(function (poi) {
+                    var p = parsePoi(poi);
+                    if (!p.type) p.type = type === 'charge' ? '充电' : '停车';
+                    return p;
+                });
+                S.pois.sort(function (a, b) { return a.distance - b.distance; });
+                refreshCurrent();
+                setPanelState('half');
+                toast('找到 ' + S.pois.length + ' 个结果', 'success');
+            } else {
+                S.pois = [];
+                refreshCurrent();
+                toast('未找到附近' + (type === 'charge' ? '充电桩' : '停车场'), 'warning');
+            }
+        });
+    }
+
     // ---------- 事件绑定 ----------
     function initEvents() {
         // 初始化信息窗样式
@@ -3531,17 +3787,20 @@ function renderMapMarkers() {
             }
         });
 
-        // 分层搜索按钮 - 充电桩
+        // 分层搜索按钮 - 充电桩（统一附近搜索，阶段2）
         const bsc = $('btnSearchCharge');
         if (bsc) bsc.addEventListener('click', function () {
-            loadChargeData();
+            searchNearby('charge');
         });
 
-        // 分层搜索按钮 - 停车场
+        // 分层搜索按钮 - 停车场（统一附近搜索，阶段2）
         const bsp = $('btnSearchParking');
         if (bsp) bsp.addEventListener('click', function () {
-            loadParkingData();
+            searchNearby('parking');
         });
+
+        // 阶段2: 半径滑块初始化
+        initNearBySearch();
 
         // 筛选按钮
         document.querySelectorAll('.filter-tag[data-filter]').forEach(function (btn) {
@@ -3673,6 +3932,7 @@ function renderMapMarkers() {
         }
         // 关闭按钮
         const dcb = $('detailCloseBtn'); if (dcb) dcb.addEventListener('click', closePoiDetail);
+        const dbc = $('detailBackBtn'); if (dbc) dbc.addEventListener('click', backToList);
         const doEl = $('detailOverlay'); if (doEl) doEl.addEventListener('click', function (e) { if (e.target === doEl) closePoiDetail(); });
         const rcb = $('routeCloseBtn'); if (rcb) rcb.addEventListener('click', hideRoutePanel);
         // 路线输入框
