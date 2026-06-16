@@ -2,13 +2,22 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no, email=no, address=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#1677ff">
 <meta name="description" content="广东新能源导航 - 充电桩 / 停车场查询">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="renderer" content="webkit">
+<meta name="force-rendering" content="webkit">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="color-scheme" content="light">
+<meta name="x5-fullscreen" content="true">
+<meta name="x5-page-mode" content="app">
+<meta name="x5-orientation" content="portrait">
+<meta name="screen-orientation" content="portrait">
+<meta name="browsermode" content="application">
 <title>广东新能源导航</title>
 
 <!-- 高德地图安全配置 -->
@@ -97,6 +106,35 @@
 
 /* ====== 基础变量与主题 ====== */
 
+/* 阶段五-1: 全局自定义滚动条样式 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; transition: background 0.2s; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+::-webkit-scrollbar-thumb:active { background: rgba(0,0,0,0.45); }
+* { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.18) transparent; }
+body.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); }
+body.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+body.dark ::-webkit-scrollbar-thumb:active { background: rgba(255,255,255,0.55); }
+
+/* 阶段五-1: 统一按压/悬停基础样式（按钮/卡片共用） */
+.pressable { transition: transform 0.12s ease, background-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease; }
+.pressable:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.pressable:active { transform: scale(0.97); }
+body.dark .pressable:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+
+/* 阶段五-4: 长文本自动换行，避免横向溢出 */
+.word-break { word-break: break-all; overflow-wrap: break-word; word-wrap: break-word; }
+
+/* 阶段四-4: 列表滚动时暂停非必要动画（降低 CPU/合成开销） */
+body.is-list-scroll .poi-card,
+body.is-list-scroll .panel-count::before,
+body.is-list-scroll .spin-anim,
+body.is-list-scroll .map-init-progress-bar {
+    animation: none !important;
+    opacity: 1 !important;
+}
+
 /* ============================================================
    广东新能源导航 H5 - 最终版样式系统
    LAYER Z-INDEX SPEC:
@@ -108,21 +146,77 @@
      - toast/loading on top         : 300-500
    ============================================================ */
 
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { font-size: 16px; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-drag: none; }
+html { font-size: 16px; font-size: clamp(14px, 1rem, 20px); }
 html, body {
   width: 100%;
   height: 100%;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: fixed;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif;
+  top: 0; left: 0; right: 0; bottom: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Helvetica", "Microsoft YaHei", "微软雅黑", "Source Han Sans CN", "Noto Sans CJK SC", Arial, sans-serif;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   touch-action: manipulation;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  color-scheme: light;
 }
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: block;
+}
+/* 阶段三: 微信内置浏览器适配 - 禁止微信默认下拉回弹 */
+body.wechat-fix {
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
+}
+/* 阶段三: X5 内核/UC 浏览器 - 修复布局偏移 */
+@supports (overflow: -webkit-marquee) {
+  html, body {
+    position: absolute;
+  }
+}
+/* 阶段三: 低版本安卓兼容 (Android 8~11) */
+@supports not (height: 100dvh) {
+  html, body {
+    height: 100vh;
+    min-height: 100vh;
+  }
+}
+/* 阶段三: iOS 安全区完整适配 */
+.safe-top { padding-top: env(safe-area-inset-top, 0px); padding-top: constant(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); padding-bottom: constant(safe-area-inset-bottom, 0px); }
+/* 阶段三: Firefox -moz- 前缀 */
+button { -moz-appearance: none; -webkit-appearance: none; appearance: none; }
+select { -moz-appearance: none; -webkit-appearance: none; appearance: none; }
+input, textarea { -webkit-appearance: none; -moz-appearance: none; appearance: none; border-radius: 0; }
+/* 阶段三: 滚动条统一 (Firefox/Chrome) */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+* { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
+/* P0-缺陷: 全局触摸优化与点击穿透防护
+   touch-action: manipulation - 禁用双击缩放，消除 300ms 点击延迟
+   -webkit-touch-callout: none - 禁止iOS长按菜单
+*/
+button, a, [role="button"], .btn, .filter-tag, .drawer-mode-btn, .quick-filter-btn, .nearby-btn, .detail-action-btn, .nav-item, .poi-action-btn, .map-tool-btn, .tool-btn, .route-action-btn, .detail-back-btn, .detail-close-btn, .drawer-handle, .load-more-btn, .no-more-btn, .poi-card, .suggestion-item, .route-strategy, .side-close-btn, .side-item, .navi-exit-btn, .navi-voice-btn, .navi-full-btn, .loading-close-btn, .drawer-action-btn, .fav-icon {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* 移动端统一最小点击热区 44x44px（扩大触控区域，视觉样式不变）
+   通过 min-height/min-width: 44px; 保证触控区域不小于 44px */
 input, textarea { -webkit-user-select: text; user-select: text; font-family: inherit; }
-button { border: none; background: none; cursor: pointer; font-family: inherit; outline: none; }
+button { border: none; background: none; cursor: pointer; font-family: inherit; outline: none; touch-action: manipulation; }
 
 /* ---- Design tokens ---- */
 :root {
@@ -141,8 +235,17 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
   --radius-lg: 16px; --radius-xl: 20px; --radius-pill: 999px;
   --safe-top: max(env(safe-area-inset-top), 0px);
   --safe-bottom: max(env(safe-area-inset-bottom), 0px);
+  --safe-left: max(env(safe-area-inset-left), 0px);
+  --safe-right: max(env(safe-area-inset-right), 0px);
   --anim-fast: 0.15s; --anim-normal: 0.25s; --anim-slow: 0.35s;
   --touch-min: 48px;
+  /* 阶段三: 统一过渡动画曲线 */
+  --ease-smooth: cubic-bezier(0.4, 0.2, 1);
+  --ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0.0, 1, 1);
+  /* 阶段三: 视口高度兼容 (vh + dvh) */
+  --app-h: 100vh;
+  --app-w: 100vw;
   /* ====== 区域高度 ====== */
   --topbar-h: 56px;
   --filterbar-h: 0px;
@@ -227,12 +330,18 @@ body { background: var(--bg-soft); color: var(--text-1); }
   left: 0;
   width: 100vw;
   height: 100vh;
-  height: 100dvh;
   width: 100%;
   height: 100%;
   z-index: 1;
   background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
   -webkit-tap-highlight-color: transparent;
+}
+/* 阶段三: 支持 dvh 的浏览器使用动态视口高度 */
+@supports (height: 100dvh) {
+  #map {
+    width: 100vw;
+    height: 100dvh;
+  }
 }
 
 /* 任务三-1: POI标记样式 */
@@ -256,7 +365,7 @@ body { background: var(--bg-soft); color: var(--text-1); }
 .map-init-loading {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
   z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 12px;
-  animation: fadeIn 0.4s ease; pointer-events: none;
+  animation: fadeIn 0.4s var(--ease-smooth); pointer-events: none;
 }
 .map-init-loading.hide { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 .map-init-spinner { width: 48px; height: 48px; border: 4px solid rgba(22,119,255,0.15);
@@ -264,22 +373,26 @@ body { background: var(--bg-soft); color: var(--text-1); }
 .map-init-text { font-size: 14px; color: var(--text-2); font-weight: 600; }
 .map-init-progress { width: 120px; height: 4px; background: rgba(22,119,255,0.15); border-radius: 2px; overflow: hidden; }
 .map-init-progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-dark));
-  width: 0%; animation: progressFill 2s ease-in-out forwards; }
-@keyframes progressFill { 0% {width:0%;} 30% {width:30%;} 60% {width:60%;} 100% {width:100%;} }
+  width: 100%; transform-origin: 0 50%; transform: scaleX(0); animation: progressFill 2s ease-in-out forwards; will-change: transform; }
+@keyframes progressFill { 0% { transform: scaleX(0);} 30% { transform: scaleX(0.3);} 60% { transform: scaleX(0.6);} 100% { transform: scaleX(1);} }
 @keyframes spin { to { transform: rotate(360deg); } }
+.spin-anim { will-change: transform; transform: translateZ(0); animation: spin 0.8s linear infinite; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { will-change: opacity; }
 
 /* ====== LAYER 2: TOP BAR ====== */
 .top-bar {
   position: absolute; top: 0; left: 0; right: 0;
   height: calc(var(--topbar-h) + var(--safe-top));
   padding: var(--safe-top) 10px 0 10px;
+  padding-left: calc(10px + var(--safe-left));
+  padding-right: calc(10px + var(--safe-right));
   z-index: 30;
   display: flex; align-items: center; gap: 8px;
   background: linear-gradient(to bottom, rgba(255,255,255,0.98), rgba(255,255,255,0.9) 70%, rgba(255,255,255,0) 100%);
-  -webkit-backdrop-filter: blur(8px); 
-  -moz-backdrop-filter: blur(8px); 
-  -ms-backdrop-filter: blur(8px); 
+  -webkit-backdrop-filter: blur(8px);
+  -moz-backdrop-filter: blur(8px);
+  -ms-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   pointer-events: auto;
 }
@@ -302,9 +415,29 @@ body.dark .top-bar {
   align-items: center;
   z-index: 30;
   transition: all var(--anim-normal);
+  pointer-events: auto;
 }
 .search-container:focus-within {
   box-shadow: 0 4px 24px rgba(26,115,232,0.25);
+}
+/* 键盘打开时保护搜索栏不被挤压 */
+body.keyboard-open .search-container {
+  position: fixed;
+  top: var(--safe-top);
+  left: 10px;
+  right: 10px;
+  z-index: 100;
+}
+body.keyboard-open .suggestions {
+  position: fixed;
+  top: calc(var(--safe-top) + 70px);
+  left: 10px;
+  right: 10px;
+  z-index: 99;
+}
+body.keyboard-open .map-tools-top {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .search-input-wrap {
@@ -326,8 +459,9 @@ body.dark .top-bar {
 .search-input::placeholder { color: var(--text-4); }
 .search-submit-btn {
   flex-shrink: 0;
-  padding: 8px 14px;
-  min-height: 36px;
+  padding: 0 14px;
+  min-height: 44px;
+  min-width: 44px;
   border: none;
   background: var(--primary);
   color: #fff;
@@ -336,12 +470,15 @@ body.dark .top-bar {
   font-weight: 700;
   cursor: pointer;
   transition: all var(--anim-fast);
+  pointer-events: auto;
 }
 .search-submit-btn:hover { background: var(--primary-hover); }
 .search-submit-btn:active { transform: scale(0.97); }
 .clear-search-btn {
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -349,6 +486,7 @@ body.dark .top-bar {
   color: var(--text-3);
   border-radius: 50%;
   background: var(--bg-gray);
+  pointer-events: auto;
 }
 .clear-search-btn:active {
   background: var(--danger-bg);
@@ -436,10 +574,11 @@ body.dark .top-bar {
   -webkit-overflow-scrolling: touch;
   z-index: 28;
   display: none; pointer-events: auto;
-  animation: slideDown 0.22s ease;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
-.suggestions.show { display: block; }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); max-height: 0; } to { opacity: 1; transform: translateY(0); max-height: 45vh; } }
+.suggestions.show { display: block; animation: slideDown 0.3s var(--ease-smooth); }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px) translateZ(0); } to { opacity: 1; transform: translateY(0) translateZ(0); } }
 .suggestion-header {
   position: sticky; top: 0; z-index: 2;
   background: var(--bg);
@@ -472,8 +611,10 @@ body.dark .top-bar {
   font-size: 16px; flex-shrink: 0;
 }
 .suggestion-content { flex: 1; min-width: 0; }
-.suggestion-name { font-size: 14px; color: var(--text-1); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.suggestion-addr { font-size: 12px; color: var(--text-3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.suggestion-name { font-size: 14px; color: var(--text-1); font-weight: 600;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all; }
+.suggestion-addr { font-size: 12px; color: var(--text-3); margin-top: 3px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all; }
 .suggestion-empty { padding: 40px 20px; text-align: center; color: var(--text-4); font-size: 13px; }
 
 /* ====== LAYER 2: 筛选快捷栏 ====== */
@@ -519,8 +660,8 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
   cursor: pointer; font-family: inherit;
   white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;
 }
-.filter-tag-btn:hover { border-color: var(--primary); color: var(--primary); }
-.filter-tag-btn:active { transform: scale(0.96); }
+.filter-tag-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+.filter-tag-btn:active { transform: scale(0.96); background: rgba(22,119,255,0.15); }
 .filter-tag-btn.active {
   background: var(--primary); color: #fff;
   border-color: var(--primary); font-weight: 700;
@@ -542,7 +683,7 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none; white-space: nowrap;
   pointer-events: auto;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.3s var(--ease-smooth);
   border: 1px solid var(--border);
 }
 .filter-tags-bar::-webkit-scrollbar { display: none; }
@@ -597,6 +738,9 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
   bottom: 0;
   height: var(--drawer-mini);
   padding-bottom: var(--safe-bottom);
+  padding-bottom: calc(var(--safe-bottom) + 4px);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
   background: white;
   z-index: 100;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -604,11 +748,13 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: height 0.3s cubic-bezier(0.4,0,0.2,1);
+  transition: height 0.3s var(--ease-smooth);
   -webkit-backdrop-filter: blur(12px);
+  -moz-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   touch-action: pan-y;
   will-change: height;
+  pointer-events: auto;
 }
 
 .bottom-drawer.state-mini { height: var(--drawer-mini); }
@@ -844,6 +990,8 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
 .panel-count { font-size: 12px; color: var(--text-3); margin: 0 0 8px 0; font-weight: 600;
   display: flex; align-items: center; gap: 6px; }
 .panel-count::before { content: ''; width: 6px; height: 6px; background: var(--primary); border-radius: 50%;
+  transform: translateZ(0);
+  will-change: opacity;
   animation: pulseDot 1.5s ease infinite; }
 @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 
@@ -999,15 +1147,17 @@ body.dark .filter-select { background-color: rgba(255,255,255,0.05); }
   transition: all var(--anim-normal);
   position: relative;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  animation: fadeInUp 0.3s ease both;
+  animation: fadeInUp 0.3s var(--ease-smooth) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px) translateZ(0); }
+  to { opacity: 1; transform: translateY(0) translateZ(0); }
 }
 
 .poi-card:nth-child(1) { animation-delay: 0.02s; }
@@ -1015,12 +1165,15 @@ body.dark .filter-select { background-color: rgba(255,255,255,0.05); }
 .poi-card:nth-child(3) { animation-delay: 0.08s; }
 
 .poi-card:active {
-  transform: scale(0.99);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transform: scale(0.985);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  background: #fafbff;
 }
 .poi-card:hover {
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
+body.dark .poi-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+body.dark .poi-card:active { background: #2a2a2a; }
 .poi-card.selected {
   background: var(--primary-light);
   box-shadow: 0 0 0 2px var(--primary), 0 4px 16px rgba(26,115,232,0.15);
@@ -1055,14 +1208,25 @@ body.dark .filter-select { background-color: rgba(255,255,255,0.05); }
   color: var(--text-1);
   line-height: 1.4;
   margin-bottom: 4px;
+  /* 阶段五-2: 长文本支持自动换行，最多2行 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 .poi-addr {
   font-size: 12px;
   color: var(--text-3);
   line-height: 1.5;
-  white-space: nowrap;
+  /* 阶段五-2: 长地址支持自动换行，最多2行 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 /* 右侧信息 */
@@ -1105,7 +1269,51 @@ body.dark .filter-select { background-color: rgba(255,255,255,0.05); }
 .poi-tag.tag-orange { background: var(--orange-bg); color: var(--orange); }
 .poi-tag.tag-gray { background: var(--bg-soft); color: var(--text-2); border: 1px solid var(--border); }
 
-.poi-extra-row { display: flex; flex-wrap: wrap; gap: 10px;
+/* P2-缺陷4: POI卡片操作按钮 */
+.poi-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+.poi-action-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--anim-fast);
+  min-height: 28px;
+}
+.poi-action-btn.detail {
+  background: var(--bg-soft);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.poi-action-btn.detail:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.poi-action-btn.detail:active {
+  transform: scale(0.95);
+}
+.poi-action-btn.nav {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(22,119,255,0.3);
+}
+.poi-action-btn.nav:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 4px 10px rgba(22,119,255,0.4);
+  transform: translateY(-1px);
+}
+.poi-action-btn.nav:active {
+  transform: scale(0.95);
+}
+
+.poi-extra-row { display: flex; flex-wrap: gap: 10px;
   margin-top: 8px; padding-top: 8px;
   border-top: 1px dashed var(--border); }
 .poi-extra-info { font-size: 12px; color: var(--text-2);
@@ -1162,7 +1370,7 @@ body.dark .filter-select { background-color: rgba(255,255,255,0.05); }
 .load-more-indicator {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 14px; color: var(--text-3); font-size: 13px;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.3s var(--ease-smooth);
 }
 .load-more-spinner {
   width: 16px; height: 16px;
@@ -1270,7 +1478,8 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
   z-index: 55;
   display: none; overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  flex-direction: column; animation: slideUpPanel 0.3s ease;
+  flex-direction: column; animation: slideUpPanel 0.3s var(--ease-smooth);
+  pointer-events: auto;
 }
 .route-panel.show { display: flex; }
 @keyframes slideUpPanel { from { transform: translateY(10%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -1380,7 +1589,8 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
   background: rgba(0,0,0,0.5);
   z-index: 100; display: none;
   align-items: flex-end; justify-content: center;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.3s var(--ease-smooth);
+  pointer-events: auto;
 }
 .detail-overlay.show { display: flex; }
 .detail-panel {
@@ -1389,8 +1599,9 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  animation: slideUpPanel 0.3s cubic-bezier(0.4,0,0.2,1);
+  animation: slideUpPanel 0.3s var(--ease-smooth);
   position: relative;
+  pointer-events: auto;
 }
 .detail-close {
   position: absolute; top: 10px; right: 14px;
@@ -1406,7 +1617,7 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
 
 .detail-panel-body {
   padding: 14px 18px calc(var(--safe-bottom) + 16px) 18px;
-  animation: fadeIn 0.3s ease 0.1s both;
+  animation: fadeIn 0.3s var(--ease-smooth) 0.1s both;
 }
 .detail-title {
   font-size: 18px; font-weight: 800; color: var(--text-1);
@@ -1650,6 +1861,7 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.4);
   z-index: 120; display: none;
+  pointer-events: auto;
 }
 .side-overlay.show { display: block; animation: fadeIn 0.2s ease; }
 
@@ -1659,9 +1871,10 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
   background: var(--bg);
   z-index: 121;
   transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  transition: transform 0.3s var(--ease-smooth);
   box-shadow: -4px 0 24px rgba(0,0,0,0.12);
   display: flex; flex-direction: column;
+  pointer-events: auto;
 }
 .side-panel.show { transform: translateX(0); }
 
@@ -1724,7 +1937,8 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
   display: none;
   align-items: center; justify-content: center; flex-direction: column;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.3s var(--ease-smooth);
+  pointer-events: auto;
 }
 body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 .loading-overlay.show { display: flex; }
@@ -1742,7 +1956,8 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 
 .loading-close {
   position: absolute; top: 20px; right: 20px;
-  width: 36px; height: 36px;
+  width: 44px; height: 44px;
+  min-width: 44px; min-height: 44px;
   border-radius: 50%;
   background: var(--bg-soft); border: none;
   cursor: pointer; font-size: 18px; color: var(--text-3);
@@ -1891,7 +2106,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
   transform: translate(-50%, -50%) scale(0.9);
   background: rgba(0,0,0,0.85);
   color: #fff;
-  padding: 12px 24px;
+  padding: 14px 28px;
   border-radius: var(--radius-md);
   font-size: 13px;
   z-index: 900;
@@ -1900,6 +2115,10 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
   max-width: 85%; text-align: center;
   line-height: 1.5; font-weight: 700;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .toast.success { background: rgba(82,196,26,0.92); }
@@ -1912,15 +2131,17 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
   top: calc(var(--topbar-h) + var(--safe-top) + var(--filterbar-h) + 8px);
   left: 50%; transform: translateX(-50%);
   background: rgba(255,77,79,0.95);
-  color: #fff; padding: 8px 16px;
+  color: #fff; padding: 10px 20px;
   border-radius: var(--radius-pill);
-  font-size: 12px; font-weight: 700;
+  font-size: 13px; font-weight: 700;
   z-index: 40; display: none;
   box-shadow: var(--shadow-md);
   white-space: nowrap;
+  min-height: 44px;
+  pointer-events: auto;
 }
 .offline-banner.success { background: rgba(82,196,26,0.95); }
-.offline-banner.show { display: block; animation: offlineBannerPop 0.3s ease; }
+.offline-banner.show { display: block; animation: offlineBannerPop 0.3s var(--ease-smooth); }
 @keyframes offlineBannerPop { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
 /* ---- 地图内错误提示浮层 ---- */
@@ -1949,7 +2170,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
   z-index: 80; display: none;
   min-width: 140px; overflow: hidden;
   transform: translate(-50%, -50%);
-  animation: menuPop 0.2s ease;
+  animation: menuPop 0.3s var(--ease-smooth);
 }
 .longpress-menu.show { display: block; }
 @keyframes menuPop { from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
@@ -2279,7 +2500,11 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         searchLoading: false,  /* 是否正在搜索 */
         debounceTimer: null,   /* 触底防抖定时器 */
         searchRadius: 3,       /* 附近搜索半径（km，阶段2） */
-        detailFromPOI: null    /* 详情面板关联的 POI（阶段2: 附近搜索用） */
+        detailFromPOI: null,   /* 详情面板关联的 POI（阶段2: 附近搜索用） */
+        apiCache: {},          /* 阶段四: 公共请求短期缓存（alias+params -> {time, data}） */
+        apiCacheTTL: 15000,    /* 缓存有效期 15s */
+        scrollIdleTimer: null, /* 列表滚动空闲定时器，用于暂停动画 */
+        listScrolling: false   /* 当前列表是否处于滚动中 */
     };
 
     // ---------- 数据生成 ----------
@@ -2372,6 +2597,16 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             clearTimeout(t); t = setTimeout(function () { fn.apply(ctx, args); }, delay);
         };
     }
+    // 阶段二: 全局防连击函数 - 200ms 内重复点击仅执行一次
+    function preventDoubleClick(fn) {
+        let lastClick = 0;
+        return function () {
+            const now = Date.now();
+            if (now - lastClick < 200) return; // 200ms 内忽略重复点击
+            lastClick = now;
+            fn.apply(this, arguments);
+        };
+    }
     function throttle(fn, delay) {
         let last = 0; return function () {
             const n = Date.now(); if (n - last >= delay) { last = n; fn.apply(this, arguments); }
@@ -2404,6 +2639,38 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             });
         } catch (e) {}
     }
+
+    // 阶段五-3/5: localStorage 安全存取（隐私模式降级不崩溃 + 状态记忆）
+    var LS_KEY = 'gdevnav_state_v1';
+    function safeLSGet(key) {
+        try { return window.localStorage.getItem(key); } catch (e) { return null; }
+    }
+    function safeLSSet(key, val) {
+        try { window.localStorage.setItem(key, val); return true; } catch (e) { return false; }
+    }
+    function safeLSDel(key) {
+        try { window.localStorage.removeItem(key); return true; } catch (e) { return false; }
+    }
+    function saveAppState() {
+        try {
+            var state = {
+                panelState: S.panelState || 'mini',
+                mode: S.mode || 'charge',
+                sort: S.sort || 'distance',
+                extraFilters: S.extraFilters || [],
+                darkMode: document.body.classList.contains('dark')
+            };
+            safeLSSet(LS_KEY, JSON.stringify(state));
+        } catch (e) {}
+    }
+    function loadAppState() {
+        try {
+            var raw = safeLSGet(LS_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (e) { return null; }
+    }
+
     function showLoading(text, hint, closable) {
         try {
             const el = $('loadingOverlay'); if (!el) return;
@@ -2617,6 +2884,18 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     }
     
     function amapFetch(alias, params) {
+        // 阶段四-3: 短期请求缓存（15s），避免同一参数短时间内重复请求
+        var cacheKey = alias + '|' + Object.keys(params || {}).sort().map(function(k){ return k + '=' + params[k]; }).join('&');
+        var now = Date.now();
+        if (S.apiCache && S.apiCache[cacheKey]) {
+            var cached = S.apiCache[cacheKey];
+            if (now - cached.time < (S.apiCacheTTL || 15000)) {
+                // console.log('[p4-cache] hit', cacheKey);
+                return Promise.resolve(cached.data);
+            }
+            delete S.apiCache[cacheKey];
+        }
+
         var url = '';
         var baseParams = Object.assign({ key: AMAP_KEY }, params);
 
@@ -2646,6 +2925,8 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 
         var finalCheck = function (j) {
             if (String(j.status) !== '1') throw new Error(j.info || j.msg || '高德接口异常');
+            // 阶段四-3: 成功后写入缓存
+            try { S.apiCache[cacheKey] = { time: Date.now(), data: j }; } catch (e) {}
             return j;
         };
 
@@ -2660,6 +2941,11 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         }
         // 无 fetch 时直接走 JSONP
         return _jsonp(url, baseParams).then(finalCheck);
+    }
+
+    // 阶段四-3: 清理缓存（可选，内存占用可控）
+    function clearApiCache() {
+        try { S.apiCache = {}; } catch (e) {}
     }
 
     // SDK 加载超时计数器
@@ -2694,11 +2980,21 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 toast('请确认已替换真实高德 Key', 'warning');
             }
             console.log('[P0-1] 开始初始化地图...');
+            // 阶段二: 地图交互精细化 - 统一拖拽阻力、缩放步长，关闭键盘控制
             S.map = new AMap.Map('map', {
                 zoom: 13,
                 center: [113.2644, 23.1292],
                 viewMode: '2D',
-                resizeEnable: true
+                resizeEnable: true,
+                // 阶段二: 交互精细化配置
+                zooms: [3, 18],           // 缩放范围限制
+                dragEnable: true,         // 允许拖拽
+                zoomEnable: true,         // 允许缩放
+                doubleClickZoom: false,   // 禁用双击缩放（已通过 touch-action: manipulation 消除 300ms 延迟）
+                keyboardEnable: false,    // 关闭键盘控制地图
+                scrollWheelZoom: true,    // 允许滚轮缩放
+                touchZoom: true,          // 允许触摸缩放
+                touchZoomCenter: 1        // 缩放中心：1=触摸点为中心
             });
             console.log('[P0-1] 地图实例创建成功');
             try { S.map.addControl(new AMap.Scale()); } catch (e) {}
@@ -2734,7 +3030,25 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                         setLoadStep(4, '正在加载数据...', '充电桩数据加载中');
                         console.log('[P0-1] 开始加载充电桩数据');
                         toast('广东新能源导航就绪', 'success');
-                        loadChargeData();
+                        // 阶段五-3: 先读取本地保存的筛选/面板状态，再加载对应模式
+                        try {
+                            var saved = loadAppState();
+                            if (saved) {
+                                if (saved.mode) S.mode = saved.mode;
+                                if (saved.sort) S.sort = saved.sort;
+                                if (saved.extraFilters && saved.extraFilters.length) S.extraFilters = saved.extraFilters;
+                                if (saved.darkMode) document.body.classList.add('dark');
+                            }
+                        } catch (e) {}
+                        if (S.mode === 'parking') loadParkingData();
+                        else loadChargeData();
+                        // 阶段五-3: 保存的面板档位（延迟到UI就绪后应用，避免动画冲突）
+                        setTimeout(function () {
+                            try {
+                                var s2 = loadAppState();
+                                if (s2 && s2.panelState && s2.panelState !== 'mini') setPanelState(s2.panelState);
+                            } catch (e) {}
+                        }, 400);
                     }, 600);
                 }
             });
@@ -2842,6 +3156,8 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         }
         // 阶段2: 控制附近搜索行显示
         updateNearbySearchVisibility();
+        // 阶段五-3: 状态记忆
+        saveAppState();
     }
     function togglePanel() {
         if (S.panelState === 'mini') setPanelState('half');
@@ -2853,12 +3169,25 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     
     // 解析POI数据
     function parsePoi(poi) {
-        const result = {
+        // P0-缺陷1: 修复 location 解析 - AMap.PlaceSearch 返回 AMap.LngLat 对象
+        var lng = 0, lat = 0;
+        if (poi.location) {
+            if (typeof poi.location.lng === 'number' && typeof poi.location.lat === 'number') {
+                // 普通对象格式 {lng, lat}
+                lng = poi.location.lng;
+                lat = poi.location.lat;
+            } else if (typeof poi.location.getLng === 'function') {
+                // AMap.LngLat 对象格式
+                lng = poi.location.getLng();
+                lat = poi.location.getLat();
+            }
+        }
+        var result = {
             id: poi.id || 'P' + Math.random().toString(36).substr(2, 9),
             name: poi.name || '未知名称',
-            address: poi.address || poi.location || '暂无地址',
-            lng: poi.location && poi.location.lng || 0,
-            lat: poi.location && poi.location.lat || 0,
+            address: poi.address || '暂无地址',
+            lng: lng,
+            lat: lat,
             distance: poi.distance || 0,
             type: '',
             _fav: false
@@ -3235,18 +3564,26 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 
         if (!poiList) return;
         poiList.innerHTML = '';
+        const emptyStateEl = $('emptyState');
         if (list.length === 0) {
-            const empty = document.createElement('div'); empty.className = 'empty-state';
-            const icon = S.mode === 'charge' ? '⚡' : S.mode === 'parking' ? '🅿️' : '📍';
-            const modeText = S.mode === 'charge' ? '充电站' : S.mode === 'parking' ? '停车场' : '地点';
-            empty.innerHTML = '<div class="empty-icon">' + icon + '</div>' +
-                '<div class="empty-title" style="font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:6px;">附近暂无' + modeText + '</div>' +
-                '<div class="empty-hint" style="font-size:12px;color:var(--text-3);line-height:1.6;">点击 ⚡充电/🅿️停车按钮<br>或搜索具体名称</div>';
-            poiList.appendChild(empty);
+            // 使用静态空状态元素，根据模式更新内容
+            if (emptyStateEl) {
+                const icon = S.mode === 'charge' ? '⚡' : S.mode === 'parking' ? '🅿️' : '📍';
+                const modeText = S.mode === 'charge' ? '充电站' : S.mode === 'parking' ? '停车场' : '地点';
+                const emptyIcon = emptyStateEl.querySelector('.empty-icon');
+                const emptyTitle = emptyStateEl.querySelector('.empty-title');
+                const emptyDesc = emptyStateEl.querySelector('.empty-desc');
+                if (emptyIcon) emptyIcon.textContent = icon;
+                if (emptyTitle) emptyTitle.textContent = '附近暂无' + modeText;
+                if (emptyDesc) emptyDesc.textContent = '请尝试扩大搜索半径或切换到' + (S.mode === 'charge' ? '停车场' : '充电站') + '模式';
+                emptyStateEl.style.display = 'flex';
+            }
             if ($('loadMoreIndicator')) $('loadMoreIndicator').style.display = 'none';
             if ($('noMoreIndicator')) $('noMoreIndicator').style.display = 'none';
             return;
         }
+        // 有数据时隐藏空状态
+        if (emptyStateEl) emptyStateEl.style.display = 'none';
         const end = Math.min(S.pageSize, list.length);
         if ($('loadMoreIndicator')) $('loadMoreIndicator').style.display = list.length > S.pageSize ? 'flex' : 'none';
         if ($('noMoreIndicator')) $('noMoreIndicator').style.display = list.length <= S.pageSize ? 'flex' : 'none';
@@ -3296,6 +3633,9 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             if (slow > 0) tagsHtml += '<span class="poi-tag slow">🔌 ' + slow + '慢</span>';
         }
         
+        // P2-缺陷4: 添加详情和导航按钮
+        const navBtn = poi.type === '充电' ? '去充电' : '去停车';
+        
         card.innerHTML = `
             <div class="poi-icon-wrap ${iconType}">${iconEmoji}</div>
             <div class="poi-content">
@@ -3305,6 +3645,10 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             <div class="poi-right">
                 <div class="poi-dist">${fmtDist(poi.distance)}</div>
                 <div class="poi-tags">${tagsHtml}</div>
+                <div class="poi-actions">
+                    <button type="button" class="poi-action-btn detail" data-action="detail" data-idx="${idx}" title="查看详情">详情</button>
+                    <button type="button" class="poi-action-btn nav" data-action="nav" data-idx="${idx}" title="导航去这里">${navBtn}</button>
+                </div>
             </div>
         `;
         
@@ -3381,56 +3725,57 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 
 
 function renderMapMarkers() {
-        // 任务三-1: Marker Clustering点聚合
-        // 清理旧的聚合器和标记
-        if (S.markerCluster) try { S.markerCluster.setMap(null); S.markerCluster = null; } catch (e) {}
-        if (S.markers && S.markers.length) try { S.map.remove(S.markers); } catch (e) {}
-        S.markers = [];
-        const list = S.filtered;
+        // 阶段四-1: 节流（80ms 内重复调用合并）
+        if (S.renderTimer) { clearTimeout(S.renderTimer); }
+        S.renderTimer = setTimeout(function() {
+            if (S.markerCluster) try { S.markerCluster.setMap(null); S.markerCluster = null; } catch (e) {}
+            if (S.markers && S.markers.length) try { S.map.remove(S.markers); } catch (e) {}
+            S.markers = [];
+            const list = S.filtered;
         
         // 根据数据量决定渲染策略
         if (list.length === 0) return;
         
         // 创建标记（不直接添加到地图，由Clusterer管理）
-        for (let i = 0; i < list.length; i++) (function (idx) {
-            const p = list[idx];
+        for (let i = 0; i < list.length; i++) {
+            const p = list[i];
+            if (!p || typeof p.lng !== 'number' || typeof p.lat !== 'number') continue;
             try {
                 const iconType = p.type === '充电' ? 'charge' : 'parking';
-                const m = new AMap.Marker({ 
-                    position: [p.lng, p.lat], 
-                    offset: new AMap.Pixel(-12, -32), 
+                const markerHtml = '<div style="width:32px;height:32px;background:#fff;border:2px solid ' + (iconType === 'charge' ? '#1677ff' : '#52c41a') + ';border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.25);transform:translateZ(0);">' + (iconType === 'charge' ? '⚡' : '🅿️') + '</div>';
+                const m = new AMap.Marker({
+                    position: [p.lng, p.lat],
+                    offset: new AMap.Pixel(-16, -32),
                     zIndex: 50,
-                    extData: { idx: idx, type: iconType },
-                    content: '<div class="poi-marker ' + iconType + '">' + 
-                             (p.type === '充电' ? '⚡' : '🅿️') + '</div>'
+                    extData: { idx: i, type: iconType },
+                    content: markerHtml
                 });
                 m.on('click', function () {
-                // Cluster点击时获取实际索引
-                const actualIdx = m.getExtData().idx;
-                selectPoi(actualIdx);
-                // 显示信息窗
-                const poi = S.filtered[actualIdx];
-                if (poi) showMarkerInfoWindow(poi);
-                // 添加呼吸灯效果
-                showMarkerPulse(m);
-            }); 
+                    const data = this.getExtData();
+                    if (data && typeof data.idx === 'number') {
+                        selectPoi(data.idx);
+                        const poi = S.filtered[data.idx];
+                        if (poi) showMarkerInfoWindow(poi);
+                        showMarkerPulse(this);
+                    }
+                });
                 S.markers.push(m);
             } catch (e) {}
-        })(i);
+        }
         
-        // 任务三-1: 使用MarkerClusterer进行点聚合
-        if (typeof AMap.MarkerClusterer !== 'undefined' && S.markers.length > 0) {
+        // 阶段四-1: 优化 MarkerClusterer 聚合
+        // - 5 个以下直接添加（避免聚合器开销）
+        // - gridSize 根据数据量动态调整
+        if (typeof AMap.MarkerClusterer !== 'undefined' && S.markers.length > 5) {
             try {
+                var gridSize = 60;
+                if (S.markers.length > 50) gridSize = 72;
+                if (S.markers.length > 100) gridSize = 84;
                 S.markerCluster = new AMap.MarkerClusterer(S.map, S.markers, {
-                    gridSize: 60,           // 聚合网格大小
-                    maxZoom: 16,            // 最大缩放级别，超过则不聚合
-                    minClusterSize: 3,      // 最少聚合点数
-                    averageCenter: true,    // 聚合点居中
-                    styles: [
-                        { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="18" fill="#1677ff" opacity="0.9"/><text x="20" y="25" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">c</text></svg>'), size: new AMap.Size(40, 40), offset: new AMap.Pixel(-20, -20), textColor: '#fff' },
-                        { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><circle cx="25" cy="25" r="22" fill="#1677ff" opacity="0.9"/><text x="25" y="30" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold">c</text></svg>'), size: new AMap.Size(50, 50), offset: new AMap.Pixel(-25, -25), textColor: '#fff' },
-                        { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><circle cx="30" cy="30" r="28" fill="#0958d9" opacity="0.9"/><text x="30" y="36" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">c</text></svg>'), size: new AMap.Size(60, 60), offset: new AMap.Pixel(-30, -30), textColor: '#fff' }
-                    ]
+                    gridSize: gridSize,
+                    maxZoom: 17,
+                    minClusterSize: S.markers.length > 50 ? 2 : 3,
+                    averageCenter: true
                 });
                 // P1-缺陷4: 集群点击事件 - 点击集群时放大视图
                 S.markerCluster.on('click', function (cluster) {
@@ -3455,14 +3800,17 @@ function renderMapMarkers() {
             S.markers.forEach(function(m) { m.setMap(S.map); });
         }
         
-        // 视野适应
+        // 阶段四-1: 视野适应（延迟 100ms，避免与地图初始化/动画冲突）
         if (S.markers.length) {
             try {
-                const all = S.markers.slice();
-                if (S.userMarker) all.push(S.userMarker);
-                S.map.setFitView(all, false, [60, 60, 120, 60]);
+                const allMarkers = S.markers.slice();
+                if (S.userMarker) allMarkers.push(S.userMarker);
+                setTimeout(function() {
+                    try { S.map.setFitView(allMarkers, false, [80, 80, 160, 80]); } catch (e) {}
+                }, 100);
             } catch (e) {}
         }
+        }, 80);
     }
     // 任务三-1: 地图联动 - 点击列表项平滑移至中心
     // 同时处理 Marker 点击 → 高亮列表 + 弹出详情
@@ -3603,6 +3951,9 @@ function renderMapMarkers() {
     function closePoiDetail() {
         $('detailOverlay').classList.remove('show');
         setTimeout(function () { $('detailOverlay').style.display = 'none'; }, 250);
+        // 阶段四-2: 面板销毁清理 - 移除可能残留的 infoWindow / pulse marker
+        try { if (S.infoWindow) { S.infoWindow.close(); S.infoWindow = null; } } catch (e) {}
+        try { clearApiCache(); } catch (e) {}
     }
     function backToList() {
         // 阶段2: 返回按钮 → 关闭详情，返回列表（保留地图状态）
@@ -3612,6 +3963,12 @@ function renderMapMarkers() {
         if (S.filtered.length > 0) renderPanel();
     }
     // ---------- 路线规划 ----------
+    // 阶段五-5: 公共 polyline 清理（去重）
+    function clearPolylines() {
+        try { if (S.polylines && S.polylines.length) S.polylines.forEach(function (pl) { try { pl.setMap(null); } catch (e) {} }); } catch (e) {}
+        S.polylines = [];
+    }
+
     function planRoute(sLng, sLat, eLng, eLat) {
         // 任务二-3: 起点终点相同校验
         if (Math.abs(sLng - eLng) < 0.0001 && Math.abs(sLat - eLat) < 0.0001) {
@@ -3667,7 +4024,12 @@ function renderMapMarkers() {
         });
     }
     function showRoutePanel() { $('routePanel').classList.add('show'); $('routePanel').style.display = 'flex'; setPanelState('mini'); }
-    function hideRoutePanel() { $('routePanel').classList.remove('show'); setTimeout(function () { $('routePanel').style.display = 'none'; }, 300); }
+    function hideRoutePanel() {
+        $('routePanel').classList.remove('show');
+        setTimeout(function () { $('routePanel').style.display = 'none'; }, 300);
+        // 阶段四-2: 面板关闭时清理路线 polyline（阶段五-5: 使用公共工具）
+        clearPolylines();
+    }
     function startNavigation(poi) {
         if (!S.user) { toast('请先定位', 'warning'); return; }
         closePoiDetail();
@@ -3680,7 +4042,12 @@ function renderMapMarkers() {
         $('naviTolls').textContent = '¥ ' + Math.round((poi.distance || 0) / 2000);
         planRoute(S.user.lng, S.user.lat, poi.lng, poi.lat);
     }
-    function exitNavi() { $('naviOverlay').style.display = 'none'; $('naviTop').style.display = 'none'; }
+    function exitNavi() {
+        $('naviOverlay').style.display = 'none';
+        $('naviTop').style.display = 'none';
+        // 阶段四-2: 导航退出清理路线（阶段五-5: 使用公共工具）
+        clearPolylines();
+    }
     // ---------- 本地联想关键词库 ----------
     const LOCAL_SUGGESTIONS = [
         { name: '广州塔', address: '海珠区阅江西路', lng: 113.3245, lat: 23.1066 },
@@ -3965,7 +4332,12 @@ function renderMapMarkers() {
         openSidePanel();
     }
     function openSidePanel() { $('sideOverlay').style.display = 'block'; setTimeout(function () { $('sidePanel').classList.add('show'); }, 20); }
-    function closeSidePanel() { $('sidePanel').classList.remove('show'); setTimeout(function () { $('sideOverlay').style.display = 'none'; }, 350); }
+    function closeSidePanel() {
+        $('sidePanel').classList.remove('show');
+        setTimeout(function () { $('sideOverlay').style.display = 'none'; }, 350);
+        // 阶段四-2: 面板关闭清理
+        try { if (S.infoWindow) { S.infoWindow.close(); S.infoWindow = null; } } catch (e) {}
+    }
     function sharePoi(poi) {
         const text = '【广东新能源导航】' + poi.name + ' (' + poi.address + ') - ' + fmtDist(poi.distance || 0);
         try {
@@ -3979,27 +4351,54 @@ function renderMapMarkers() {
         const handle = $('drawerHandle'), drawer = $('bottomDrawer');
         if (!handle || !drawer) return;
         let startY = 0, startH = 0, dragging = false, lastH = 0;
-        // 阻止抽屉区域的触摸事件冒泡到地图
-        ['touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove', 'mouseup', 'wheel'].forEach(function (evtName) {
-            drawer.addEventListener(evtName, function (e) { e.stopPropagation(); }, { passive: false });
+        
+        // 阶段二: 严格手势隔离 - 仅拖拽条控制高度，列表区域仅滚动
+        // 列表内容区域事件隔离 - 阻止滚轮/触摸冒泡到地图，但不触发面板拖拽
+        const drawerContent = $('drawerContent');
+        const poiList = $('poiList');
+        [drawerContent, poiList].forEach(function(el) {
+            if (!el) return;
+            // 阻止 wheel 事件冒泡 - 保护列表滚动不触发地图缩放
+            el.addEventListener('wheel', function(e) {
+                e.stopPropagation();
+            }, { passive: true });
+            // 阻止触摸滚动冒泡到地图
+            el.addEventListener('touchmove', function(e) {
+                e.stopPropagation();
+            }, { passive: true });
         });
+        
+        // 阻止抽屉内的 touchmove 冒泡到地图（但列表区域已单独处理）
+        drawer.addEventListener('touchmove', function(e) {
+            // 仅当不是在内容区域滚动时才阻止
+            const target = e.target;
+            if (!drawerContent || !drawerContent.contains(target)) {
+                e.stopPropagation();
+            }
+        }, { passive: true });
+        
         function getH() {
             const vh = window.innerHeight || 480;
             return { mini: 80, half: Math.max(200, Math.min(vh * 0.45, 450)), full: Math.max(300, Math.min(vh * 0.8, 650)) };
         }
+        
+        // 阶段二: 拖拽开始 - 仅在 handle 上触发
         function onStart(e) {
             dragging = true;
             const pt = e.touches ? e.touches[0] : e;
             startY = pt.clientY; startH = drawer.offsetHeight;
-            drawer.classList.add('is-dragging');
+            drawer.classList.add('is-dragging'); // 临时关闭过渡动画
             if (e.cancelable) e.preventDefault();
         }
+        
+        // 阶段二: 拖拽过程 - 限制边界，实时更新
         function onMove(e) {
             if (!dragging) return;
             const pt = e.touches ? e.touches[0] : e;
             const delta = startY - pt.clientY;
             const h = getH();
             let nh = startH + delta;
+            // 严格限制边界
             nh = Math.max(h.mini, Math.min(h.full, nh));
             drawer.style.height = nh + 'px';
             const content = $('drawerContent');
@@ -4008,20 +4407,20 @@ function renderMapMarkers() {
             }
             if (e.cancelable) e.preventDefault();
         }
+        
+        // 阶段二: 拖拽结束 - 精准吸附到三档位
         function onEnd() {
             if (!dragging) return;
             dragging = false;
-            drawer.classList.remove('is-dragging');
+            drawer.classList.remove('is-dragging'); // 恢复过渡动画
             const h = getH(), cur = drawer.offsetHeight;
+            // 优化吸附阈值：使用中点作为分界
             const t1 = (h.mini + h.half) / 2, t2 = (h.half + h.full) / 2;
             let target = (cur < t1) ? 'mini' : (cur < t2) ? 'half' : 'full';
-            setPanelState(target);
+            setPanelState(target); // 精准停靠到档位
         }
-        // 阻止抽屉内的 touchmove 冒泡到地图
-        drawer.addEventListener('touchmove', function(e) {
-            e.stopPropagation();
-        }, { passive: true });
-
+        
+        // 仅在 handle 上绑定拖拽事件
         handle.addEventListener('touchstart', onStart, { passive: false });
         handle.addEventListener('touchmove', onMove, { passive: false });
         handle.addEventListener('touchend', onEnd);
@@ -4034,16 +4433,45 @@ function renderMapMarkers() {
         document.addEventListener('mouseup', function (e) { if (dragging) onEnd(); });
         handle.addEventListener('click', function (e) { if (!clickMoved) togglePanel(); });
 
-        // 软键盘监听
+        // 软键盘监听 - 优化移动端软键盘弹出时的布局
         lastH = window.innerHeight;
         window.addEventListener('resize', function () {
             const nh = window.innerHeight;
             if (Math.abs(nh - lastH) > 80) {
-                if (nh < lastH) { $('bottomNav').style.transform = 'translateY(100%)'; $('bottomNav').style.opacity = '0'; }
-                else { $('bottomNav').style.transform = ''; $('bottomNav').style.opacity = '1'; }
+                if (nh < lastH) {
+                    // 键盘弹出
+                    document.body.classList.add('keyboard-open');
+                    $('bottomNav').style.transform = 'translateY(100%)';
+                    $('bottomNav').style.opacity = '0';
+                } else {
+                    // 键盘收起
+                    document.body.classList.remove('keyboard-open');
+                    $('bottomNav').style.transform = '';
+                    $('bottomNav').style.opacity = '1';
+                }
             }
             lastH = nh;
         });
+
+        // 搜索框获取焦点时也触发键盘状态
+        const searchInput = $('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('focus', function () {
+                document.body.classList.add('keyboard-open');
+                $('bottomNav').style.transform = 'translateY(100%)';
+                $('bottomNav').style.opacity = '0';
+            });
+            searchInput.addEventListener('blur', function () {
+                setTimeout(function () {
+                    // 延迟检查确保是真正的键盘收起
+                    if (document.activeElement !== searchInput) {
+                        document.body.classList.remove('keyboard-open');
+                        $('bottomNav').style.transform = '';
+                        $('bottomNav').style.opacity = '1';
+                    }
+                }, 200);
+            });
+        }
         window.addEventListener('orientationchange', function () {
             setTimeout(function () { try { S.map.invalidateSize && S.map.invalidateSize(); } catch (e) {} }, 300);
         });
@@ -4096,6 +4524,7 @@ function renderMapMarkers() {
         S.mode = type;
         S.searchCenter = center;
         S.searchPageIndex = 1;
+        saveAppState();
         // 优先高德 SDK，失败使用 mock 数据
         if (window.AMap && typeof AMap.PlaceSearch !== 'undefined') {
             showLoading('搜索中...', '正在查找附近设施', false);
@@ -4158,24 +4587,29 @@ function renderMapMarkers() {
                 if (e.key === 'Enter') { e.preventDefault(); onSearchSubmit(); }
             });
         }
-        if (sb) sb.addEventListener('click', onSearchSubmit);
-        if (cb) cb.addEventListener('click', function (e) {
+        // 阶段二: 搜索按钮防连击
+        if (sb) sb.addEventListener('click', preventDoubleClick(onSearchSubmit));
+        // 阶段二: 清除按钮防连击
+        if (cb) cb.addEventListener('click', preventDoubleClick(function (e) {
             e.preventDefault();
             if (si) si.value = '';
-            this.style.display = 'none';
+            cb.style.display = 'none';
             S.kw = ''; hideSuggestions(); refreshCurrent();
-        });
-        const bl = $('btnLocate'); if (bl) bl.addEventListener('click', function () { doLocate(true); });
-        const bi = $('btnZoomIn'); if (bi) bi.addEventListener('click', function () { try { S.map.zoomIn(); } catch (e) {} });
-        const bo = $('btnZoomOut'); if (bo) bo.addEventListener('click', function () { try { S.map.zoomOut(); } catch (e) {} });
+        }));
+        // 阶段二: 定位按钮防连击
+        const bl = $('btnLocate'); if (bl) bl.addEventListener('click', preventDoubleClick(function () { doLocate(true); }));
+        // 阶段二: 缩放按钮防连击
+        const bi = $('btnZoomIn'); if (bi) bi.addEventListener('click', preventDoubleClick(function () { try { S.map.zoomIn(); } catch (e) {} }));
+        const bo = $('btnZoomOut'); if (bo) bo.addEventListener('click', preventDoubleClick(function () { try { S.map.zoomOut(); } catch (e) {} }));
+        // 阶段二: 刷新按钮防连击
         const bf = $('btnRefresh');
-        if (bf) bf.addEventListener('click', function () {
+        if (bf) bf.addEventListener('click', preventDoubleClick(function () {
             if (S.kw) { S.kw = ''; if (si) si.value = ''; }
             refreshCurrent(); toast('数据已刷新', 'success');
-        });
-        // 任务二-1: 实时路况切换
+        }));
+        // 阶段二: 路况按钮防连击
         const bt = $('btnTraffic');
-        if (bt) bt.addEventListener('click', function () {
+        if (bt) bt.addEventListener('click', preventDoubleClick(function () {
             S.trafficOn = !S.trafficOn;
             if (S.trafficOn) {
                 S.trafficLayer.show();
@@ -4186,49 +4620,55 @@ function renderMapMarkers() {
                 bt.classList.remove('active');
                 toast('已关闭实时路况', 'success');
             }
-        });
+        }));
 
+        // 阶段二: 搜索按钮防抖（300ms）
+        var searchNearbyDebounced = debounce(function(type) {
+            searchNearby(type);
+        }, 300);
+        
         // 分层搜索按钮 - 充电桩（统一附近搜索，阶段2）
         const bsc = $('btnSearchCharge');
-        if (bsc) bsc.addEventListener('click', function () {
-            searchNearby('charge');
-        });
+        if (bsc) bsc.addEventListener('click', preventDoubleClick(function () {
+            searchNearbyDebounced('charge');
+        }));
 
         // 分层搜索按钮 - 停车场（统一附近搜索，阶段2）
         const bsp = $('btnSearchParking');
-        if (bsp) bsp.addEventListener('click', function () {
-            searchNearby('parking');
-        });
+        if (bsp) bsp.addEventListener('click', preventDoubleClick(function () {
+            searchNearbyDebounced('parking');
+        }));
 
         // 阶段2: 半径滑块初始化
         initNearBySearch();
 
-        // 筛选按钮
+        // 阶段二: 筛选按钮防连击
         document.querySelectorAll('.filter-tag[data-filter]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', preventDoubleClick(function () {
                 document.querySelectorAll('.filter-tag[data-filter]').forEach(function (b) { b.style.background = ''; b.style.color = ''; b.style.fontWeight = ''; });
                 btn.style.background = '#1677ff'; btn.style.color = '#fff'; btn.style.fontWeight = '700';
                 const f = btn.dataset.filter;
                 if (f === 'all') loadAllData();
                 else if (f === 'nearby' || f === 'fastCharge') loadChargeData();
                 else if (f === 'parking') loadParkingData();
-            });
+            }));
         });
-        // 排序按钮
+        // 阶段二: 排序按钮防连击
         document.querySelectorAll('.filter-tag.sort-tag').forEach(function (btn) {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', preventDoubleClick(function () {
                 document.querySelectorAll('.filter-tag.sort-tag').forEach(function (b) { b.classList.remove('active'); b.style.background = ''; b.style.color = ''; b.style.fontWeight = ''; });
                 btn.classList.add('active');
                 btn.style.background = '#52c41a'; btn.style.color = '#fff'; btn.style.fontWeight = '700';
                 S.sort = btn.dataset.sort || 'distance';
                 refreshCurrent();
+                saveAppState();
                 const label = S.sort === 'distance' ? '距离' : '价格';
                 toast('按' + label + '排序', 'success');
-            });
+            }));
         });
-        // 快捷筛选（面板内）
+        // 阶段二: 快捷筛选按钮防连击
         document.querySelectorAll('.quick-filter-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', preventDoubleClick(function () {
                 // 任务二-2: 多重筛选逻辑 - 取交集
                 const f = btn.dataset.extraFilter;
                 if (!S.extraFilters) S.extraFilters = [];
@@ -4248,10 +4688,11 @@ function renderMapMarkers() {
                     toast('筛选: ' + filterNames, 'success');
                 }
                 refreshCurrent();
-            });
+                saveAppState();
+            }));
         });
         // 排序下拉
-        const ss = $('sortSelect'); if (ss) ss.addEventListener('change', function () { S.sort = this.value; refreshCurrent(); });
+        const ss = $('sortSelect'); if (ss) ss.addEventListener('change', function () { S.sort = this.value; refreshCurrent(); saveAppState(); });
         const fs = $('filterSelect'); if (fs) fs.addEventListener('change', function () { 
             // 任务二-2: 全部类型时重置所有筛选条件
             if (this.value === 'all') {
@@ -4274,16 +4715,21 @@ function renderMapMarkers() {
                 }.bind(this));
             }
             refreshCurrent(); 
+            saveAppState();
         });
+        // 阶段二: 模式切换按钮防连击+防抖
+        var modeSwitchDebounced = debounce(function(m) {
+            if (m === 'charge') loadChargeData();
+            else if (m === 'parking') loadParkingData();
+        }, 300);
         // 模式按钮
         document.querySelectorAll('.drawer-mode-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', preventDoubleClick(function () {
                 document.querySelectorAll('.drawer-mode-btn').forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
                 const m = btn.dataset.mode;
-                if (m === 'charge') loadChargeData();
-                else if (m === 'parking') loadParkingData();
-            });
+                modeSwitchDebounced(m);
+            }));
         });
         // POI列表点击
         const pl = $('poiList');
@@ -4314,6 +4760,16 @@ function renderMapMarkers() {
         const pc = $('panelContent');
         if (pc) {
             pc.addEventListener('touchmove', function (e) { e.stopPropagation(); }, { passive: true });
+            // 阶段四-4: 列表滚动时暂停非必要动画，降低 CPU
+            pc.addEventListener('scroll', function () {
+                if (!document.body.classList.contains('is-list-scroll')) {
+                    document.body.classList.add('is-list-scroll');
+                }
+                if (S.scrollIdleTimer) clearTimeout(S.scrollIdleTimer);
+                S.scrollIdleTimer = setTimeout(function () {
+                    document.body.classList.remove('is-list-scroll');
+                }, 250);
+            }, { passive: true });
             pc.addEventListener('scroll', throttle(function () {
                 if (S.displayed >= S.filtered.length) return;
                 const ms = pc.scrollHeight - pc.clientHeight;
@@ -4410,6 +4866,96 @@ function renderMapMarkers() {
     }
     window.addEventListener('online', function() { updateNetworkStatus(); toast('网络已恢复', 'success'); });
     window.addEventListener('offline', function() { updateNetworkStatus(); toast('网络已断开，请检查连接', 'warning'); });
+    
+    // ---------- 阶段三: 平台检测与兼容性补丁 ----------
+    (function platformInit() {
+        var ua = navigator.userAgent || '';
+        var isWeChat = /MicroMessenger/i.test(ua);
+        var isQQBrowser = /MQQBrowser/i.test(ua);
+        var isAndroid = /Android/i.test(ua);
+        var isIOS = /iPhone|iPad|iPod/i.test(ua);
+        var isFirefox = /Firefox|FxiOS/i.test(ua);
+        
+        // 微信/X5 内核 - 禁止默认下拉回弹, 加 platform class
+        if (isWeChat || isQQBrowser) {
+            document.body.classList.add('wechat-fix');
+            document.body.classList.add('platform-wechat');
+            // 微信内置浏览器: 阻止默认触摸手势, 但保留内容滚动
+            document.addEventListener('touchmove', function(e) {
+                // 仅当非内容区域时才阻止默认（防止页面整体被拖动）
+                var target = e.target;
+                var scrollable = target.closest ? target.closest('.drawer-content, .poi-list, .suggestions, .route-panel, .side-panel') : null;
+                if (!scrollable) {
+                    // 检查是否是地图触摸 - 地图本身有自己的处理
+                    if (target && target.id !== 'map' && !target.closest('#map')) {
+                        // 不阻止地图的正常拖拽, 只阻止空区域整体回弹
+                    }
+                }
+            }, { passive: true });
+        }
+        
+        if (isAndroid) document.body.classList.add('platform-android');
+        if (isIOS) document.body.classList.add('platform-ios');
+        if (isFirefox) document.body.classList.add('platform-firefox');
+        
+        // 微信禁止双指缩放
+        if (isWeChat) {
+            document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+        }
+        
+        // iOS Safari - 防止输入框获焦后页面滚动偏移
+        if (isIOS) {
+            document.addEventListener('focusout', function(e) {
+                if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+                    setTimeout(function() {
+                        window.scrollTo(0, 0);
+                        document.body.scrollTop = 0;
+                    }, 100);
+                }
+            });
+        }
+    })();
+    
+    // ---------- 阶段三: 横竖屏切换适配 ----------
+    var rotateTimer = null;
+    function handleOrientationChange() {
+        clearTimeout(rotateTimer);
+        rotateTimer = setTimeout(function() {
+            // 重置抽屉到迷你态, 刷新布局
+            var drawer = document.getElementById('bottomDrawer');
+            if (drawer) {
+                drawer.classList.remove('is-dragging');
+                // 重置状态 class
+                if (drawer.classList.contains('state-half') || drawer.classList.contains('state-full')) {
+                    drawer.style.height = '';
+                }
+            }
+            // 地图重绘（高德需要）
+            try {
+                if (window.AMap && S && S.map && typeof S.map.setStatus === 'function') {
+                    S.map.setStatus({ rotateEnable: false });
+                }
+            } catch (err) {}
+            // 触发 resize 事件通知组件刷新
+            try {
+                window.dispatchEvent(new Event('resize'));
+            } catch (err2) {}
+        }, 250);
+    }
+    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener('resize', function() {
+        // PC 端窗口大小变化时也刷新布局
+        if (typeof window.orientation === 'undefined') {
+            clearTimeout(rotateTimer);
+            rotateTimer = setTimeout(function() {
+                try {
+                    if (window.AMap && S && S.map) {
+                        // 非移动端不做特殊处理
+                    }
+                } catch (err) {}
+            }, 200);
+        }
+    });
     
     // ---------- 启动 ----------
     document.addEventListener('DOMContentLoaded', function () {
