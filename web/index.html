@@ -2265,13 +2265,46 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 
 
 /* =========================================================================
- * 纯前端直接调用高德 REST API（无需后端代理）
+ * 纯前端直接调用高德 REST API（无需后端代理，可在 GitHub Pages 直连）
+ * 优先走 fetch（CORS），失败自动回退 JSONP，确保浏览器端稳定可用
  * ========================================================================= */
     const AMAP_KEY = '8429788d2971b1eb0b278b878180ce92';   // Web服务Key（用于 REST API / amapFetch）
 
+    // ---------- JSONP 实现（GitHub Pages 纯前端兜底方案） ----------
+    function _jsonp(url, params) {
+        return new Promise(function (resolve, reject) {
+            var cbName = '_amap_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+            var fullParams = Object.assign({}, params, { callback: cbName });
+            var qs = Object.keys(fullParams)
+                .map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(fullParams[k]); })
+                .join('&');
+            var script = document.createElement('script');
+            script.src = url + '?' + qs;
+            script.async = true;
+            var timeoutId = setTimeout(function () {
+                cleanup();
+                reject(new Error('请求超时'));
+            }, 10000);
+            function cleanup() {
+                clearTimeout(timeoutId);
+                delete window[cbName];
+                if (script.parentNode) script.parentNode.removeChild(script);
+            }
+            window[cbName] = function (data) {
+                cleanup();
+                resolve(data);
+            };
+            script.onerror = function () {
+                cleanup();
+                reject(new Error('网络请求失败'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
     function amapFetch(alias, params) {
-        let url = '';
-        const baseParams = { key: AMAP_KEY, ...params };
+        var url = '';
+        var baseParams = Object.assign({ key: AMAP_KEY }, params);
 
         switch (alias) {
             case 'suggest':
@@ -2292,16 +2325,27 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 url = 'https://restapi.amap.com/v3/' + alias;
         }
 
-        const qs = Object.keys(baseParams)
+        // 1) 先走 fetch / CORS
+        var qs = Object.keys(baseParams)
             .map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(baseParams[k]); })
             .join('&');
 
-        return fetch(url + '?' + qs)
-            .then(function (r) { return r.json(); })
-            .then(function (j) {
-                if (String(j.status) !== '1') throw new Error(j.info || j.msg || '高德接口异常');
-                return j;
-            });
+        var finalCheck = function (j) {
+            if (String(j.status) !== '1') throw new Error(j.info || j.msg || '高德接口异常');
+            return j;
+        };
+
+        if (window.fetch) {
+            return fetch(url + '?' + qs, { method: 'GET', mode: 'cors' })
+                .then(function (r) { return r.json(); })
+                .then(finalCheck)
+                .catch(function () {
+                    // 2) 回退：JSONP（GitHub Pages 上最稳定的纯前端调用方式）
+                    return _jsonp(url, baseParams).then(finalCheck);
+                });
+        }
+        // 无 fetch 时直接走 JSONP
+        return _jsonp(url, baseParams).then(finalCheck);
     }
 
     function initMap() {
