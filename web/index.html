@@ -2461,10 +2461,24 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         return _jsonp(url, baseParams).then(finalCheck);
     }
 
+    // SDK 加载超时计数器
+    var sdkLoadAttempts = 0;
+    var maxSdkAttempts = 5;
+    
     function initMap() {
+        sdkLoadAttempts++;
+        // 立即显示加载状态（解决卡死问题）
+        showMapLoading('正在初始化地图...');
+        
         try {
             if (!window.AMap) {
-                toast('高德地图 SDK 加载失败，请刷新页面或检查网络');
+                if (sdkLoadAttempts >= maxSdkAttempts) {
+                    hideMapLoading();
+                    toast('高德地图 SDK 加载超时，请检查网络后刷新页面', 'error', 5000);
+                    showMapLoadError('SDK 加载超时');
+                    return;
+                }
+                toast('等待地图 SDK 加载... (' + sdkLoadAttempts + '/' + maxSdkAttempts + ')', 'warning');
                 setTimeout(initMap, 1500);
                 return;
             }
@@ -2504,7 +2518,13 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 hideMapLoading();
                 if (S.firstLoad) {
                     S.firstLoad = false;
+                    // 先定位，定位完成后再加载数据
                     setTimeout(function () { doLocate(true); }, 500);
+                    // 同时加载初始数据（充电桩）
+                    setTimeout(function () {
+                        toast('广东新能源导航就绪');
+                        loadChargeData();
+                    }, 600);
                 }
             });
             S.map.on('error', function (e) {
@@ -2521,21 +2541,26 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             });
             S.map.on('touchend', function () { clearTimeout(S.lpTimer); });
             S.map.on('touchmove', function () { clearTimeout(S.lpTimer); });
-            setTimeout(function () {
-                toast('广东新能源导航就绪');
-                loadChargeData();
-            }, 800);
-
-            showMapLoading('地图加载中...');
+            // 加载数据已移到地图 complete 回调中
         } catch (err) {
             console.error('地图初始化致命错误:', err);
             hideMapLoading();
             toast('地图初始化失败: ' + (err.message || '请刷新重试'), 'error');
-            var mapDom = document.getElementById('map');
-            if (mapDom) {
-                mapDom.innerHTML = '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;padding:20px;"><div style="font-size:48px;">🗺️</div><div style="margin-top:10px;font-size:16px;">地图加载失败</div><div style="margin-top:5px;font-size:12px;color:#999;">请检查网络或刷新页面</div></div>';
-            }
+            showMapLoadError(err.message || '未知错误');
         }
+    }
+
+    // P0-1: 地图加载失败兜底UI
+    function showMapLoadError(msg) {
+        var mapDom = document.getElementById('map');
+        if (!mapDom) return;
+        mapDom.innerHTML = 
+            '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-page);">' +
+            '<div style="font-size:64px;margin-bottom:16px;">🗺️</div>' +
+            '<div style="font-size:17px;color:var(--text-1);font-weight:700;margin-bottom:8px;">地图加载失败</div>' +
+            '<div style="font-size:13px;color:var(--text-3);text-align:center;padding:0 20px;margin-bottom:20px;">' + (msg || '请检查网络连接') + '</div>' +
+            '<button onclick="initMap();" style="padding:12px 28px;border-radius:var(--radius-lg);background:var(--primary);color:#fff;border:none;font-weight:700;font-size:14px;min-width:120px;">🔄 重试加载</button>' +
+            '</div>';
     }
     function doLocate(showHint) {
         if (!S.geo) { setUserLocation(113.264, 23.129, '广州默认位置'); if (showHint) toast('定位服务不可用，使用默认位置', 'warning'); return; }
