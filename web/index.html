@@ -2285,13 +2285,13 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     // ---------- 数据生成 ----------
     function mCS(name, addr, lng, lat, fast, slow, price) {
         const t = fast + slow, av = Math.max(0, Math.round(t * 0.35 + Math.random() * t * 0.25));
-        return { id: 'S' + Math.random().toString(36).substr(2, 9), name, address: addr, lng, lat,
+        return { id: 'S' + Math.random().toString(36).substr(2, 9), name: name, address: addr, lng: lng, lat: lat,
             fastChargePiles: fast, slowChargePiles: slow, totalPiles: t, availablePiles: av,
             pricePerKwh: price, type: '充电', distance: 0, _fav: false };
     }
     function mPK(name, addr, lng, lat, total, price) {
         const av = Math.max(0, Math.round(total * 0.3 + Math.random() * total * 0.3));
-        return { id: 'P' + Math.random().toString(36).substr(2, 9), name, address: addr, lng, lat,
+        return { id: 'P' + Math.random().toString(36).substr(2, 9), name: name, address: addr, lng: lng, lat: lat,
             totalSpots: total, availableSpots: av, pricePerHour: price, priceType: '按时计费',
             type: '停车', distance: 0, _fav: false };
     }
@@ -2381,7 +2381,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         try {
             const R = 6371000, toRad = function (x) { return x * Math.PI / 180; };
             const dLat = toRad(d - b), dLng = toRad(c - a);
-            const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(b)) * Math.cos(toRad(d)) * Math.sin(dLng / 2) ** 2;
+            const x = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(toRad(b)) * Math.cos(toRad(d)) * Math.pow(Math.sin(dLng / 2), 2);
             return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
         } catch (e) { return 0; }
     }
@@ -2595,6 +2595,27 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         });
     }
 
+    // P1-缺陷2: 带重试机制的 API 请求
+    function amapFetchWithRetry(alias, params, maxRetries) {
+        maxRetries = maxRetries || 2;
+        var attempt = 0;
+        function tryRequest() {
+            attempt++;
+            return amapFetch(alias, params).catch(function(err) {
+                console.warn('[P1-缺陷2] 请求失败，第 ' + attempt + ' 次尝试: ' + err.message);
+                if (attempt < maxRetries) {
+                    // 指数退避: 300ms, 600ms
+                    var delay = 300 * Math.pow(2, attempt - 1);
+                    return new Promise(function(resolve) {
+                        setTimeout(function() { resolve(tryRequest()); }, delay);
+                    });
+                }
+                throw err;
+            });
+        }
+        return tryRequest();
+    }
+    
     function amapFetch(alias, params) {
         var url = '';
         var baseParams = Object.assign({ key: AMAP_KEY }, params);
@@ -3410,6 +3431,20 @@ function renderMapMarkers() {
                         { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><circle cx="25" cy="25" r="22" fill="#1677ff" opacity="0.9"/><text x="25" y="30" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold">c</text></svg>'), size: new AMap.Size(50, 50), offset: new AMap.Pixel(-25, -25), textColor: '#fff' },
                         { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><circle cx="30" cy="30" r="28" fill="#0958d9" opacity="0.9"/><text x="30" y="36" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">c</text></svg>'), size: new AMap.Size(60, 60), offset: new AMap.Pixel(-30, -30), textColor: '#fff' }
                     ]
+                });
+                // P1-缺陷4: 集群点击事件 - 点击集群时放大视图
+                S.markerCluster.on('click', function (cluster) {
+                    try {
+                        var markers = cluster.markers;
+                        if (markers && markers.length > 0) {
+                            var lngs = markers.map(function(m) { return m.getPosition().lng; });
+                            var lats = markers.map(function(m) { return m.getPosition().lat; });
+                            var centerLng = (Math.min.apply(null, lngs) + Math.max.apply(null, lngs)) / 2;
+                            var centerLat = (Math.min.apply(null, lats) + Math.max.apply(null, lats)) / 2;
+                            var currentZoom = S.map.getZoom();
+                            S.map.setZoomAndCenter(currentZoom + 2, [centerLng, centerLat]);
+                        }
+                    } catch (e) {}
                 });
             } catch (e) {
                 // 降级：不使用聚合，直接添加标记
@@ -4360,9 +4395,25 @@ function renderMapMarkers() {
         setTimeout(calibratePanelHeights, 100);
         setTimeout(fixVhIssue, 150);
     
+    // ---------- P2-缺陷1: 网络状态检测 ----------
+    function updateNetworkStatus() {
+        var isOnline = navigator.onLine;
+        var banner = $('offlineBanner');
+        if (banner) {
+            if (isOnline) {
+                banner.classList.remove('show');
+            } else {
+                banner.textContent = '⚠ 网络已断开';
+                banner.className = 'offline-banner show';
+            }
+        }
+    }
+    window.addEventListener('online', function() { updateNetworkStatus(); toast('网络已恢复', 'success'); });
+    window.addEventListener('offline', function() { updateNetworkStatus(); toast('网络已断开，请检查连接', 'warning'); });
+    
     // ---------- 启动 ----------
     document.addEventListener('DOMContentLoaded', function () {
-        initMap(); initPanelDrag(); initEvents();
+        initMap(); initPanelDrag(); initEvents(); updateNetworkStatus();
     });
     // 如果DOMContentLoaded已触发
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
