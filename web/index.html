@@ -1763,7 +1763,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.95);
   z-index: 1000;
   opacity: 0;
   pointer-events: none;
@@ -1772,6 +1772,59 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 .map-loading-overlay.show {
   opacity: 1;
   pointer-events: auto;
+}
+/* P0-任务1: 加载进度条 */
+.map-loading-progress {
+  width: 200px;
+  height: 4px;
+  background: rgba(26,115,232,0.15);
+  border-radius: 2px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+.map-loading-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #52c41a);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  animation: progressPulse 1.5s ease infinite;
+}
+@keyframes progressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.map-loading-steps {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.map-loading-step {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(26,115,232,0.2);
+  transition: all 0.3s ease;
+}
+.map-loading-step.active {
+  background: var(--primary);
+  transform: scale(1.3);
+}
+.map-loading-step.done {
+  background: #52c41a;
+}
+.map-loading-text {
+  font-size: 14px;
+  color: var(--text-1);
+  font-weight: 600;
+  margin-top: 12px;
+  text-align: center;
+  max-width: 80%;
+}
+.map-loading-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 6px;
+  text-align: center;
 }
 
 .map-loading-spinner {
@@ -1987,7 +2040,18 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
 <div id="map" class="map-container" role="application" aria-label="广东新能源导航地图" aria-describedby="mapDesc"></div>
 <div class="map-loading-overlay" id="mapLoadingOverlay">
     <div class="map-loading-spinner"></div>
-    <div class="map-loading-text">正在加载...</div>
+    <!-- P0-任务1: 加载进度指示 -->
+    <div class="map-loading-progress">
+        <div class="map-loading-progress-bar" id="loadingProgressBar" style="width: 0%"></div>
+    </div>
+    <div class="map-loading-steps">
+        <div class="map-loading-step active" id="step1" title="SDK加载"></div>
+        <div class="map-loading-step" id="step2" title="地图初始化"></div>
+        <div class="map-loading-step" id="step3" title="定位"></div>
+        <div class="map-loading-step" id="step4" title="数据加载"></div>
+    </div>
+    <div class="map-loading-text" id="loadingText">正在初始化...</div>
+    <div class="map-loading-hint" id="loadingHint">请稍候</div>
 </div>
 <div class="map-error-banner" id="mapErrorBanner"></div>
 <div class="longpress-menu" id="longpressMenu"></div>
@@ -2359,21 +2423,54 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     }
 
     // ---------- 地图中心加载状态 ----------
+    /* =========================================================================
+     * P0-任务1: 可靠的加载状态管理
+     * 包含进度指示、步骤标记、console.log 日志
+     * ========================================================================= */
+    var _loadStep = 0;
+    function setLoadStep(step, text, hint) {
+        _loadStep = step;
+        try {
+            // 更新进度条
+            var bar = $('loadingProgressBar');
+            if (bar) bar.style.width = (step / 4 * 100) + '%';
+            // 更新步骤点
+            for (var i = 1; i <= 4; i++) {
+                var s = $('step' + i);
+                if (!s) continue;
+                s.classList.remove('active', 'done');
+                if (i < step) s.classList.add('done');
+                else if (i === step) s.classList.add('active');
+            }
+            // 更新文字
+            if (text) {
+                var t = $('loadingText');
+                if (t) t.textContent = text;
+            }
+            if (hint) {
+                var h = $('loadingHint');
+                if (h) h.textContent = hint;
+            }
+            console.log('[P0-1] 加载步骤 ' + step + '/4: ' + text + (hint ? ' - ' + hint : ''));
+        } catch (e) {}
+    }
     function showMapLoading(text) {
         try {
             const el = $('mapLoadingOverlay');
             if (!el) return;
-            const textEl = el.querySelector('.map-loading-text');
-            if (textEl) textEl.textContent = text || '正在加载...';
+            const textEl = $('loadingText');
+            if (textEl) textEl.textContent = text || '正在初始化...';
             el.classList.add('show');
+            // P0-1: 每次显示都重置步骤
+            setLoadStep(1, text || '正在初始化...', 'SDK加载中');
         } catch (e) {}
     }
-
     function hideMapLoading() {
         try {
             const el = $('mapLoadingOverlay');
             if (!el) return;
             el.classList.remove('show');
+            console.log('[P0-1] ✅ 地图初始化完成');
         } catch (e) {}
     }
 
@@ -2550,8 +2647,9 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     
     function initMap() {
         sdkLoadAttempts++;
-        // 立即显示加载状态（解决卡死问题）
+        // P0-任务1: 立即显示加载状态（带进度指示）
         showMapLoading('正在初始化地图...');
+        console.log('[P0-1] initMap() 开始执行，第 ' + sdkLoadAttempts + ' 次尝试');
         
         try {
             if (!window.AMap) {
@@ -2559,24 +2657,29 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                     hideMapLoading();
                     toast('高德地图 SDK 加载超时，请检查网络后刷新页面', 'error', 5000);
                     showMapLoadError('SDK 加载超时');
+                    console.error('[P0-1] SDK 加载超时，已达最大重试次数');
                     return;
                 }
+                setLoadStep(1, '等待SDK加载...', 'SDK加载中 ' + sdkLoadAttempts + '/' + maxSdkAttempts);
                 toast('等待地图 SDK 加载... (' + sdkLoadAttempts + '/' + maxSdkAttempts + ')', 'warning');
                 setTimeout(initMap, 1500);
                 return;
             }
+            // P0-任务1: SDK 加载成功，进入步骤 2
+            setLoadStep(2, '正在初始化地图...', '地图初始化中');
+            console.log('[P0-1] SDK 加载成功，开始创建地图实例');
             // Key 有效性提醒（占位符时提示用户替换）
             if (AMAP_KEY.includes('你的高德KEY') || AMAP_KEY.includes('PLACEHOLDER')) {
                 toast('请确认已替换真实高德 Key', 'warning');
             }
-            console.log('开始初始化地图...');
+            console.log('[P0-1] 开始初始化地图...');
             S.map = new AMap.Map('map', {
                 zoom: 13,
                 center: [113.2644, 23.1292],
                 viewMode: '2D',
                 resizeEnable: true
             });
-            console.log('地图实例创建成功');
+            console.log('[P0-1] 地图实例创建成功');
             try { S.map.addControl(new AMap.Scale()); } catch (e) {}
             try {
                 S.geo = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 10000, buttonPosition: 'RB', showCircle: false, showMarker: false, zoomToAccuracy: false });
@@ -2588,7 +2691,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 S.trafficLayer.setMap(S.map);
                 S.trafficLayer.hide(); // 默认隐藏
             } catch (e) { console.warn('路况图层初始化失败:', e); }
-            try { S.ps = new AMap.PlaceSearch({ extensions: 'all', pageSize: 20, pageIndex: 1, autoFitView: false }); S.ac = new AMap.AutoComplete({ city: '全国' }); console.log('PlaceSearch 初始化成功'); } catch (e) { console.error('PlaceSearch 初始化失败:', e); }
+            try { S.ps = new AMap.PlaceSearch({ extensions: 'all', pageSize: 20, pageIndex: 1, autoFitView: false }); S.ac = new AMap.AutoComplete({ city: '全国' }); console.log('[P0-1] PlaceSearch 初始化成功'); } catch (e) { console.error('[P0-1] PlaceSearch 初始化失败:', e); }
             try { S.driving = new AMap.Driving({ 
                 policy: AMap.DrivingPolicy.LEAST_TIME,
                 model: 'EV_NOVEL',  // 任务三-3: 新能源绿牌策略
@@ -2596,23 +2699,28 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             }); } catch (e) {}
             try { S.geocoder = new AMap.Geocoder({ city: '全国' }); } catch (e) {}
 
+            // P0-任务1: 地图 complete 事件 - 所有资源加载完成
             S.map.on('complete', function () {
-                console.log('地图瓦片加载完成');
-                hideMapLoading();
+                console.log('[P0-1] 地图瓦片加载完成');
+                // 进入步骤 3（定位）
+                setLoadStep(3, '正在定位...', '获取位置中');
                 if (S.firstLoad) {
                     S.firstLoad = false;
                     // 先定位，定位完成后再加载数据
                     setTimeout(function () { doLocate(true); }, 500);
                     // 同时加载初始数据（充电桩）
                     setTimeout(function () {
-                        toast('广东新能源导航就绪');
+                        setLoadStep(4, '正在加载数据...', '充电桩数据加载中');
+                        console.log('[P0-1] 开始加载充电桩数据');
+                        toast('广东新能源导航就绪', 'success');
                         loadChargeData();
                     }, 600);
                 }
             });
             S.map.on('error', function (e) {
-                console.warn('地图错误:', e);
+                console.warn('[P0-1] 地图错误:', e);
                 hideMapLoading();
+                showMapLoadError('地图加载失败: ' + (e.message || '未知错误'));
             });
             S.map.on('moveend', throttle(onMapMoveEnd, 900));
             S.map.on('zoomend', throttle(onMapMoveEnd, 1200));
@@ -3569,15 +3677,24 @@ function renderMapMarkers() {
         { name: '正佳广场停车场', address: '天河区天河路', lng: 113.3240, lat: 23.1340, type: '停车' },
         { name: '天河城停车场', address: '天河区天河路', lng: 113.3210, lat: 23.1330, type: '停车' },
     ];
-    // ---------- 搜索联想 ----------
+    /* =========================================================================
+     * P0-任务2: 搜索功能完整可用（全局 + 联想）
+     * - 支持关键词模糊搜索
+     * - 实时联想下拉（debounce 防抖 300ms）
+     * - 回车搜索
+     * - 搜索后立即更新地图 Marker
+     * ========================================================================= */
+    // 搜索联想（防抖 300ms，避免频繁请求）
     const debouncedSearch = debounce(function () {
         const kw = this.value.trim();
+        console.log('[P0-2] 搜索联想输入:', kw);
         if (!kw) { S.kw = ''; refreshCurrent(); hideSuggestions(); return; }
         S.kw = kw; refreshCurrent();
         // 优先使用高德 SDK 联想；失败时使用本地关键词库
         if (S.ac) {
             try {
                 S.ac.search(kw, function (status, result) {
+                    console.log('[P0-2] 高德联想结果:', status, result && result.tips ? result.tips.length : 0);
                     if (status === 'complete' && result.tips && result.tips.length) {
                         showInlineSuggestions(result.tips.slice(0, 6));
                     } else {
@@ -3585,6 +3702,7 @@ function renderMapMarkers() {
                     }
                 });
             } catch (e) {
+                console.warn('[P0-2] 高德联想异常，使用本地词库:', e.message);
                 showLocalSuggestions(kw);
             }
         } else {
@@ -3640,13 +3758,30 @@ function renderMapMarkers() {
         if (!sug.innerHTML) sug.style.display = 'none';
     }
     function hideSuggestions() { const s = $('suggestions'); if (s) s.style.display = 'none'; }
+    /* =========================================================================
+     * P0-任务2: 回车搜索
+     * - 获取关键词
+     * - 执行全局搜索（过滤 POI）
+     * - 搜索后更新地图 Marker
+     * ========================================================================= */
     function onSearchSubmit() {
         const si = $('searchInput');
         const kw = (si ? si.value : '').trim();
-        if (!kw) { S.kw = ''; refreshCurrent(); return; }
-        S.kw = kw; refreshCurrent();
-        toast('已搜索"' + kw + '"', 'success');
+        console.log('[P0-2] 回车搜索:', kw);
+        if (!kw) {
+            S.kw = '';
+            refreshCurrent();
+            hideSuggestions();
+            return;
+        }
+        S.kw = kw;
+        // P0-任务2: 确保搜索后更新地图和列表
+        refreshCurrent();
+        renderMapMarkers(); // 强制更新地图 Marker
         setPanelState('half');
+        hideSuggestions();
+        toast('已搜索"' + kw + '"，找到 ' + S.filtered.length + ' 个结果', 'success');
+        console.log('[P0-2] 搜索结果:', S.filtered.length, '个');
     }
     // ---------- 长按菜单 ----------
     function showLongPressMenu(lng, lat) {
