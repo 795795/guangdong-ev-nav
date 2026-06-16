@@ -313,7 +313,7 @@ body.dark .top-bar {
   align-items: center;
   gap: 8px;
 }
-.search-icon { font-size: 16px; color: var(--text-3); }
+.search-icon { font-size: 16px; color: var(--text-3); flex-shrink: 0; }
 .search-input {
   flex: 1;
   border: none;
@@ -321,8 +321,24 @@ body.dark .top-bar {
   background: transparent;
   font-size: 15px;
   color: var(--text-1);
+  min-width: 0;
 }
 .search-input::placeholder { color: var(--text-4); }
+.search-submit-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  min-height: 36px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--anim-fast);
+}
+.search-submit-btn:hover { background: var(--primary-hover); }
+.search-submit-btn:active { transform: scale(0.97); }
 .clear-search-btn {
   width: 28px;
   height: 28px;
@@ -1982,6 +1998,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         <span class="search-icon">🔍</span>
         <input type="search" id="searchInput" class="search-input" placeholder="搜索目的地/充电站/停车场" autocomplete="off" aria-label="搜索地点或充电站" role="searchbox" aria-autocomplete="list">
         <button type="button" id="clearSearchBtn" class="clear-search-btn" aria-label="清空" style="display:none;">✕</button>
+        <button type="button" id="searchBtn" class="search-submit-btn" aria-label="搜索">搜索</button>
     </div>
 </div>
 <div class="suggestions" id="suggestions" style="display:none;"></div>
@@ -2213,6 +2230,72 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         return { id: 'P' + Math.random().toString(36).substr(2, 9), name, address: addr, lng, lat,
             totalSpots: total, availableSpots: av, pricePerHour: price, priceType: '按时计费',
             type: '停车', distance: 0, _fav: false };
+    }
+
+    // 生成mock充电桩数据（API失败时兜底）
+    function generateMockChargeData(centerLng, centerLat) {
+        const data = [];
+        const names = ['特来电充电站', '国家电网充电站', '星星充电', '云快充', '蔚来换电站', '小鹏超充站', '理想充电站', '比亚迪充电站', '广汽埃安充电站', '华为超充站'];
+        const addrs = ['天河区体育西路', '珠江新城CBD', '琶洲会展中心', '广州南站', '白云机场', '番禺万达广场', '北京路步行街', '天河智慧城'];
+        
+        for (let i = 0; i < 8; i++) {
+            const offset = (Math.random() - 0.5) * 0.15;
+            const offsetLat = (Math.random() - 0.5) * 0.12;
+            const lng = centerLng + offset;
+            const lat = centerLat + offsetLat;
+            const fast = Math.floor(Math.random() * 8) + 4;
+            const slow = Math.floor(Math.random() * 6) + 2;
+            
+            data.push({
+                id: 'MOCK_CHG_' + i,
+                name: names[i % names.length] + (i > 0 ? '(' + i + ')' : ''),
+                address: addrs[i % addrs.length],
+                lng: lng,
+                lat: lat,
+                fastChargePiles: fast,
+                slowChargePiles: slow,
+                totalPiles: fast + slow,
+                availablePiles: Math.floor((fast + slow) * (0.3 + Math.random() * 0.4)),
+                pricePerKwh: 1.2 + Math.random() * 0.8,
+                operator: '运营商' + (i % 3 + 1),
+                stationType: ['地面', '地下', '楼顶'][i % 3],
+                type: '充电',
+                distance: Math.round(hav(centerLng, centerLat, lng, lat)),
+                _fav: false
+            });
+        }
+        return data;
+    }
+
+    // 生成mock停车场数据（API失败时兜底）
+    function generateMockParkingData(centerLng, centerLat) {
+        const data = [];
+        const names = ['万达广场停车场', '正佳广场停车场', '天河城停车场', '太古汇停车场', '万菱汇停车场', '高德置地停车场', '天环广场停车场', '富力广场停车场'];
+        const addrs = ['天河区体育西路', '珠江新城', '北京路', '上下九', '番禺广场', '白云新城', '萝岗万达', '南沙万达'];
+        
+        for (let i = 0; i < 8; i++) {
+            const offset = (Math.random() - 0.5) * 0.15;
+            const offsetLat = (Math.random() - 0.5) * 0.12;
+            const lng = centerLng + offset;
+            const lat = centerLat + offsetLat;
+            const total = Math.floor(Math.random() * 200) + 50;
+            
+            data.push({
+                id: 'MOCK_PARK_' + i,
+                name: names[i % names.length],
+                address: addrs[i % addrs.length],
+                lng: lng,
+                lat: lat,
+                totalSpots: total,
+                availableSpots: Math.floor(total * (0.2 + Math.random() * 0.5)),
+                pricePerHour: 5 + Math.floor(Math.random() * 15),
+                priceType: '按时计费',
+                type: '停车',
+                distance: Math.round(hav(centerLng, centerLat, lng, lat)),
+                _fav: false
+            });
+        }
+        return data;
     }
     // ------------------------------------------------------------------
 
@@ -2872,7 +2955,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         }, function(status, result) {
             hideLoading();
             console.log('充电桩搜索结果:', status, result);
-            if (status === 'complete' && result.poiList && result.poiList.pois) {
+            if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
                 // 直接使用默认类型标记，避免识别失败
                 S.pois = result.poiList.pois.map(function(poi) {
                     const p = parsePoi(poi);
@@ -2885,9 +2968,13 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 setPanelState('mini');
                 toast('找到 ' + S.pois.length + ' 个充电桩', 'success');
             } else {
-                S.pois = [];
+                // API失败或无结果，使用mock数据兜底
+                console.warn('API搜索失败，使用mock数据');
+                S.pois = generateMockChargeData(centerPoint[0], centerPoint[1]);
+                S.pois.sort(function(a, b) { return a.distance - b.distance; });
                 refreshCurrent();
-                toast('未找到充电桩', 'warning');
+                setPanelState('mini');
+                toast('搜索服务暂不可用，显示示例数据', 'warning');
             }
         });
     }
@@ -2924,7 +3011,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         }, function(status, result) {
             hideLoading();
             console.log('停车场搜索结果:', status, result);
-            if (status === 'complete' && result.poiList && result.poiList.pois) {
+            if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
                 S.pois = result.poiList.pois.map(function(poi) {
                     const p = parsePoi(poi);
                     if (!p.type) p.type = '停车';
@@ -2936,9 +3023,13 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 setPanelState('mini');
                 toast('找到 ' + S.pois.length + ' 个停车场', 'success');
             } else {
-                S.pois = [];
+                // API失败或无结果，使用mock数据兜底
+                console.warn('停车场API搜索失败，使用mock数据');
+                S.pois = generateMockParkingData(centerPoint[0], centerPoint[1]);
+                S.pois.sort(function(a, b) { return a.distance - b.distance; });
                 refreshCurrent();
-                toast('未找到停车场', 'warning');
+                setPanelState('mini');
+                toast('搜索服务暂不可用，显示示例数据', 'warning');
             }
         });
     }
@@ -2985,30 +3076,51 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
     function renderPanel() {
         const list = S.filtered, count = list.length;
         const ml = S.mode === 'charge' ? '充电站' : S.mode === 'parking' ? '停车场' : '地点';
-        $('summaryCount').textContent = String(count);
-        $('summaryLabel').textContent = '个' + ml;
-        $('panelCount').textContent = '共找到 ' + count + ' 个' + ml;
-        $('panelTitle').textContent = '附近' + ml;
-        if (S.panelState === 'mini') $('summaryHint').textContent = '（上滑查看）';
+        
+        // 安全检查：确保元素存在
+        const summaryCount = $('summaryCount');
+        const summaryLabel = $('summaryLabel');
+        const panelCount = $('panelCount');
+        const panelTitle = $('panelTitle');
+        const summaryHint = $('summaryHint');
+        const quickFilterRow = $('quickFilterRow');
+        const filterSortContainer = $('filterSortContainer');
+        const nearbySearchRow = $('nearbySearchRow');
+        const poiList = $('poiList');
+        
+        if (summaryCount) summaryCount.textContent = String(count);
+        if (summaryLabel) summaryLabel.textContent = '个' + ml;
+        if (summaryHint) summaryHint.textContent = S.panelState === 'mini' ? '（上滑查看）' : '';
+        if (panelCount) panelCount.textContent = '共找到 ' + count + ' 个' + ml;
+        if (panelTitle) panelTitle.textContent = '附近' + ml;
+        // 同时更新抽屉主标题和副标题
+        const drawerTitle = $('drawerTitle');
+        const drawerCount = $('drawerCount');
+        if (drawerTitle) drawerTitle.textContent = '附近' + ml;
+        if (drawerCount) drawerCount.textContent = count > 0 ? count + ' 个' + ml : '暂无数据';
+        
         const showFilter = S.mode === 'charge' || S.mode === 'parking';
-        $('quickFilterRow').style.display = showFilter ? 'flex' : 'none';
-        $('filterSortContainer').style.display = showFilter ? 'flex' : 'none';
-        // 阶段2: 附近搜索行在非 mini 态时显示
-        if ($('nearbySearchRow')) {
-            $('nearbySearchRow').style.display = (S.panelState === 'half' || S.panelState === 'full') ? 'flex' : 'none';
-        }
+        if (quickFilterRow) quickFilterRow.style.display = showFilter ? 'flex' : 'none';
+        if (filterSortContainer) filterSortContainer.style.display = showFilter ? 'flex' : 'none';
+        if (nearbySearchRow) nearbySearchRow.style.display = (S.panelState === 'half' || S.panelState === 'full') ? 'flex' : 'none';
 
-        const container = $('poiList'); container.innerHTML = '';
+        if (!poiList) return;
+        poiList.innerHTML = '';
         if (list.length === 0) {
             const empty = document.createElement('div'); empty.className = 'empty-state';
-            empty.innerHTML = '<div class="empty-icon">🔍</div><div class="empty-text">附近暂无数据</div><div class="empty-hint">尝试改变搜索条件或刷新位置</div>';
-            container.appendChild(empty);
-            $('loadMoreIndicator').style.display = 'none'; $('noMoreIndicator').style.display = 'none';
+            const icon = S.mode === 'charge' ? '⚡' : S.mode === 'parking' ? '🅿️' : '📍';
+            const modeText = S.mode === 'charge' ? '充电站' : S.mode === 'parking' ? '停车场' : '地点';
+            empty.innerHTML = '<div class="empty-icon">' + icon + '</div>' +
+                '<div class="empty-title" style="font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:6px;">附近暂无' + modeText + '</div>' +
+                '<div class="empty-hint" style="font-size:12px;color:var(--text-3);line-height:1.6;">点击 ⚡充电/🅿️停车按钮<br>或搜索具体名称</div>';
+            poiList.appendChild(empty);
+            if ($('loadMoreIndicator')) $('loadMoreIndicator').style.display = 'none';
+            if ($('noMoreIndicator')) $('noMoreIndicator').style.display = 'none';
             return;
         }
         const end = Math.min(S.pageSize, list.length);
-        $('loadMoreIndicator').style.display = list.length > S.pageSize ? 'flex' : 'none';
-        $('noMoreIndicator').style.display = list.length <= S.pageSize ? 'flex' : 'none';
+        if ($('loadMoreIndicator')) $('loadMoreIndicator').style.display = list.length > S.pageSize ? 'flex' : 'none';
+        if ($('noMoreIndicator')) $('noMoreIndicator').style.display = list.length <= S.pageSize ? 'flex' : 'none';
         // 优化：分批渲染，每批4个，间隔50ms，避免卡顿
         renderCardsInBatches(list, 0, end, 4, 50);
         S.displayed = end;
@@ -3426,15 +3538,86 @@ function renderMapMarkers() {
         planRoute(S.user.lng, S.user.lat, poi.lng, poi.lat);
     }
     function exitNavi() { $('naviOverlay').style.display = 'none'; $('naviTop').style.display = 'none'; }
+    // ---------- 本地联想关键词库 ----------
+    const LOCAL_SUGGESTIONS = [
+        { name: '广州塔', address: '海珠区阅江西路', lng: 113.3245, lat: 23.1066 },
+        { name: '白云山', address: '白云区广园中路', lng: 113.3076, lat: 23.1728 },
+        { name: '广州南站', address: '番禺区石壁街道', lng: 113.2644, lat: 22.9885 },
+        { name: '白云机场 T2', address: '花都区机场大道', lng: 113.3000, lat: 23.3924 },
+        { name: '珠江新城', address: '天河区冼村路', lng: 113.3264, lat: 23.1210 },
+        { name: '正佳广场', address: '天河区天河路', lng: 113.3240, lat: 23.1342 },
+        { name: '万菱汇', address: '天河区天河路', lng: 113.3226, lat: 23.1337 },
+        { name: '太古汇', address: '天河区天河路', lng: 113.3280, lat: 23.1350 },
+        { name: '天河城', address: '天河区天河路', lng: 113.3210, lat: 23.1330 },
+        { name: '广州东站', address: '天河区林和西路', lng: 113.3300, lat: 23.1450 },
+        { name: '琶洲会展中心', address: '海珠区阅江中路', lng: 113.3400, lat: 23.1030 },
+        { name: '大学城北', address: '番禺区大学城内环', lng: 113.3900, lat: 23.0400 },
+        { name: '黄埔科学城', address: '黄埔区科学大道', lng: 113.4700, lat: 23.1650 },
+        { name: '南沙客运港', address: '南沙区港前大道', lng: 113.5300, lat: 22.8000 },
+        { name: '增城万达广场', address: '增城区府佑路', lng: 113.8200, lat: 23.2800 },
+        { name: '从化客运站', address: '从化区从城大道', lng: 113.5800, lat: 23.5500 },
+        { name: '花都广场', address: '花都区公益路', lng: 113.2200, lat: 23.3900 },
+        { name: '番禺广场', address: '番禺区清河东路', lng: 113.3900, lat: 22.9400 },
+        // 充电相关
+        { name: '特来电充电站', address: '天河区体育西路', lng: 113.3240, lat: 23.1310, type: '充电' },
+        { name: '国家电网充电站', address: '海珠区新港东路', lng: 113.3400, lat: 23.1000, type: '充电' },
+        { name: '星星充电', address: '越秀区中山三路', lng: 113.2700, lat: 23.1300, type: '充电' },
+        { name: '蔚来换电站', address: '天河区珠江新城', lng: 113.3260, lat: 23.1210, type: '充电' },
+        { name: '小鹏超充站', address: '黄埔区科学城', lng: 113.4710, lat: 23.1660, type: '充电' },
+        // 停车相关
+        { name: '万达广场停车场', address: '天河区黄埔大道', lng: 113.3200, lat: 23.1270, type: '停车' },
+        { name: '正佳广场停车场', address: '天河区天河路', lng: 113.3240, lat: 23.1340, type: '停车' },
+        { name: '天河城停车场', address: '天河区天河路', lng: 113.3210, lat: 23.1330, type: '停车' },
+    ];
     // ---------- 搜索联想 ----------
     const debouncedSearch = debounce(function () {
         const kw = this.value.trim();
         if (!kw) { S.kw = ''; refreshCurrent(); hideSuggestions(); return; }
         S.kw = kw; refreshCurrent();
-        if (S.ac) try { S.ac.search(kw, function (status, result) {
-            if (status === 'complete' && result.tips && result.tips.length) showInlineSuggestions(result.tips.slice(0, 6));
-        }); } catch (e) {}
+        // 优先使用高德 SDK 联想；失败时使用本地关键词库
+        if (S.ac) {
+            try {
+                S.ac.search(kw, function (status, result) {
+                    if (status === 'complete' && result.tips && result.tips.length) {
+                        showInlineSuggestions(result.tips.slice(0, 6));
+                    } else {
+                        showLocalSuggestions(kw);
+                    }
+                });
+            } catch (e) {
+                showLocalSuggestions(kw);
+            }
+        } else {
+            showLocalSuggestions(kw);
+        }
     }, 300);
+    // 本地关键词联想
+    function showLocalSuggestions(kw) {
+        const kwLower = kw.toLowerCase();
+        const matched = LOCAL_SUGGESTIONS.filter(function (item) {
+            return item.name.toLowerCase().indexOf(kwLower) !== -1 ||
+                item.address.toLowerCase().indexOf(kwLower) !== -1;
+        }).slice(0, 6);
+        if (matched.length === 0) return;
+        const sug = $('suggestions'); if (!sug) return;
+        sug.innerHTML = ''; sug.style.display = 'block';
+        matched.forEach(function (item) {
+            const row = document.createElement('div');
+            row.className = 'poi-card';
+            row.style.padding = '10px 12px';
+            const icon = item.type === '充电' ? '⚡' : item.type === '停车' ? '🅿️' : '📍';
+            row.innerHTML = '<div class="poi-main" style="min-height:auto"><div class="poi-name-wrap"><span class="fav-icon" style="color:' + (item.type === '充电' ? 'var(--success)' : item.type === '停车' ? 'var(--primary)' : '#1677ff') + '">' + icon + '</span><span class="poi-name" style="font-size:14px;font-weight:600">' + item.name + '</span></div></div>' +
+                '<div class="poi-addr" style="font-size:12px;color:var(--text-3);margin-top:4px">' + item.address + '</div>';
+            row.onclick = function () {
+                setUserLocation(item.lng, item.lat, item.name);
+                S.kw = ''; const si = $('searchInput'); if (si) si.value = '';
+                const cb = $('clearSearchBtn'); if (cb) cb.style.display = 'none';
+                sug.style.display = 'none';
+                refreshCurrent(); toast('已定位到"' + item.name + '"', 'success');
+            };
+            sug.appendChild(row);
+        });
+    }
     function showInlineSuggestions(tips) {
         const sug = $('suggestions'); if (!sug) return;
         sug.innerHTML = ''; sug.style.display = 'block';
@@ -3442,12 +3625,13 @@ function renderMapMarkers() {
             if (!tip.location) return;
             const row = document.createElement('div');
             row.className = 'poi-card';
-            row.style.padding = '8px 12px';
-            row.innerHTML = '<div class="poi-main" style="min-height:auto"><div class="poi-name-wrap"><span class="fav-icon" style="color:#1677ff">📍</span><span class="poi-name" style="font-size:13px">' + tip.name + '</span></div></div>' +
-                '<div class="poi-addr" style="font-size:11px;margin-top:2px">' + (tip.district || '') + ' ' + (tip.address || '') + '</div>';
+            row.style.padding = '10px 12px';
+            row.innerHTML = '<div class="poi-main" style="min-height:auto"><div class="poi-name-wrap"><span class="fav-icon" style="color:var(--primary)">📍</span><span class="poi-name" style="font-size:14px;font-weight:600">' + tip.name + '</span></div></div>' +
+                '<div class="poi-addr" style="font-size:12px;color:var(--text-3);margin-top:4px">' + (tip.district || '') + ' ' + (tip.address || '') + '</div>';
             row.onclick = function () {
                 setUserLocation(tip.location.lng, tip.location.lat, tip.name);
                 S.kw = ''; const si = $('searchInput'); if (si) si.value = '';
+                const cb = $('clearSearchBtn'); if (cb) cb.style.display = 'none';
                 sug.style.display = 'none';
                 refreshCurrent(); toast('已定位到"' + tip.name + '"', 'success');
             };
@@ -3733,42 +3917,53 @@ function renderMapMarkers() {
             center = S.user;
             toast('搜索附近' + (type === 'charge' ? '充电桩' : '停车场') + '（' + S.searchRadius + 'km 内）', 'success');
         } else {
-            toast('请先定位后再搜索', 'warning');
+            // 无定位：尝试定位，定位失败时使用广州默认中心
+            try { doLocate(true); toast('正在定位，请稍候...', 'info'); }
+            catch (e) { center = { lng: 113.3245, lat: 23.1066 }; toast('无法获取位置，使用默认中心', 'warning'); }
+            setTimeout(function () { if (S.user) searchNearby(type); }, 2000);
             return;
-        }
-        var radiusM = S.searchRadius * 1000; // km → m
-        showLoading('搜索中...', '正在查找附近设施', false);
-        if (!S.ps) {
-            try { S.ps = new AMap.PlaceSearch({ extensions: 'all', pageSize: 20, pageIndex: 1, autoFitView: false }); }
-            catch (e) { hideLoading(); toast('搜索服务不可用', 'error'); return; }
         }
         S.mode = type;
         S.searchCenter = center;
         S.searchPageIndex = 1;
-        var keywords = type === 'charge' ? '电动汽车充电站|充电桩' : '停车场';
-        S.ps.searchNearBy({
-            keywords: keywords,
-            location: [center.lng, center.lat],
-            radius: radiusM,
-            pageIndex: 1
-        }, function (status, result) {
-            hideLoading();
-            if (status === 'complete' && result.poiList && result.poiList.pois) {
-                S.pois = result.poiList.pois.map(function (poi) {
-                    var p = parsePoi(poi);
-                    if (!p.type) p.type = type === 'charge' ? '充电' : '停车';
-                    return p;
+        // 优先高德 SDK，失败使用 mock 数据
+        if (window.AMap && typeof AMap.PlaceSearch !== 'undefined') {
+            showLoading('搜索中...', '正在查找附近设施', false);
+            try {
+                if (!S.ps) S.ps = new AMap.PlaceSearch({ extensions: 'all', pageSize: 20, pageIndex: 1, autoFitView: false });
+                S.ps.searchNearBy({
+                    keywords: type === 'charge' ? '电动汽车充电站|充电桩' : '停车场',
+                    location: [center.lng, center.lat],
+                    radius: S.searchRadius * 1000,
+                    pageIndex: 1
+                }, function (status, result) {
+                    hideLoading();
+                    if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
+                        S.pois = result.poiList.pois.map(function (poi) {
+                            var p = parsePoi(poi);
+                            if (!p.type) p.type = type === 'charge' ? '充电' : '停车';
+                            return p;
+                        });
+                        S.pois.sort(function (a, b) { return a.distance - b.distance; });
+                        refreshCurrent();
+                        setPanelState('half');
+                        toast('找到 ' + S.pois.length + ' 个结果', 'success');
+                    } else {
+                        useMockNearbyData(type, center);
+                    }
                 });
-                S.pois.sort(function (a, b) { return a.distance - b.distance; });
-                refreshCurrent();
-                setPanelState('half');
-                toast('找到 ' + S.pois.length + ' 个结果', 'success');
-            } else {
-                S.pois = [];
-                refreshCurrent();
-                toast('未找到附近' + (type === 'charge' ? '充电桩' : '停车场'), 'warning');
-            }
-        });
+            } catch (e) { hideLoading(); useMockNearbyData(type, center); }
+        } else {
+            useMockNearbyData(type, center);
+        }
+    }
+    function useMockNearbyData(type, center) {
+        S.pois = type === 'charge' ? generateMockChargeData(center.lng, center.lat) : generateMockParkingData(center.lng, center.lat);
+        S.pois.forEach(function (p) { p.distance = Math.round(hav(center.lng, center.lat, p.lng, p.lat)); });
+        S.pois.sort(function (a, b) { return a.distance - b.distance; });
+        refreshCurrent();
+        setPanelState('half');
+        toast('显示示例数据（' + S.pois.length + '）', 'warning');
     }
 
     // ---------- 事件绑定 ----------
@@ -3777,16 +3972,27 @@ function renderMapMarkers() {
         initInfoWindowStyle();
 
         const si = $('searchInput');
-        if (si) {
-            si.addEventListener('input', debouncedSearch);
-            si.addEventListener('focus', function () { const s = $('suggestions'); if (s && s.innerHTML && s.innerHTML.trim()) s.style.display = 'block'; });
-            si.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); onSearchSubmit(); } });
-        }
-        const sb = $('searchBtn'); if (sb) sb.addEventListener('click', onSearchSubmit);
         const cb = $('clearSearchBtn');
+        const sb = $('searchBtn');
+        if (si) {
+            si.addEventListener('input', function () {
+                // 清除按钮智能显示
+                if (cb) cb.style.display = this.value.trim() ? 'flex' : 'none';
+                debouncedSearch.call(this);
+            });
+            si.addEventListener('focus', function () {
+                const s = $('suggestions');
+                if (s && s.innerHTML && s.innerHTML.trim()) s.style.display = 'block';
+            });
+            si.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); onSearchSubmit(); }
+            });
+        }
+        if (sb) sb.addEventListener('click', onSearchSubmit);
         if (cb) cb.addEventListener('click', function (e) {
             e.preventDefault();
             if (si) si.value = '';
+            this.style.display = 'none';
             S.kw = ''; hideSuggestions(); refreshCurrent();
         });
         const bl = $('btnLocate'); if (bl) bl.addEventListener('click', function () { doLocate(true); });
