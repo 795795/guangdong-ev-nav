@@ -3255,11 +3255,12 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         let completed = 0;
         const allResults = [];
         
-        S.ps.searchNearBy({
-            keywords: '停车场',
-            location: centerPoint,
-            radius: 5000
-        }, function(status, result) {
+        doSearchPoi(
+            '停车场',
+            centerPoint,
+            5000,
+            1,
+            function(status, result) {
             completed++;
             if (status === 'complete' && result.poiList && result.poiList.pois) {
                 result.poiList.pois.forEach(function(poi) {
@@ -3272,11 +3273,12 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             checkComplete();
         });
         
-        S.ps.searchNearBy({
-            keywords: '电动汽车充电站|充电桩',
-            location: centerPoint,
-            radius: 5000
-        }, function(status, result) {
+        doSearchPoi(
+            ['电动汽车充电站', '充电桩'],
+            centerPoint,
+            5000,
+            1,
+            function(status, result) {
             completed++;
             if (status === 'complete' && result.poiList && result.poiList.pois) {
                 result.poiList.pois.forEach(function(poi) {
@@ -3313,12 +3315,12 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         let completed = 0;
         const newResults = [];
         
-        S.ps.searchNearBy({
-            keywords: '停车场',
-            location: centerPoint,
-            radius: 5000,
-            pageIndex: currentPage
-        }, function(status, result) {
+        doSearchPoi(
+            '停车场',
+            centerPoint,
+            5000,
+            currentPage,
+            function(status, result) {
             completed++;
             if (status === 'complete' && result.poiList && result.poiList.pois) {
                 result.poiList.pois.forEach(function(poi) {
@@ -3331,12 +3333,12 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             checkComplete();
         });
         
-        S.ps.searchNearBy({
-            keywords: '电动汽车充电站|充电桩',
-            location: centerPoint,
-            radius: 5000,
-            pageIndex: currentPage
-        }, function(status, result) {
+        doSearchPoi(
+            ['电动汽车充电站', '充电桩'],
+            centerPoint,
+            5000,
+            currentPage,
+            function(status, result) {
             completed++;
             if (status === 'complete' && result.poiList && result.poiList.pois) {
                 result.poiList.pois.forEach(function(poi) {
@@ -3406,11 +3408,12 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         S.searchCenter = S.user;
         S.searchPageIndex = 1;
         
-        S.ps.searchNearBy({
-            keywords: '电动汽车充电站|充电桩',
-            location: centerPoint,
-            radius: 5000
-        }, function(status, result) {
+        doSearchPoi(
+            ['电动汽车充电站', '充电桩'],
+            centerPoint,
+            5000,
+            1,
+            function(status, result) {
             hideLoading();
             console.log('充电桩搜索结果:', status, result);
             if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
@@ -3462,11 +3465,12 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         S.searchCenter = S.user;
         S.searchPageIndex = 1;
         
-        S.ps.searchNearBy({
-            keywords: '停车场',
-            location: centerPoint,
-            radius: 5000
-        }, function(status, result) {
+        doSearchPoi(
+            '停车场',
+            centerPoint,
+            5000,
+            1,
+            function(status, result) {
             hideLoading();
             console.log('停车场搜索结果:', status, result);
             if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
@@ -3529,6 +3533,28 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         S.filtered = list;
         renderPanel(); renderMapMarkers();
     }
+    // ---------- 统一 POI 搜索（修复 searchNearBy 对象参数 bug） ----------
+    function doSearchPoi(keywords, center, radius, pageIndex, onResult) {
+        try {
+            // 每次创建新的 PlaceSearch 实例，确保 pageIndex 生效
+            const ps = new AMap.PlaceSearch({
+                extensions: 'all',
+                pageSize: 20,
+                pageIndex: pageIndex || 1,
+                autoFitView: false
+            });
+            const lnglat = new AMap.LngLat(center[0], center[1]);
+            ps.searchNearBy(keywords, lnglat, radius || 5000, function (status, result) {
+                onResult(status, result);
+            });
+            return ps;
+        } catch (e) {
+            console.error('doSearchPoi 错误:', e);
+            onResult('error', null);
+            return null;
+        }
+    }
+
     // ---------- 面板渲染 ----------
     
     function renderPanel() {
@@ -4540,13 +4566,8 @@ function renderMapMarkers() {
         if (window.AMap && typeof AMap.PlaceSearch !== 'undefined') {
             showLoading('搜索中...', '正在查找附近设施', false);
             try {
-                if (!S.ps) S.ps = new AMap.PlaceSearch({ extensions: 'all', pageSize: 20, pageIndex: 1, autoFitView: false });
-                S.ps.searchNearBy({
-                    keywords: type === 'charge' ? '电动汽车充电站|充电桩' : '停车场',
-                    location: [center.lng, center.lat],
-                    radius: S.searchRadius * 1000,
-                    pageIndex: 1
-                }, function (status, result) {
+                const kws = type === 'charge' ? ['电动汽车充电站', '充电桩'] : '停车场';
+                doSearchPoi(kws, [center.lng, center.lat], S.searchRadius * 1000, 1, function (status, result) {
                     hideLoading();
                     if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
                         S.pois = result.poiList.pois.map(function (poi) {
