@@ -3910,7 +3910,8 @@ function renderMapMarkers() {
             '<button type="button" class="detail-nearby-btn parking" id="detailNearParkingBtn">🅿️ 附近停车</button>' +
             '</div>';
 
-        $('detailContent').innerHTML =
+        const dcEl = $('detailContent');
+        if (dcEl) dcEl.innerHTML =
             '<div class="detail-title"><span class="detail-icon">' + icon + '</span><span>' + poi.name + '</span></div>' +
             '<div class="detail-addr">📍 ' + poi.address + '</div>' +
             telHtml +
@@ -3930,11 +3931,13 @@ function renderMapMarkers() {
 
         // 展开抽屉面板到半态
         setPanelState('half');
-        $('detailOverlay').classList.add('show');
-        $('detailOverlay').style.display = 'flex';
-        $('detailFavBtn').onclick = function () { poi._fav = !poi._fav; updateFavorite(poi); showPoiDetail(idx); renderPanel(); };
-        $('detailShareBtn').onclick = function () { sharePoi(poi); };
-        $('detailNavBtn').onclick = function () { startNavigation(poi); };
+        if ($('detailOverlay')) {
+            $('detailOverlay').classList.add('show');
+            $('detailOverlay').style.display = 'flex';
+        }
+        if ($('detailFavBtn')) $('detailFavBtn').onclick = function () { poi._fav = !poi._fav; updateFavorite(poi); showPoiDetail(idx); renderPanel(); };
+        if ($('detailShareBtn')) $('detailShareBtn').onclick = function () { sharePoi(poi); };
+        if ($('detailNavBtn')) $('detailNavBtn').onclick = function () { startNavigation(poi); };
 
         // 阶段2: 详情页内附近搜索按钮
         var nearChargeBtn = $('detailNearChargeBtn');
@@ -3949,8 +3952,11 @@ function renderMapMarkers() {
         };
     }
     function closePoiDetail() {
-        $('detailOverlay').classList.remove('show');
-        setTimeout(function () { $('detailOverlay').style.display = 'none'; }, 250);
+        const el = $('detailOverlay');
+        if (el) {
+            el.classList.remove('show');
+            setTimeout(function () { el.style.display = 'none'; }, 250);
+        }
         // 阶段四-2: 面板销毁清理 - 移除可能残留的 infoWindow / pulse marker
         try { if (S.infoWindow) { S.infoWindow.close(); S.infoWindow = null; } } catch (e) {}
         try { clearApiCache(); } catch (e) {}
@@ -4004,7 +4010,8 @@ function renderMapMarkers() {
         } catch (e) { hideLoading(); toast('路线规划出错', 'error'); }
     }
     function displayRouteList(routes) {
-        $('routeList').innerHTML = '';
+        const rl = $('routeList');
+        if (rl) rl.innerHTML = '';
         routes.forEach(function (route, idx) {
             const card = document.createElement('div');
             card.className = 'route-card' + (idx === 0 ? ' active' : '');
@@ -4020,32 +4027,38 @@ function renderMapMarkers() {
                 card.classList.add('active');
                 try { if (S.polylines[idx]) S.map.setFitView([S.polylines[idx]], false, [60, 60, 120, 60]); } catch (e) {}
             };
-            $('routeList').appendChild(card);
+            if (rl) rl.appendChild(card);
         });
     }
-    function showRoutePanel() { $('routePanel').classList.add('show'); $('routePanel').style.display = 'flex'; setPanelState('mini'); }
+    function showRoutePanel() { const rp = $('routePanel'); if (rp) { rp.classList.add('show'); rp.style.display = 'flex'; setPanelState('mini'); } }
     function hideRoutePanel() {
-        $('routePanel').classList.remove('show');
-        setTimeout(function () { $('routePanel').style.display = 'none'; }, 300);
-        // 阶段四-2: 面板关闭时清理路线 polyline（阶段五-5: 使用公共工具）
+        const rp = $('routePanel');
+        if (rp) {
+            rp.classList.remove('show');
+            setTimeout(function () { rp.style.display = 'none'; }, 300);
+        }
         clearPolylines();
     }
     function startNavigation(poi) {
         if (!S.user) { toast('请先定位', 'warning'); return; }
         closePoiDetail();
-        $('naviOverlay').style.display = 'flex'; $('naviTop').style.display = 'block';
+        const navO = $('naviOverlay');
+        if (navO) navO.style.display = 'flex';
+        const navT = $('naviTop');
+        if (navT) navT.style.display = 'block';
         const tl = poi.type === '充电' ? '充电站' : '停车场';
-        $('naviInstruction').textContent = '前往' + tl + '：' + poi.name;
-        $('naviDistNext').textContent = fmtDist(poi.distance || 0) + ' · 预计 ' + Math.max(1, Math.round((poi.distance || 0) / 800)) + ' 分钟';
-        $('naviTotalDist').textContent = fmtDist(poi.distance || 0);
-        $('naviTotalTime').textContent = Math.max(1, Math.round((poi.distance || 0) / 800)) + ' 分钟';
-        $('naviTolls').textContent = '¥ ' + Math.round((poi.distance || 0) / 2000);
+        if ($('naviInstruction')) $('naviInstruction').textContent = '前往' + tl + '：' + poi.name;
+        if ($('naviDistNext')) $('naviDistNext').textContent = fmtDist(poi.distance || 0) + ' · 预计 ' + Math.max(1, Math.round((poi.distance || 0) / 800)) + ' 分钟';
+        if ($('naviTotalDist')) $('naviTotalDist').textContent = fmtDist(poi.distance || 0);
+        if ($('naviTotalTime')) $('naviTotalTime').textContent = Math.max(1, Math.round((poi.distance || 0) / 800)) + ' 分钟';
+        if ($('naviTolls')) $('naviTolls').textContent = '¥ ' + Math.round((poi.distance || 0) / 2000);
         planRoute(S.user.lng, S.user.lat, poi.lng, poi.lat);
     }
     function exitNavi() {
-        $('naviOverlay').style.display = 'none';
-        $('naviTop').style.display = 'none';
-        // 阶段四-2: 导航退出清理路线（阶段五-5: 使用公共工具）
+        const navO = $('naviOverlay');
+        if (navO) navO.style.display = 'none';
+        const navT = $('naviTop');
+        if (navT) navT.style.display = 'none';
         clearPolylines();
     }
     // ---------- 本地联想关键词库 ----------
@@ -4331,11 +4344,17 @@ function renderMapMarkers() {
         };
         openSidePanel();
     }
-    function openSidePanel() { $('sideOverlay').style.display = 'block'; setTimeout(function () { $('sidePanel').classList.add('show'); }, 20); }
+    function openSidePanel() {
+        const sO = $('sideOverlay');
+        if (sO) {
+            sO.style.display = 'block';
+            setTimeout(function () { const sP = $('sidePanel'); if (sP) sP.classList.add('show'); }, 20);
+        }
+    }
     function closeSidePanel() {
-        $('sidePanel').classList.remove('show');
-        setTimeout(function () { $('sideOverlay').style.display = 'none'; }, 350);
-        // 阶段四-2: 面板关闭清理
+        const sP = $('sidePanel');
+        if (sP) sP.classList.remove('show');
+        setTimeout(function () { const sO = $('sideOverlay'); if (sO) sO.style.display = 'none'; }, 350);
         try { if (S.infoWindow) { S.infoWindow.close(); S.infoWindow = null; } } catch (e) {}
     }
     function sharePoi(poi) {
@@ -4438,16 +4457,13 @@ function renderMapMarkers() {
         window.addEventListener('resize', function () {
             const nh = window.innerHeight;
             if (Math.abs(nh - lastH) > 80) {
+                const bn = null;
                 if (nh < lastH) {
                     // 键盘弹出
                     document.body.classList.add('keyboard-open');
-                    $('bottomNav').style.transform = 'translateY(100%)';
-                    $('bottomNav').style.opacity = '0';
                 } else {
                     // 键盘收起
                     document.body.classList.remove('keyboard-open');
-                    $('bottomNav').style.transform = '';
-                    $('bottomNav').style.opacity = '1';
                 }
             }
             lastH = nh;
@@ -4458,16 +4474,11 @@ function renderMapMarkers() {
         if (searchInput) {
             searchInput.addEventListener('focus', function () {
                 document.body.classList.add('keyboard-open');
-                $('bottomNav').style.transform = 'translateY(100%)';
-                $('bottomNav').style.opacity = '0';
             });
             searchInput.addEventListener('blur', function () {
                 setTimeout(function () {
-                    // 延迟检查确保是真正的键盘收起
                     if (document.activeElement !== searchInput) {
                         document.body.classList.remove('keyboard-open');
-                        $('bottomNav').style.transform = '';
-                        $('bottomNav').style.opacity = '1';
                     }
                 }, 200);
             });
