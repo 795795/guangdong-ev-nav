@@ -2671,73 +2671,13 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         } catch (e) { return null; }
     }
 
-    function showLoading(text, hint, closable) {
-        try {
-            const el = $('loadingOverlay'); if (!el) return;
-            $('loadingText').textContent = text || '加载中...';
-            $('loadingHint').textContent = hint || '';
-            $('loadingCloseBtn').style.display = closable ? 'flex' : 'none';
-            el.style.display = 'flex';
-            setTimeout(function () { el.classList.add('show'); }, 10);
-        } catch (e) {}
-    }
+    function showLoading() {}
     function hideLoading() {
         try {
             const el = $('loadingOverlay');
+            if (!el) return;
             el.classList.remove('show');
             setTimeout(function () { el.style.display = 'none'; }, 200);
-        } catch (e) {}
-    }
-
-    // ---------- 地图中心加载状态 ----------
-    /* =========================================================================
-     * P0-任务1: 可靠的加载状态管理
-     * 包含进度指示、步骤标记、console.log 日志
-     * ========================================================================= */
-    var _loadStep = 0;
-    function setLoadStep(step, text, hint) {
-        _loadStep = step;
-        try {
-            // 更新进度条
-            var bar = $('loadingProgressBar');
-            if (bar) bar.style.width = (step / 4 * 100) + '%';
-            // 更新步骤点
-            for (var i = 1; i <= 4; i++) {
-                var s = $('step' + i);
-                if (!s) continue;
-                s.classList.remove('active', 'done');
-                if (i < step) s.classList.add('done');
-                else if (i === step) s.classList.add('active');
-            }
-            // 更新文字
-            if (text) {
-                var t = $('loadingText');
-                if (t) t.textContent = text;
-            }
-            if (hint) {
-                var h = $('loadingHint');
-                if (h) h.textContent = hint;
-            }
-            console.log('[P0-1] 加载步骤 ' + step + '/4: ' + text + (hint ? ' - ' + hint : ''));
-        } catch (e) {}
-    }
-    function showMapLoading(text) {
-        try {
-            const el = $('mapLoadingOverlay');
-            if (!el) return;
-            const textEl = $('loadingText');
-            if (textEl) textEl.textContent = text || '正在初始化...';
-            el.classList.add('show');
-            // P0-1: 每次显示都重置步骤
-            setLoadStep(1, text || '正在初始化...', 'SDK加载中');
-        } catch (e) {}
-    }
-    function hideMapLoading() {
-        try {
-            const el = $('mapLoadingOverlay');
-            if (!el) return;
-            el.classList.remove('show');
-            console.log('[P0-1] ✅ 地图初始化完成');
         } catch (e) {}
     }
 
@@ -2967,18 +2907,10 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                     console.error('[P0-1] SDK 加载超时，已达最大重试次数');
                     return;
                 }
-                setLoadStep(1, '等待SDK加载...', 'SDK加载中 ' + sdkLoadAttempts + '/' + maxSdkAttempts);
-                toast('等待地图 SDK 加载... (' + sdkLoadAttempts + '/' + maxSdkAttempts + ')', 'warning');
                 setTimeout(initMap, 1500);
                 return;
             }
-            // P0-任务1: SDK 加载成功，进入步骤 2
-            setLoadStep(2, '正在初始化地图...', '地图初始化中');
             console.log('[P0-1] SDK 加载成功，开始创建地图实例');
-            // Key 有效性提醒（占位符时提示用户替换）
-            if (AMAP_KEY.includes('你的高德KEY') || AMAP_KEY.includes('PLACEHOLDER')) {
-                toast('请确认已替换真实高德 Key', 'warning');
-            }
             console.log('[P0-1] 开始初始化地图...');
             // 阶段二: 地图交互精细化 - 统一拖拽阻力、缩放步长，关闭键盘控制
             S.map = new AMap.Map('map', {
@@ -3016,18 +2948,12 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             }); } catch (e) {}
             try { S.geocoder = new AMap.Geocoder({ city: '全国' }); } catch (e) {}
 
-            // P0-任务1: 地图 complete 事件 - 所有资源加载完成
             S.map.on('complete', function () {
                 console.log('[P0-1] 地图瓦片加载完成');
-                // 进入步骤 3（定位）
-                setLoadStep(3, '正在定位...', '获取位置中');
                 if (S.firstLoad) {
                     S.firstLoad = false;
-                    // 先定位，定位完成后再加载数据
                     setTimeout(function () { doLocate(true); }, 500);
-                    // 同时加载初始数据（充电桩）
                     setTimeout(function () {
-                        setLoadStep(4, '正在加载数据...', '充电桩数据加载中');
                         console.log('[P0-1] 开始加载充电桩数据');
                         toast('广东新能源导航就绪', 'success');
                         // 阶段五-3: 先读取本地保存的筛选/面板状态，再加载对应模式
