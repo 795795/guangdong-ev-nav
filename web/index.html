@@ -66,7 +66,8 @@
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 20;
-            padding: var(--safe-top) 16px 8px;
+            padding: var(--safe-top) 16px 0;
+            height: calc(44px + var(--safe-top));
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -78,41 +79,41 @@
         .city-selector {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
+            gap: 4px;
+            padding: 6px 10px;
             background: rgba(0,0,0,0.04);
-            border-radius: var(--radius-lg);
+            border-radius: var(--radius-md);
             cursor: pointer;
-            min-width: 60px;
         }
         .city-name { font-weight: 600; font-size: 14px; }
-        .city-arrow { font-size: 10px; color: var(--text-3); }
+        .city-arrow { font-size: 8px; color: var(--text-3); }
         
         .top-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
         }
         .top-btn {
-            width: 44px; height: 44px;
+            width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
-            border-radius: var(--radius-md);
-            background: rgba(0,0,0,0.04);
+            border-radius: var(--radius-sm);
+            background: transparent;
             border: none;
             cursor: pointer;
-            font-size: 16px;
-            transition: all var(--anim-fast);
+            font-size: 18px;
+            transition: background 0.15s ease;
         }
-        .top-btn:hover, .top-btn.active { background: var(--primary-light); color: var(--primary); }
+        .top-btn:hover { background: rgba(0,0,0,0.06); }
+        .top-btn.active { background: var(--primary-light); }
         .top-btn:active { transform: scale(0.95); }
 
         /* ========== LAYER 3: 左上角搜索组件 ========== */
         .search-container {
             position: fixed;
-            top: calc(var(--safe-top) + 60px);
-            left: 16px;
-            width: calc(100% - 32px);
-            max-width: 380px;
+            top: calc(var(--safe-top) + 48px);
+            left: 12px;
+            width: calc(100% - 24px);
+            max-width: 360px;
             z-index: 30;
             pointer-events: auto;
         }
@@ -120,9 +121,10 @@
             display: flex;
             align-items: center;
             background: #fff;
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
-            padding: 4px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 0;
+            height: 44px;
         }
         .search-icon {
             width: 44px; height: 44px;
@@ -139,7 +141,8 @@
             background: transparent;
         }
         .search-btn {
-            width: 64px; height: 36px;
+            height: 36px;
+            padding: 0 14px;
             margin-right: 4px;
             background: var(--primary);
             color: #fff;
@@ -148,18 +151,18 @@
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: all var(--anim-fast);
+            transition: background 0.15s ease;
         }
         .search-btn:hover { background: var(--primary-hover); }
-        .search-btn:active { transform: scale(0.95); }
+        .search-btn:active { transform: scale(0.96); }
 
         /* 搜索联想列表 */
         .suggestions {
-            margin-top: 8px;
+            margin-top: 6px;
             background: #fff;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-lg);
-            max-height: 320px;
+            max-height: 280px;
             overflow-y: auto;
             display: none;
         }
@@ -167,29 +170,28 @@
         .suggestions-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
+            gap: 10px;
+            padding: 10px 12px;
             cursor: pointer;
             border-bottom: 1px solid var(--border-light);
-            transition: all var(--anim-fast);
         }
         .suggestions-item:last-child { border-bottom: none; }
         .suggestions-item:hover { background: var(--bg-soft); }
         .suggestions-icon {
-            width: 32px; height: 32px;
+            width: 28px; height: 28px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%;
             background: var(--bg-soft);
-            font-size: 14px;
-        }
-        .suggestions-item .suggestions-icon.parking { background: rgba(26,115,232,0.08); }
-        .suggestions-item .suggestions-icon.charging { background: rgba(52,168,83,0.08); }
-        .suggestions-text { flex: 1; }
-        .suggestions-name { font-size: 14px; font-weight: 500; }
-        .suggestions-addr { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-        .suggestions-nav-btn {
-            padding: 8px 12px;
             font-size: 12px;
+        }
+        .suggestions-item .suggestions-icon.parking { background: rgba(26,115,232,0.1); }
+        .suggestions-item .suggestions-icon.charging { background: rgba(52,168,83,0.1); }
+        .suggestions-text { flex: 1; }
+        .suggestions-name { font-size: 13px; font-weight: 500; }
+        .suggestions-addr { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+        .suggestions-nav-btn {
+            padding: 6px 10px;
+            font-size: 11px;
             background: var(--primary-light);
             color: var(--primary);
             border: none;
@@ -198,28 +200,29 @@
             font-weight: 500;
         }
         .suggestions-nav-btn:hover { background: var(--primary); color: #fff; }
+        .suggestions-nav-btn:active { transform: scale(0.96); opacity: 0.85; }
         
         .quick-icons {
             display: flex;
-            gap: 12px;
-            margin-top: 12px;
-            padding: 8px 12px;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 6px 8px;
             background: rgba(255,255,255,0.95);
             border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-sm);
         }
         .quick-icon {
             display: flex; flex-direction: column;
-            align-items: center; gap: 4px;
-            padding: 8px 16px;
-            border-radius: var(--radius-md);
+            align-items: center; gap: 2px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            transition: all var(--anim-fast);
+            transition: background 0.15s ease;
         }
         .quick-icon:hover { background: rgba(0,0,0,0.04); }
-        .quick-icon.active { background: var(--primary-light); color: var(--primary); }
-        .quick-icon span:first-child { font-size: 20px; }
-        .quick-icon span:last-child { font-size: 12px; color: var(--text-2); }
+        .quick-icon.active { background: var(--primary-light); }
+        .quick-icon span:first-child { font-size: 18px; }
+        .quick-icon span:last-child { font-size: 11px; color: var(--text-2); }
         .quick-icon.active span:last-child { color: var(--primary); }
 
         /* ========== LAYER 4: 左侧悬浮面板 ========== */
@@ -312,6 +315,19 @@
             font-size: 14px;
             background: transparent;
         }
+        .nav-input-clear {
+            width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 50%;
+            font-size: 12px;
+            color: var(--text-2);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .nav-input-clear:hover { background: rgba(0,0,0,0.2); }
+        .nav-input-clear:active { transform: scale(0.9); }
         .nav-swap-btn {
             display: block;
             margin: 4px auto 12px;
@@ -417,6 +433,7 @@
             border: 2px solid transparent;
         }
         .layer-item:hover { background: rgba(0,0,0,0.06); }
+        .layer-item:active { transform: scale(0.97); }
         .layer-item.active { background: var(--primary-light); border-color: var(--primary); }
         .layer-item-icon { font-size: 28px; }
         .layer-item-label { font-size: 13px; font-weight: 500; }
@@ -434,6 +451,7 @@
             cursor: pointer;
             transition: all var(--anim-fast);
         }
+        .theme-item:active { transform: scale(0.96); opacity: 0.85; }
         .theme-thumb {
             width: 100%;
             aspect-ratio: 1.3;
@@ -535,38 +553,57 @@
             gap: 8px;
         }
         .route-item {
-            padding: 16px;
-            background: rgba(0,0,0,0.03);
+            padding: 14px 16px;
+            background: rgba(0,0,0,0.02);
             border-radius: var(--radius-lg);
             cursor: pointer;
             transition: all var(--anim-fast);
             border: 2px solid transparent;
+            position: relative;
         }
-        .route-item:hover { background: rgba(0,0,0,0.06); }
+        .route-item:hover { background: rgba(0,0,0,0.05); }
         .route-item.active {
             background: var(--primary-light);
             border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.15);
+        }
+        .route-item.active::before {
+            content: '✓';
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            width: 18px; height: 18px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
         }
         .route-header {
             display: flex;
-            align-items: center;
+            align-items: baseline;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            padding-right: 28px;  // 留出对勾空间
         }
         .route-time {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
-            color: var(--primary);
+            color: var(--text-1);
         }
-        .route-item.active .route-time { font-size: 22px; }
+        .route-item.active .route-time { font-size: 22px; color: var(--primary); }
         .route-price { font-size: 13px; color: var(--text-3); font-weight: 500; }
+        .route-price .toll { color: #e67e22; font-weight: 600; }
         .route-info {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             font-size: 12px;
             color: var(--text-2);
+            padding-right: 28px;
         }
+        .route-info > span:first-child { font-weight: 500; color: var(--text-1); }
         .route-actions {
             display: flex;
             gap: 8px;
@@ -589,6 +626,7 @@
             border-color: var(--primary);
         }
         .route-action-btn.primary:hover { background: var(--primary-hover); }
+        .route-action-btn:active { transform: scale(0.96); opacity: 0.85; }
 
         /* ========== LAYER 5: 右下角工具按钮 ========== */
         .map-tools {
@@ -615,6 +653,48 @@
         .tool-btn:hover { transform: scale(1.05); box-shadow: var(--shadow-lg); }
         .tool-btn:active { transform: scale(0.95); }
         .tool-btn.active { background: var(--primary); color: #fff; }
+        
+        /* ========== 测距状态指示器 ========== */
+        .ranging-indicator {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            -webkit-transform: translateX(-50%);
+            transform: translateX(-50%);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: rgba(0,0,0,0.85);
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+        }
+        .ranging-info {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .ranging-distance {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .ranging-unit {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+        }
+        .ranging-exit-btn {
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .ranging-exit-btn:hover { background: rgba(255,255,255,0.25); }
+        .ranging-exit-btn:active { transform: scale(0.95); opacity: 0.8; }
         
         /* ========== Toast 提示 ========== */
         .toast {
@@ -679,6 +759,7 @@
             color: var(--text-1);
         }
         .info-btn.secondary:hover { background: rgba(0,0,0,0.1); }
+        .info-btn:active { transform: scale(0.96); opacity: 0.85; }
 
         /* ========== 响应式优化 ========== */
         @media (max-width: 420px) {
@@ -746,6 +827,7 @@
                         <div class="nav-input-label">我的位置</div>
                         <input type="text" class="nav-input" id="navStartInput" placeholder="当前位置">
                     </div>
+                    <button class="nav-input-clear" id="clearStart" style="display:none;">✕</button>
                 </div>
                 <button class="nav-swap-btn" id="navSwapBtn" title="交换起终点">⇅</button>
                 <div class="nav-input-row">
@@ -754,6 +836,7 @@
                         <div class="nav-input-label">终点</div>
                         <input type="text" class="nav-input" id="navEndInput" placeholder="输入终点（停车场/充电站）">
                     </div>
+                    <button class="nav-input-clear" id="clearEnd">✕</button>
                 </div>
                 <div class="nav-history">
                     <div class="nav-history-title">
@@ -838,6 +921,15 @@
         <button class="tool-btn" id="btnNavigation" title="导航">🧭</button>
     </div>
 
+    <!-- 测距状态指示器 -->
+    <div class="ranging-indicator" id="rangingIndicator" style="display:none;">
+        <div class="ranging-info">
+            <span class="ranging-distance" id="rangingDistance">0</span>
+            <span class="ranging-unit">米</span>
+        </div>
+        <button class="ranging-exit-btn" id="btnExitRanging">退出测距</button>
+    </div>
+
     <!-- ========== Toast 提示 ========== -->
     <div class="toast" id="toast"></div>
 
@@ -895,6 +987,23 @@
             el.classList.add('show');
             clearTimeout(S._toastTimer);
             S._toastTimer = setTimeout(() => el.classList.remove('show'), duration || 2000);
+        }
+
+        // localStorage状态读写（图层、路况、主题设置持久化）
+        function saveSettings() {
+            try {
+                localStorage.setItem('gd_nav_settings', JSON.stringify({
+                    trafficOn: S.trafficOn,
+                    currentMapType: S.currentMapType,
+                    currentTheme: S.currentTheme
+                }));
+            } catch(e) {}
+        }
+        function loadSettings() {
+            try {
+                const data = localStorage.getItem('gd_nav_settings');
+                return data ? JSON.parse(data) : {};
+            } catch(e) { return {}; }
         }
 
         function showPanel(panelType) {
@@ -963,7 +1072,16 @@
             // 测距工具
             S.rangingTool = new AMap.RangingTool(S.map);
             S.rangingTool.on('end', function(e) {
+                $('rangingIndicator').style.display = 'none';
+                $('btnRanging').classList.remove('active');
+                S.map.setStatus({ dragEnable: true, zoomEnable: true, pitchEnable: true });
                 toast('总距离: ' + e.distance.toFixed(0) + ' 米');
+            });
+            S.rangingTool.on('addnode', function(e) {
+                // 每打一个点更新距离
+                if (e.distance) {
+                    $('rangingDistance').textContent = e.distance.toFixed(0);
+                }
             });
 
             // 信息窗口
@@ -998,7 +1116,20 @@
 
             // 加载历史记录
             loadHistory();
-            
+
+            // 从localStorage恢复图层、路况、主题状态
+            const settings = loadSettings();
+            if (settings.trafficOn) {
+                S.trafficOn = false;  // 先设为false，toggleTraffic会切换为true
+                toggleTraffic();
+            }
+            if (settings.currentMapType && settings.currentMapType !== 'normal') {
+                switchMapType(settings.currentMapType);
+            }
+            if (settings.currentTheme && settings.currentTheme !== 'normal') {
+                switchTheme(settings.currentTheme);
+            }
+
             toast('地图加载完成');
         }
 
@@ -1047,28 +1178,32 @@
 
         function renderResults(pois, type) {
             clearMarkers();
-            
+
             if (!pois || pois.length === 0) {
                 toast('未找到附近的' + (type === 'parking' ? '停车场' : '充电站'));
                 return;
             }
 
+            const markerColor = type === 'parking' ? '#1a73e8' : '#34a853';
             const newMarkers = pois.map(poi => createMarker(poi, type));
             S.markers = newMarkers;
 
-            // 点聚合
-            if (newMarkers.length > 5) {
+            // 点聚合（统一使用AMap.MarkerCluster，无论点位数量多少都启用，解决密集点位卡顿问题
+            if (AMap.MarkerCluster) {
                 S.cluster = new AMap.MarkerCluster(S.map, newMarkers.map(m => ({
                     lnglat: [m.getPosition().lng, m.getPosition().lat],
                     marker: m
                 })), {
-                    gridSize: 60,
+                    gridSize: 70,
+                    averageCenter: false,
                     renderClusterMarker: function(context) {
                         const count = context.count;
+                        // 聚合点尺寸根据数量分级显示不同大小
+                        const size = count < 10 ? 36 : count < 50 ? 42 : 48;
                         return new AMap.Marker({
                             position: context.lnglat,
-                            content: '<div style="background:' + (type === 'parking' ? '#1a73e8' : '#34a853') + ';color:#fff;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.2);border:2px solid #fff;">' + count + '</div>',
-                            offset: new AMap.Pixel(-20, -20)
+                            content: '<div style="background:' + markerColor + ';color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.2);border:2px solid #fff;">' + count + '</div>',
+                            offset: new AMap.Pixel(-size / 2, -size / 2)
                         });
                     }
                 });
@@ -1105,10 +1240,15 @@
                 return;
             }
 
-            const keywords = type === 'parking' ? '停车场' : '充电站|充电桩';
+            // 使用category参数精准搜索停车场/充电桩POI分类，避免混入小区、商铺等其他地点
+            // 停车场: 011100 (交通设施服务/停车场)
+            // 充电站: 110100 (生活服务/电力供应/充电站) 或 01010007 (交通设施/充电站)
+            const category = type === 'parking' ? '011100' : '011100|110100';
+            const keyword = '';  // 使用category参数过滤，keyword留空以获得更精准结果
             const ps = new AMap.PlaceSearch({
                 pageSize: 30,
-                extensions: 'all'
+                extensions: 'all',
+                category: category  // 高德API的category参数，按POI分类过滤
             });
 
             toast('正在搜索周边' + (type === 'parking' ? '停车场' : '充电站') + '...');
@@ -1120,13 +1260,26 @@
                 toast('搜索超时，请检查网络后重试');
             }, 10000);
 
-            ps.searchNearBy(keywords, new AMap.LngLat(S.userLocation[0], S.userLocation[1]), 5000, function(status, result) {
+            ps.searchNearBy(keyword, new AMap.LngLat(S.userLocation[0], S.userLocation[1]), 5000, function(status, result) {
                 clearTimeout(S._searchTimeoutTimer);
                 if (status === 'complete' && result.poiList && result.poiList.pois) {
+                    // 二次过滤：只保留真正的停车场/充电站，作为双保险
+                    const filtered = result.poiList.pois.filter(poi => {
+                        const name = (poi.name || '').toLowerCase();
+                        const typeStr = (poi.type || '').toLowerCase();
+                        if (type === 'parking') {
+                            return name.includes('停车') || name.includes('停车场') || 
+                                   name.includes('p+') || typeStr.includes('停车场') || typeStr.includes('停车');
+                        } else {
+                            return name.includes('充电') || name.includes('充电桩') || 
+                                   name.includes('充电站') || typeStr.includes('充电');
+                        }
+                    });
+                    
                     // 缓存结果
-                    S._searchCache = { type, pois: result.poiList.pois };
+                    S._searchCache = { type, pois: filtered.length > 0 ? filtered : result.poiList.pois };
                     S._searchCacheTime = now;
-                    renderResults(result.poiList.pois, type);
+                    renderResults(filtered.length > 0 ? filtered : result.poiList.pois, type);
                 } else if (status === 'error' || status === 'no_data') {
                     clearMarkers();
                     toast('未找到附近的' + (type === 'parking' ? '停车场' : '充电站'));
@@ -1172,20 +1325,33 @@
                 return;
             }
 
+            // 使用category参数过滤，仅返回停车场和充电站POI，屏蔽小区、商铺等无关地点
             const ps = new AMap.PlaceSearch({
-                pageSize: 8,
-                extensions: 'base'
+                pageSize: 10,
+                extensions: 'base',
+                category: '011100|110100'  // 停车场 | 充电站/电力供应分类
             });
 
-            ps.search(keyword + ' 停车场 充电站', function(status, result) {
+            ps.search(keyword, new AMap.LngLat(S.userLocation[0], S.userLocation[1]), function(status, result) {
                 if (status === 'complete' && result.poiList && result.poiList.pois) {
                     const pois = result.poiList.pois;
-                    if (pois.length === 0) {
+                    
+                    // 二次过滤：确保只保留停车场/充电站
+                    const filtered = pois.filter(poi => {
+                        const name = (poi.name || '').toLowerCase();
+                        const typeStr = (poi.type || '').toLowerCase();
+                        return name.includes('停车') || name.includes('停车场') || 
+                               name.includes('p+') || name.includes('充电') || 
+                               typeStr.includes('停车场') || typeStr.includes('充电') ||
+                               typeStr.includes('停车');
+                    });
+                    
+                    if (filtered.length === 0) {
                         $('suggestions').classList.remove('show');
                         return;
                     }
                     
-                    const html = pois.slice(0, 6).map(poi => {
+                    const html = filtered.slice(0, 6).map(poi => {
                         const isCharging = (poi.name || '').includes('充电') || (poi.type || '').includes('充电');
                         const type = isCharging ? 'charging' : 'parking';
                         return `
@@ -1249,6 +1415,7 @@
                 switchBtn.classList.remove('active');
                 toast('已关闭实时路况');
             }
+            saveSettings();  // 持久化到localStorage
         }
 
         function toggleRanging() {
@@ -1256,12 +1423,15 @@
             if (btn.classList.contains('active')) {
                 S.rangingTool.turnOff();
                 btn.classList.remove('active');
-                S.map.setStatus({ dragEnable: true, zoomEnable: true, pitchEnable: true }); // 恢复地图手势
+                $('rangingIndicator').style.display = 'none';
+                S.map.setStatus({ dragEnable: true, zoomEnable: true, pitchEnable: true });
                 toast('已退出测距');
             } else {
                 S.rangingTool.turnOn();
                 btn.classList.add('active');
-                S.map.setStatus({ dragEnable: false, zoomEnable: false, pitchEnable: false }); // 测距时屏蔽地图手势
+                $('rangingDistance').textContent = '0';
+                $('rangingIndicator').style.display = 'flex';
+                S.map.setStatus({ dragEnable: false, zoomEnable: false, pitchEnable: false });
                 toast('点击地图开始测距');
             }
         }
@@ -1274,11 +1444,12 @@
                 S.roadnetLayer.setMap(null);
             } else if (type === 'satellite') {
                 S.satelliteLayer.setMap(S.map);
-                S.roadnetLayer.setMap(S.map);
+                S.roadnetLayer.setMap(S.map);  // 卫星图叠加路网，对齐高德同款卫星道路模式
             }
             
             document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('active'));
             $('layer' + type.charAt(0).toUpperCase() + type.slice(1)).classList.add('active');
+            saveSettings();  // 持久化到localStorage
         }
 
         function switchTheme(theme) {
@@ -1292,6 +1463,7 @@
             
             document.querySelectorAll('.theme-item').forEach(el => el.classList.remove('active'));
             $('theme' + theme.charAt(0).toUpperCase() + theme.slice(1)).classList.add('active');
+            saveSettings();  // 持久化到localStorage
         }
 
         /* ========================================
@@ -1417,6 +1589,9 @@
         function renderRoutes(routes) {
             // 更新tab激活状态
             document.querySelectorAll('.route-tab').forEach(t => t.classList.remove('active'));
+
+            // 存储路线数据用于后续切换重绘
+            S._cachedRoutes = routes;
             
             const html = routes.map((route, idx) => {
                 const km = (route.distance / 1000).toFixed(1);
@@ -1426,15 +1601,20 @@
                 const timeStr = hours > 0 ? hours + '小时' + mins + '分' : mins + '分钟';
                 const tolls = route.tolls || 0;
                 
+                // 根据策略选择路线标签（高德风格）
+                const labels = ['推荐', '躲避拥堵', '避免收费'];
+                const label = labels[idx] || (idx + 1) + '号方案';
+                
                 return `
                     <div class="route-item ${idx === 0 ? 'active' : ''}" data-index="${idx}">
                         <div class="route-header">
                             <span class="route-time">${timeStr}</span>
-                            <span class="route-price">${tolls > 0 ? '¥' + tolls + ' 过路费' : '无收费'}</span>
+                            <span class="route-price">${tolls > 0 ? '<span class="toll">¥' + tolls + '</span> 过路费' : '无收费'}</span>
                         </div>
                         <div class="route-info">
-                            <span>约 ${km} 公里</span>
+                            <span>${km} 公里</span>
                             <span>${route.trafficLights || 0} 个红绿灯</span>
+                            <span style="color:var(--primary);font-weight:500;">${label}</span>
                         </div>
                     </div>
                 `;
@@ -1443,11 +1623,28 @@
             $('routeList').innerHTML = html;
             $('routeActions').style.display = 'flex';
             
-            // 绑定路线点击
+            // 绑定路线点击：切换高亮并调用Driving的searchOnRoute重绘对应路线
             document.querySelectorAll('.route-item').forEach(item => {
                 item.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
                     document.querySelectorAll('.route-item').forEach(i => i.classList.remove('active'));
                     this.classList.add('active');
+                    
+                    // 切换到选中路线并重绘地图（Driving支持切换方案）
+                    if (S.driving && S._startPoint && S._endPoint && S._cachedRoutes && S._cachedRoutes[idx]) {
+                        // 先清除旧路线，再用当前策略重新规划
+                        S.driving.clear();
+                        // 根据索引设置策略：0=推荐, 1=躲避拥堵, 2=避免收费
+                        const policies = [0, 2, 1];
+                        S.driving.setPolicy(policies[idx] || 0);
+                        S.driving.search(
+                            new AMap.LngLat(S._startPoint.lng, S._startPoint.lat),
+                            new AMap.LngLat(S._endPoint.lng, S._endPoint.lat),
+                            function(status, result) {
+                                // 成功后自动绘制，无需额外处理
+                            }
+                        );
+                    }
                 });
             });
             
@@ -1478,10 +1675,36 @@
                 clearTimeout(S._toastTimer);
             });
 
+            // 软键盘弹出监听：仅压缩搜索区，地图尺寸固定
+            let lastHeight = window.innerHeight;
+            window.addEventListener('resize', function() {
+                const newHeight = window.innerHeight;
+                if (newHeight !== lastHeight) {
+                    lastHeight = newHeight;
+                    // 当软键盘弹出时，地图容器高度不变，搜索区域自动被压缩
+                    const searchContainer = document.querySelector('.search-container');
+                    if (searchContainer) {
+                        if (newHeight < 500) {
+                            searchContainer.style.transform = 'scale(0.85)';
+                            searchContainer.style.transformOrigin = 'top left';
+                        } else {
+                            searchContainer.style.transform = 'scale(1)';
+                        }
+                    }
+                }
+            });
+
             // 顶部按钮（防抖200ms）
             $('btnTraffic').addEventListener('click', _debouncedTraffic);
             $('btnRanging').addEventListener('click', toggleRanging);
             $('btnLayers').addEventListener('click', () => showPanel('layer'));
+            
+            // 测距退出按钮
+            $('btnExitRanging').addEventListener('click', function() {
+                if ($('btnRanging').classList.contains('active')) {
+                    toggleRanging();
+                }
+            });
             
             // 搜索框
             $('searchBtn').addEventListener('click', () => {
@@ -1584,6 +1807,28 @@
                         }
                     }.bind(this));
                 }
+            });
+
+            // 起点清空按钮
+            $('clearStart').addEventListener('click', function() {
+                $('navStartInput').value = S.hasLocation ? '我的位置' : '';
+                S._startPoint = null;
+                $('clearStart').style.display = 'none';
+            });
+
+            // 终点清空按钮
+            $('clearEnd').addEventListener('click', function() {
+                $('navEndInput').value = '';
+                S._endPoint = null;
+                $('clearEnd').style.display = 'none';
+            });
+
+            // 输入框内容变化显示/隐藏清空按钮
+            $('navStartInput').addEventListener('input', function() {
+                $('clearStart').style.display = (this.value && this.value !== '我的位置') ? 'flex' : 'none';
+            });
+            $('navEndInput').addEventListener('input', function() {
+                $('clearEnd').style.display = this.value ? 'flex' : 'none';
             });
 
             // 图层面板（防抖200ms）
