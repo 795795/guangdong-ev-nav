@@ -3469,8 +3469,28 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 pageIndex: pageIndex || 1,
                 autoFitView: false
             });
-            const lnglat = new AMap.LngLat(center[0], center[1]);
-            ps.searchNearBy(keywords, lnglat, radius || 5000, function (status, result) {
+            // 防御：确保 center 是有效数字数组
+            const lng = parseFloat(center[0]);
+            const lat = parseFloat(center[1]);
+            if (isNaN(lng) || isNaN(lat)) {
+                console.error('doSearchPoi: 无效坐标', center);
+                onResult('error', null);
+                return null;
+            }
+            // 防御：keywords 数组转为 | 分隔字符串
+            const kw = Array.isArray(keywords) ? keywords.join('|') : keywords;
+            const lnglat = new AMap.LngLat(lng, lat);
+            ps.searchNearBy(kw, lnglat, radius || 5000, function (status, result) {
+                // 防御：确保 result 是有效对象
+                if (!result || typeof result !== 'object') {
+                    onResult('error', null);
+                    return;
+                }
+                // 防御：poiList.pois 不存在时当作无数据处理
+                if (!result.poiList || !Array.isArray(result.poiList.pois) || result.poiList.pois.length === 0) {
+                    onResult('no_data', result);
+                    return;
+                }
                 onResult(status, result);
             });
             return ps;
