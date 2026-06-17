@@ -203,6 +203,13 @@ input, textarea { -webkit-appearance: none; -moz-appearance: none; appearance: n
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
 * { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
+/* BUG7: Firefox 专属增强（Firefox 原生控件重置 + 布局间隙一致性） */
+@-moz-document url-prefix() {
+  button, select, input, textarea { -moz-appearance: none; border: none; outline: none; }
+  .drawer-mode-btn, .quick-filter-btn, .nearby-btn, .filter-tag-btn, .poi-action-btn { -moz-appearance: none; }
+  .poi-card { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  .bottom-drawer { box-sizing: border-box; }
+}
 /* P0-缺陷: 全局触摸优化与点击穿透防护
    touch-action: manipulation - 禁用双击缩放，消除 300ms 点击延迟
    -webkit-touch-callout: none - 禁止iOS长按菜单
@@ -336,7 +343,7 @@ body { background: var(--bg-soft); color: var(--text-1); }
   background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
   -webkit-tap-highlight-color: transparent;
 }
-/* 阶段三: 支持 dvh 的浏览器使用动态视口高度 */
+/* BUG8: 支持 dvh 的浏览器使用动态视口高度，低版本安卓（Android 8~11）保持 100vh/100% */
 @supports (height: 100dvh) {
   #map {
     width: 100vw;
@@ -854,9 +861,12 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
 /* 滚动内容区 */
 .drawer-content {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto; overflow-x: hidden;
   padding: 12px 16px;
   padding-bottom: calc(var(--safe-bottom) + 80px);
+  touch-action: pan-y;           /* BUG4: 允许垂直滚动，阻止横向手势冲突 */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .drawer-title {
@@ -896,6 +906,39 @@ body.dark .filter-tags-bar { border-color: rgba(255,255,255,0.1); }
   font-size: 13px;
   color: var(--text-3);
 }
+
+/* P2-4: 内联搜索 Loading 指示器 */
+.search-loading-indicator {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; gap: 12px;
+  animation: fadeIn 0.3s ease;
+}
+.search-loading-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.search-loading-indicator span { font-size: 13px; color: var(--text-3); font-weight: 600; }
+
+/* P2-4: 网络异常提示 */
+.network-error-indicator {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 30px 20px; gap: 8px; text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+.network-error-indicator .error-icon { font-size: 40px; }
+.network-error-indicator .error-title { font-size: 15px; font-weight: 700; color: var(--text-1); }
+.network-error-indicator .error-desc { font-size: 12px; color: var(--text-3); }
+.network-error-indicator .retry-btn {
+  margin-top: 8px; padding: 10px 24px; border-radius: var(--radius-lg);
+  background: var(--primary); color: #fff; border: none;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all var(--anim-fast);
+}
+.network-error-indicator .retry-btn:active { transform: scale(0.96); }
 
 /* 详情卡片 */
 .drawer-detail {
@@ -1630,6 +1673,7 @@ body.keyboard-open .bottom-nav { transform: translateY(100%); opacity: 0; pointe
   font-size: 13px; color: var(--text-3);
   line-height: 1.6; margin-bottom: 14px;
   display: flex; align-items: flex-start; gap: 6px;
+  word-break: break-all; overflow-wrap: break-word; white-space: normal;
 }
 .detail-addr::before { content: "📍"; font-size: 14px; opacity: 0.7; flex-shrink: 0; }
 
@@ -2249,6 +2293,196 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
   overflow: hidden; clip: rect(0,0,0,0); border: 0;
 }
 
+/* ============== P1 BUG 修复集合 ============== */
+
+/* BUG9: 浏览器多倍缩放（150%/200%）元素截断防护
+   核心：Flex 子元素允许收缩 + 内容最小尺寸 + 流式弹性 */
+.poi-card, .drawer-mode-btn, .quick-filter-btn, .nearby-btn,
+.detail-data-item, .detail-action-btn, .poi-action-btn,
+.route-strategy, .route-action-btn, .filter-tag-btn {
+  min-width: 0;
+  min-height: 0;
+}
+.poi-card .title, .drawer-count, .drawer-title, .detail-title,
+.suggestion-item .name, .route-title, .route-data-item .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex-shrink: 1;
+}
+/* 避免卡片被纵向挤压 */
+.drawer-content > * { min-height: 0; flex-shrink: 1; }
+
+/* BUG10: 按钮/卡片点击反馈（:active 缩放 + :hover 高亮）
+   未明确定义反馈的可点击元素统一补齐 */
+.drawer-mode-btn:active { transform: scale(0.95); }
+.drawer-mode-btn.active:active { transform: scale(0.97); }
+.nearby-btn.charge:hover, .nearby-btn.parking:hover { transform: translateY(-1px); }
+.empty-action-btn { transition: all var(--anim-fast); }
+.suggestion-item { transition: background var(--anim-fast); }
+.poi-card {
+  transition: all var(--anim-fast);
+}
+.poi-card:active {
+  transform: scale(0.99);
+  background: var(--primary-light);
+}
+body.dark .poi-card:active { background: #2a2a2a; }
+.poi-marker:active { transform: translate(-50%, -50%) scale(1.15); }
+/* 顶部按钮点击热区视觉反馈 */
+.btn-primary:active { transform: scale(0.96); opacity: 0.95; }
+.btn-secondary:active { transform: scale(0.96); opacity: 0.95; }
+.detail-action-btn { transition: all var(--anim-fast); }
+.detail-action-btn:active { transform: scale(0.96); }
+.detail-call-btn { transition: all var(--anim-fast); }
+.detail-copy-btn { transition: all var(--anim-fast); }
+.detail-nav-btn { transition: all var(--anim-fast); }
+
+/* BUG12: 二级面板开闭生硬 / 无过渡动画
+   使用 transform（兼顾性能）+ 300ms 平滑过渡
+   1. 联想列表滑入 / 滑出
+   2. 详情面板滑入 / 滑出
+   3. 侧栏滑入 / 滑出
+   4. 抽屉高度变化（已在 bottom-drawer 定义，这里确认关闭平滑） */
+.suggestions {
+  transition: opacity var(--anim-normal) var(--ease-smooth),
+              transform var(--anim-normal) var(--ease-smooth);
+}
+/* 联想列表隐藏态：透明 + 上移（配合 JS 延时 display:none 触发动画） */
+.suggestions:not(.show) {
+  opacity: 0;
+  transform: translateY(-6px) translateZ(0);
+  pointer-events: none;
+}
+/* 详情面板：打开时 slideUp，关闭时下滑淡出 */
+.detail-panel {
+  transition: transform var(--anim-normal) var(--ease-smooth),
+              opacity var(--anim-normal) var(--ease-smooth);
+}
+.detail-panel.closing {
+  animation: slideDownPanel 0.3s var(--ease-smooth) forwards;
+}
+@keyframes slideDownPanel {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(10%); opacity: 0; }
+}
+/* 侧栏：打开 translateX(0)，关闭 translateX(100%)（已在 .side-panel 定义） */
+/* 保证关闭过程中也有动画 */
+.side-panel:not(.show) {
+  pointer-events: none;
+}
+
+/* BUG13: 微信内置浏览器回弹（body 已配置 overscroll-behavior: none）
+   额外加固：微信 X5 内核专属处理 */
+body.wechat-fix {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 屏幕阅读器专用（兼容移动端放大倍数） */
+@media (min-resolution: 144dpi) {
+  .poi-card {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .drawer-mode-btn, .quick-filter-btn {
+    font-size: 13px;
+  }
+}
+
+/* P2-5: 平板大屏适配 - 地图 + 右侧列表双栏布局
+   触发条件：宽度 >= 768px 且 高度 >= 600px（排除大屏手机横屏）*/
+@media (min-width: 768px) and (min-height: 600px) {
+  body {
+    overflow: hidden;
+  }
+  /* 地图缩小到左侧 62%，让出右侧空间给面板 */
+  #map {
+    width: 62vw !important;
+    height: 100vh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    z-index: 1;
+  }
+  /* 顶部搜索栏调整为左侧宽度 */
+  .search-container {
+    left: 10px;
+    right: calc(38vw - 10px);
+  }
+  .top-bar {
+    left: 0;
+    right: 38vw;
+  }
+  .filter-bar {
+    left: 0;
+    right: 38vw;
+  }
+  /* 底部抽屉改为右侧固定面板 */
+  .bottom-drawer {
+    left: auto !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 38vw !important;
+    min-width: 280px;
+    max-width: 480px;
+    height: 100vh !important;
+    border-radius: 0;
+    padding-bottom: 0;
+    z-index: 50;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+  }
+  /* 右侧面板抽为常驻半屏态 */
+  .bottom-drawer.state-mini {
+    height: 40vh !important;
+  }
+  .bottom-drawer.state-half {
+    height: 60vh !important;
+  }
+  .bottom-drawer.state-full {
+    height: 100vh !important;
+  }
+  /* 隐藏抽屉手柄（平板不需要拖拽） */
+  .drawer-handle {
+    display: none;
+  }
+  /* 隐藏模式切换标签（平板直接显示内容） */
+  .drawer-modes {
+    display: none;
+  }
+  /* 抽屉内容区全时显示 */
+  .drawer-content {
+    display: block !important;
+    padding-top: 0;
+  }
+  .panel-content {
+    display: block !important;
+  }
+  /* 工具按钮移到地图内 */
+  .map-tools-top {
+    left: 12px;
+    right: auto;
+  }
+  .map-tools-bottom {
+    left: 12px;
+    right: auto;
+  }
+  /* 侧栏也改为右侧固定面板样式 */
+  .side-panel {
+    top: 0;
+    bottom: 0;
+  }
+  /* 隐藏顶部栏的一部分 */
+  .top-bar {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .filter-bar {
+    top: calc(var(--topbar-h) + var(--safe-top));
+  }
+}
+
 </style>
 
 <script src="gcj02.js"></script>
@@ -2357,6 +2591,20 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             <div class="empty-icon">🔌</div>
             <div class="empty-title">附近没有找到充电桩</div>
             <div class="empty-desc">请尝试扩大搜索半径或切换到停车场模式</div>
+        </div>
+
+        <!-- P2-4: 内联搜索 Loading 指示器 -->
+        <div class="search-loading-indicator" id="searchLoadingIndicator" style="display:none;">
+            <div class="search-loading-spinner"></div>
+            <span>搜索中...</span>
+        </div>
+
+        <!-- P2-4: 网络异常提示 -->
+        <div class="network-error-indicator" id="networkErrorIndicator" style="display:none;">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">网络异常</div>
+            <div class="error-desc">请检查网络后重试</div>
+            <button class="retry-btn" id="retrySearchBtn">🔄 重试</button>
         </div>
         
         <div class="load-more-indicator" id="loadMoreIndicator" style="display:none;">
@@ -3335,6 +3583,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         S.mode = 'charge';
         S.searchCenter = S.user;
         S.searchPageIndex = 1;
+        showSearchLoading();
         
         doSearchPoi(
             ['电动汽车充电站', '充电桩'],
@@ -3342,7 +3591,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             5000,
             1,
             function(status, result) {
-            hideLoading();
+            hideLoading(); hideSearchLoading();
             console.log('充电桩搜索结果:', status, result);
             if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
                 // 直接使用默认类型标记，避免识别失败
@@ -3356,14 +3605,18 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 refreshCurrent();
                 setPanelState('mini');
                 toast('找到 ' + S.pois.length + ' 个充电桩', 'success');
-            } else {
-                // API失败或无结果，使用mock数据兜底
-                console.warn('API搜索失败，使用mock数据');
+            } else if (status === 'error' || status === 'no_data') {
+                showNetworkError('网络异常，搜索失败');
                 S.pois = generateMockChargeData(centerPoint[0], centerPoint[1]);
                 S.pois.sort(function(a, b) { return a.distance - b.distance; });
                 refreshCurrent();
                 setPanelState('mini');
-                toast('搜索服务暂不可用，显示示例数据', 'warning');
+            } else {
+                // API返回空结果
+                hideNetworkError();
+                S.pois = [];
+                refreshCurrent();
+                setPanelState('mini');
             }
         });
     }
@@ -3392,6 +3645,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
         S.mode = 'parking';
         S.searchCenter = S.user;
         S.searchPageIndex = 1;
+        showSearchLoading();
         
         doSearchPoi(
             '停车场',
@@ -3399,7 +3653,7 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             5000,
             1,
             function(status, result) {
-            hideLoading();
+            hideLoading(); hideSearchLoading();
             console.log('停车场搜索结果:', status, result);
             if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
                 S.pois = result.poiList.pois.map(function(poi) {
@@ -3412,14 +3666,17 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
                 refreshCurrent();
                 setPanelState('mini');
                 toast('找到 ' + S.pois.length + ' 个停车场', 'success');
-            } else {
-                // API失败或无结果，使用mock数据兜底
-                console.warn('停车场API搜索失败，使用mock数据');
+            } else if (status === 'error' || status === 'no_data') {
+                showNetworkError('网络异常，搜索失败');
                 S.pois = generateMockParkingData(centerPoint[0], centerPoint[1]);
                 S.pois.sort(function(a, b) { return a.distance - b.distance; });
                 refreshCurrent();
                 setPanelState('mini');
-                toast('搜索服务暂不可用，显示示例数据', 'warning');
+            } else {
+                hideNetworkError();
+                S.pois = [];
+                refreshCurrent();
+                setPanelState('mini');
             }
         });
     }
@@ -3502,6 +3759,44 @@ body.dark .loading-overlay { background: rgba(30,30,30,0.85); }
             return null;
         }
     }
+
+    // P2-4: 内联搜索 Loading / 网络异常指示器控制函数
+    function showSearchLoading() {
+        var el = $('searchLoadingIndicator');
+        if (el) el.style.display = 'flex';
+        var err = $('networkErrorIndicator');
+        if (err) err.style.display = 'none';
+        var empty = $('emptyState');
+        if (empty) empty.style.display = 'none';
+    }
+    function hideSearchLoading() {
+        var el = $('searchLoadingIndicator');
+        if (el) el.style.display = 'none';
+    }
+    function showNetworkError(msg) {
+        var err = $('networkErrorIndicator');
+        if (err) {
+            var desc = err.querySelector('.error-desc');
+            if (desc) desc.textContent = msg || '请检查网络后重试';
+            err.style.display = 'flex';
+        }
+        hideSearchLoading();
+        var empty = $('emptyState');
+        if (empty) empty.style.display = 'none';
+    }
+    function hideNetworkError() {
+        var err = $('networkErrorIndicator');
+        if (err) err.style.display = 'none';
+    }
+    // 重试按钮事件绑定
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'retrySearchBtn') {
+            hideNetworkError();
+            if (S.mode === 'charge') loadChargeData();
+            else if (S.mode === 'parking') loadParkingData();
+            else loadAllData();
+        }
+    });
 
     // ---------- 面板渲染 ----------
     
@@ -3928,8 +4223,12 @@ function renderMapMarkers() {
     function closePoiDetail() {
         const el = $('detailOverlay');
         if (el) {
+            el.classList.add('closing');
             el.classList.remove('show');
-            setTimeout(function () { el.style.display = 'none'; }, 250);
+            setTimeout(function () {
+                el.style.display = 'none';
+                el.classList.remove('closing');
+            }, 300);
         }
         // 阶段四-2: 面板销毁清理 - 移除可能残留的 infoWindow / pulse marker
         try { if (S.infoWindow) { S.infoWindow.close(); S.infoWindow = null; } } catch (e) {}
@@ -4384,7 +4683,7 @@ function renderMapMarkers() {
             if (e.cancelable) e.preventDefault();
         }
         
-        // 阶段二: 拖拽过程 - 限制边界，实时更新
+        // 阶段二: 拖拽过程 - 限制边界，实时更新，强制阻止默认行为防止地图/列表被触发
         function onMove(e) {
             if (!dragging) return;
             const pt = e.touches ? e.touches[0] : e;
@@ -4398,7 +4697,7 @@ function renderMapMarkers() {
             if (content) {
                 content.style.display = (nh > h.mini + 30) ? 'block' : 'none';
             }
-            if (e.cancelable) e.preventDefault();
+            e.preventDefault(); // 强制阻止，防止地图拖拽或列表滚动被触发
         }
         
         // 阶段二: 拖拽结束 - 精准吸附到三档位
@@ -4439,6 +4738,8 @@ function renderMapMarkers() {
                     // 键盘收起
                     document.body.classList.remove('keyboard-open');
                 }
+                // 键盘状态变化后重置地图尺寸，防止地图渲染异常
+                try { S.map && S.map.invalidateSize && S.map.invalidateSize(); } catch (e) {}
             }
             lastH = nh;
         });
@@ -4458,7 +4759,12 @@ function renderMapMarkers() {
             });
         }
         window.addEventListener('orientationchange', function () {
-            setTimeout(function () { try { S.map.invalidateSize && S.map.invalidateSize(); } catch (e) {} }, 300);
+            setTimeout(function () {
+                try { S.map && S.map.invalidateSize && S.map.invalidateSize(); } catch (e) {}
+                // P2-2: 横竖屏切换后重置面板布局，防止抽屉高度错位
+                var ps = S.panelState || 'mini';
+                try { setPanelState(ps); } catch (e) {}
+            }, 350);
         });
     }
 
@@ -4512,11 +4818,11 @@ function renderMapMarkers() {
         saveAppState();
         // 优先高德 SDK，失败使用 mock 数据
         if (window.AMap && typeof AMap.PlaceSearch !== 'undefined') {
-            showLoading('搜索中...', '正在查找附近设施', false);
+            showSearchLoading();
             try {
                 const kws = type === 'charge' ? ['电动汽车充电站', '充电桩'] : '停车场';
                 doSearchPoi(kws, [center.lng, center.lat], S.searchRadius * 1000, 1, function (status, result) {
-                    hideLoading();
+                    hideLoading(); hideSearchLoading();
                     if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
                         S.pois = result.poiList.pois.map(function (poi) {
                             var p = parsePoi(poi);
@@ -4527,16 +4833,21 @@ function renderMapMarkers() {
                         refreshCurrent();
                         setPanelState('half');
                         toast('找到 ' + S.pois.length + ' 个结果', 'success');
+                    } else if (status === 'error' || status === 'no_data') {
+                        showNetworkError('网络异常，搜索失败');
+                        useMockNearbyData(type, center);
                     } else {
+                        hideNetworkError();
                         useMockNearbyData(type, center);
                     }
                 });
-            } catch (e) { hideLoading(); useMockNearbyData(type, center); }
+            } catch (e) { hideLoading(); hideSearchLoading(); showNetworkError('搜索异常'); useMockNearbyData(type, center); }
         } else {
             useMockNearbyData(type, center);
         }
     }
     function useMockNearbyData(type, center) {
+        hideSearchLoading(); hideNetworkError();
         S.pois = type === 'charge' ? generateMockChargeData(center.lng, center.lat) : generateMockParkingData(center.lng, center.lat);
         S.pois.forEach(function (p) { p.distance = Math.round(hav(center.lng, center.lat, p.lng, p.lat)); });
         S.pois.sort(function (a, b) { return a.distance - b.distance; });
