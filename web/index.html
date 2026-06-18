@@ -2845,165 +2845,179 @@
         function initMap() {
             showLoading('地图加载中...');
 
-            S.map = new AMap.Map('map', {
-                center: S.userLocation,
-                zoom: 13,
-                resizeEnable: true,
-                showIndoorMap: false,
-                viewMode: '2D',
-                mapStyle: 'amap://styles/normal'
-            });
-
-            // 路况图层（默认关闭）
-            S.trafficLayer = new AMap.TileLayer.Traffic({
-                autoRefresh: true,
-                interval: 180
-            });
-
-            // 卫星图层（默认关闭）
-            S.satelliteLayer = new AMap.TileLayer.Satellite();
-            S.roadnetLayer = new AMap.TileLayer.RoadNet();
-
-            // 驾车路线规划
-            S.driving = new AMap.Driving({
-                map: S.map,
-                hideMarkers: false,
-                autoFitView: true,
-                policy: 0
-            });
-
-            // 测距工具
-            S.rangingTool = new AMap.RangingTool(S.map);
-            S.rangingTool.on('end', function(e) {
-                $('rangingIndicator').style.display = 'none';
-                $('btnRanging').classList.remove('active');
-                S.map.setStatus({ dragEnable: true, zoomEnable: true, pitchEnable: true });
-                toast('总距离: ' + e.distance.toFixed(0) + ' 米');
-            });
-            S.rangingTool.on('addnode', function(e) {
-                // 每打一个点更新距离
-                if (e.distance) {
-                    $('rangingDistance').textContent = e.distance.toFixed(0);
+            try {
+                // 检查AMap是否加载成功
+                if (typeof AMap === 'undefined') {
+                    throw new Error('高德地图API未加载');
                 }
-            });
 
-            // 信息窗口
-            S.infoWindow = new AMap.InfoWindow({
-                offset: new AMap.Pixel(0, -20),
-                closeWhenClickMap: true
-            });
+                S.map = new AMap.Map('map', {
+                    center: S.userLocation,
+                    zoom: 13,
+                    resizeEnable: true,
+                    showIndoorMap: false,
+                    viewMode: '2D',
+                    mapStyle: 'amap://styles/normal'
+                });
 
-            // 定位功能
-            const geolocation = new AMap.Geolocation({
-                enableHighAccuracy: true,
-                timeout: 10000,
-                buttonPosition: 'RB',
-                showButton: false
-            });
-            S.map.addControl(geolocation);
+                // 路况图层（默认关闭）
+                S.trafficLayer = new AMap.TileLayer.Traffic({
+                    autoRefresh: true,
+                    interval: 180
+                });
 
-            geolocation.getCurrentPosition(function(status, result) {
-                if (status === 'complete') {
-                    S.userLocation = [result.position.lng, result.position.lat];
-                    S.hasLocation = true;
-                    $('navStartInput').value = '我的位置';
-                    $('cityName').textContent = result.addressComponent.city || '广州';
-                    toast('定位成功');
-                } else {
-                    // 定位失败：区分超时 / 拒绝 / 未知错误
-                    S.hasLocation = false;
-                    $('navStartInput').value = '定位失败，点击重试';
-                    $('navStartInput').style.color = 'var(--danger)';
-                    $('navStartInput').style.cursor = 'pointer';
-                    // 检测错误类型（高德 result 可能含 info）
-                    const errInfo = (result && result.info) ? result.info.toLowerCase() : '';
-                    let errMsg = '定位失败，请手动输入起点或切换城市';
-                    if (errInfo.includes('timeout') || errInfo.includes('超时')) {
-                        errMsg = '定位超时，请检查定位权限后重试';
-                    } else if (errInfo.includes('permission') || errInfo.includes('拒绝') || errInfo.includes('denied')) {
-                        errMsg = '定位权限被拒绝，请开启定位权限后重试';
+                // 卫星图层（默认关闭）
+                S.satelliteLayer = new AMap.TileLayer.Satellite();
+                S.roadnetLayer = new AMap.TileLayer.RoadNet();
+
+                // 驾车路线规划
+                S.driving = new AMap.Driving({
+                    map: S.map,
+                    hideMarkers: false,
+                    autoFitView: true,
+                    policy: 0
+                });
+
+                // 测距工具
+                S.rangingTool = new AMap.RangingTool(S.map);
+                S.rangingTool.on('end', function(e) {
+                    $('rangingIndicator').style.display = 'none';
+                    $('btnRanging').classList.remove('active');
+                    S.map.setStatus({ dragEnable: true, zoomEnable: true, pitchEnable: true });
+                    toast('总距离: ' + e.distance.toFixed(0) + ' 米');
+                });
+                S.rangingTool.on('addnode', function(e) {
+                    // 每打一个点更新距离
+                    if (e.distance) {
+                        $('rangingDistance').textContent = e.distance.toFixed(0);
                     }
-                    recoverToast(errMsg, '重试', function() {
-                        if (S.hasLocation) return;
-                        $('navStartInput').value = '定位中...';
-                        $('navStartInput').style.color = '';
-                        geolocation.getCurrentPosition(function(s2, r2) {
-                            if (s2 === 'complete') {
-                                S.userLocation = [r2.position.lng, r2.position.lat];
-                                S.hasLocation = true;
-                                $('navStartInput').value = '我的位置';
-                                $('navStartInput').style.color = '';
-                                $('navStartInput').style.cursor = '';
-                                $('navStartInput').onclick = null;
-                                toast('定位成功');
-                            } else {
-                                $('navStartInput').value = '定位失败，点击重试';
-                                $('navStartInput').style.color = 'var(--danger)';
-                                recoverToast('定位失败，请手动输入起点或切换城市', '重试', function() {
-                                    if (S.hasLocation) return;
-                                    $('navStartInput').value = '定位中...';
+                });
+
+                // 信息窗口
+                S.infoWindow = new AMap.InfoWindow({
+                    offset: new AMap.Pixel(0, -20),
+                    closeWhenClickMap: true
+                });
+
+                // 定位功能
+                const geolocation = new AMap.Geolocation({
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    buttonPosition: 'RB',
+                    showButton: false
+                });
+                S.map.addControl(geolocation);
+
+                geolocation.getCurrentPosition(function(status, result) {
+                    if (status === 'complete') {
+                        S.userLocation = [result.position.lng, result.position.lat];
+                        S.hasLocation = true;
+                        $('navStartInput').value = '我的位置';
+                        $('cityName').textContent = result.addressComponent.city || '广州';
+                        toast('定位成功');
+                    } else {
+                        // 定位失败：区分超时 / 拒绝 / 未知错误
+                        S.hasLocation = false;
+                        $('navStartInput').value = '定位失败，点击重试';
+                        $('navStartInput').style.color = 'var(--danger)';
+                        $('navStartInput').style.cursor = 'pointer';
+                        // 检测错误类型（高德 result 可能含 info）
+                        const errInfo = (result && result.info) ? result.info.toLowerCase() : '';
+                        let errMsg = '定位失败，请手动输入起点或切换城市';
+                        if (errInfo.includes('timeout') || errInfo.includes('超时')) {
+                            errMsg = '定位超时，请检查定位权限后重试';
+                        } else if (errInfo.includes('permission') || errInfo.includes('拒绝') || errInfo.includes('denied')) {
+                            errMsg = '定位权限被拒绝，请开启定位权限后重试';
+                        }
+                        recoverToast(errMsg, '重试', function() {
+                            if (S.hasLocation) return;
+                            $('navStartInput').value = '定位中...';
+                            $('navStartInput').style.color = '';
+                            geolocation.getCurrentPosition(function(s2, r2) {
+                                if (s2 === 'complete') {
+                                    S.userLocation = [r2.position.lng, r2.position.lat];
+                                    S.hasLocation = true;
+                                    $('navStartInput').value = '我的位置';
                                     $('navStartInput').style.color = '';
-                                    geolocation.getCurrentPosition(function(s3, r3) {
-                                        if (s3 === 'complete') {
-                                            S.userLocation = [r3.position.lng, r3.position.lat];
-                                            S.hasLocation = true;
-                                            $('navStartInput').value = '我的位置';
-                                            $('navStartInput').style.color = '';
-                                            $('navStartInput').style.cursor = '';
-                                            $('navStartInput').onclick = null;
-                                            toast('定位成功');
-                                        } else {
-                                            $('navStartInput').value = '定位失败，请手动输入';
-                                            $('navStartInput').style.color = 'var(--danger)';
-                                            toast('请手动输入起点');
-                                        }
+                                    $('navStartInput').style.cursor = '';
+                                    $('navStartInput').onclick = null;
+                                    toast('定位成功');
+                                } else {
+                                    $('navStartInput').value = '定位失败，点击重试';
+                                    $('navStartInput').style.color = 'var(--danger)';
+                                    recoverToast('定位失败，请手动输入起点或切换城市', '重试', function() {
+                                        if (S.hasLocation) return;
+                                        $('navStartInput').value = '定位中...';
+                                        $('navStartInput').style.color = '';
+                                        geolocation.getCurrentPosition(function(s3, r3) {
+                                            if (s3 === 'complete') {
+                                                S.userLocation = [r3.position.lng, r3.position.lat];
+                                                S.hasLocation = true;
+                                                $('navStartInput').value = '我的位置';
+                                                $('navStartInput').style.color = '';
+                                                $('navStartInput').style.cursor = '';
+                                                $('navStartInput').onclick = null;
+                                                toast('定位成功');
+                                            } else {
+                                                $('navStartInput').value = '定位失败，请手动输入';
+                                                $('navStartInput').style.color = 'var(--danger)';
+                                                toast('请手动输入起点');
+                                            }
+                                        });
                                     });
-                                });
                             }
                         });
                     });
                 }
-            });
+                // 加载历史记录
+                loadHistory();
 
-            // 加载历史记录
-            loadHistory();
+                // 从localStorage恢复图层、路况、主题状态
+                const settings = loadSettings();
+                if (settings.trafficOn) {
+                    S.trafficOn = false;
+                    toggleTraffic();
+                }
+                if (settings.currentMapType && settings.currentMapType !== 'normal') {
+                    switchMapType(settings.currentMapType);
+                }
+                if (settings.currentTheme && settings.currentTheme !== 'normal') {
+                    switchTheme(settings.currentTheme);
+                }
 
-            // 从localStorage恢复图层、路况、主题状态
-            const settings = loadSettings();
-            if (settings.trafficOn) {
-                S.trafficOn = false;
-                toggleTraffic();
-            }
-            if (settings.currentMapType && settings.currentMapType !== 'normal') {
-                switchMapType(settings.currentMapType);
-            }
-            if (settings.currentTheme && settings.currentTheme !== 'normal') {
-                switchTheme(settings.currentTheme);
-            }
+                // 从localStorage恢复城市并获取天气
+                loadCity();
+                // 地图中心平移到缓存的城市
+                if (S.currentCityLngLat) {
+                    S.map.setCenter(S.currentCityLngLat);
+                    S.userLocation = S.currentCityLngLat;
+                }
+                fetchWeather(S.currentCity);
 
-            // 从localStorage恢复城市并获取天气
-            loadCity();
-            // 地图中心平移到缓存的城市
-            if (S.currentCityLngLat) {
-                S.map.setCenter(S.currentCityLngLat);
-                S.userLocation = S.currentCityLngLat;
-            }
-            fetchWeather(S.currentCity);
+                // 恢复搜索类型，自动搜索
+                if (settings.currentSearchType && (settings.currentSearchType === 'parking' || settings.currentSearchType === 'charging')) {
+                    S.currentSearchType = settings.currentSearchType;
+                    const target = S.currentSearchType.charAt(0).toUpperCase() + S.currentSearchType.slice(1);
+                    // 高亮快捷图标
+                    document.querySelectorAll('.quick-icon').forEach(el => el.classList.remove('active'));
+                    const activeId = S.currentSearchType === 'parking' ? 'quickParking' : 'quickCharge';
+                    document.getElementById(activeId) && document.getElementById(activeId).classList.add('active');
+                    // 触发搜索
+                    searchNearby(S.currentSearchType);
+                }
 
-            // 恢复搜索类型，自动搜索
-            if (settings.currentSearchType && (settings.currentSearchType === 'parking' || settings.currentSearchType === 'charging')) {
-                S.currentSearchType = settings.currentSearchType;
-                const target = S.currentSearchType.charAt(0).toUpperCase() + S.currentSearchType.slice(1);
-                // 高亮快捷图标
-                document.querySelectorAll('.quick-icon').forEach(el => el.classList.remove('active'));
-                const activeId = S.currentSearchType === 'parking' ? 'quickParking' : 'quickCharge';
-                document.getElementById(activeId) && document.getElementById(activeId).classList.add('active');
-                // 触发搜索
-                searchNearby(S.currentSearchType);
+                toast('地图加载完成');
+                hideLoading();
+            } catch (e) {
+                // 地图初始化失败处理
+                hideLoading();
+                console.error('地图初始化失败:', e);
+                const mapEl = document.getElementById('map');
+                if (mapEl) {
+                    mapEl.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-2);gap:12px;"><div style="font-size:48px;">⚠️</div><div style="font-size:15px;font-weight:600;">地图加载失败</div><div style="font-size:13px;">请检查网络后重试</div><button onclick="location.reload()" style="margin-top:8px;padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">重新加载</button></div>';
+                    mapEl.style.background = '#f7f8fa';
+                }
             }
-
-            toast('地图加载完成');
-            hideLoading();
         }
 
         /* ========================================
