@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="#1a73e8">
     <!-- 微信X5浏览器兼容：禁止下拉回弹 -->
-    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-orientation" content="auto">
     <meta name="x5-fullscreen" content="true">
     <meta name="x5-page-mode" content="app">
+    <meta name="applicable-device" content="mobile,pc">
     <title>广东新能源导航</title>
     <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=faf78a1b9d57c1e1a88fd9f50c795032&plugin=AMap.PlaceSearch,AMap.Geocoder,AMap.Geolocation,AMap.Driving,AMap.RangingTool,AMap.TileLayer,AMap.MarkerCluster"></script>
     
@@ -41,130 +46,123 @@
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
-        body { 
-            background: #fff; 
-            color: var(--text-1); 
-            overflow: hidden; 
-            overscroll-behavior: none; 
+        html, body {
+            height: 100%;
+            height: 100dvh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        body {
+            background: #fff;
+            color: var(--text-1);
+            overflow: hidden;
+            overflow-x: hidden;  /* 禁止横向滚动 */
+            overflow-y: hidden;
+            overscroll-behavior: none;
+            overscroll-behavior-y: none;
+            overscroll-behavior-x: none;
             touch-action: manipulation;
-            -webkit-overflow-scrolling: touch; /* iOS惯性滚动 */
+            -webkit-overflow-scrolling: touch;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
         }
 
         /* ========== LAYER 1: 全屏地图 ========== */
         #map {
             position: fixed;
             top: 0; left: 0;
-            width: 100%; height: 100%;
+            width: 100%;
+            height: 100%;
+            height: 100vh;  /* 兼容旧版安卓 */
+            height: 100dvh; /* 现代浏览器优先，规避软键盘塌陷 */
             z-index: 1;
+            box-sizing: border-box;
         }
 
-        /* ========== LAYER 2: 顶部通栏 ========== */
+        /* ========== LAYER 2: 顶部通栏（搜索+城市天气+工具一体化 ========== */
         .top-bar {
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 20;
-            padding: var(--safe-top) 16px 0;
-            height: calc(44px + var(--safe-top));
+            padding: var(--safe-top) 12px 0;
+            height: calc(56px + var(--safe-top));
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            background: rgba(255,255,255,0.95);
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(12px);
             backdrop-filter: blur(12px);
             pointer-events: auto;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.05);
         }
-        .city-selector {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 6px 10px;
-            background: rgba(0,0,0,0.04);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-        }
-        .city-name { font-weight: 600; font-size: 14px; }
-        .city-arrow { font-size: 8px; color: var(--text-3); }
-        
-        .top-actions {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .top-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: var(--radius-sm);
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
-            transition: background 0.15s ease;
-        }
-        .top-btn:hover { background: rgba(0,0,0,0.06); }
-        .top-btn.active { background: var(--primary-light); }
-        .top-btn:active { transform: scale(0.95); }
 
-        /* ========== LAYER 3: 左上角搜索组件 ========== */
-        .search-container {
-            position: fixed;
-            top: calc(var(--safe-top) + 48px);
-            left: 12px;
-            width: calc(100% - 24px);
-            max-width: 360px;
-            z-index: 30;
-            pointer-events: auto;
-        }
-        .search-box {
+        /* 搜索框：弹性占比最大 */
+        .top-search-box {
+            flex: 1;
+            min-width: 0;
             display: flex;
             align-items: center;
             background: #fff;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            padding: 0;
-            height: 44px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            min-height: 44px;
+            padding: 0 4px 0 12px;
+            overflow: hidden;
+            pointer-events: auto;
         }
-        .search-icon {
-            width: 44px; height: 44px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
+        .top-search-icon {
+            font-size: 14px;
             color: var(--text-3);
+            flex-shrink: 0;
         }
-        .search-input {
+        .top-search-input {
             flex: 1;
-            height: 44px;
+            min-width: 0;
+            height: 40px;
             border: none;
             outline: none;
             font-size: 14px;
             background: transparent;
+            padding: 0 8px;
         }
-        .search-btn {
-            height: 36px;
+        .top-search-btn {
+            min-height: 44px;
+            min-width: 44px;
             padding: 0 14px;
-            margin-right: 4px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-sm);
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.15s ease;
+            flex-shrink: 0;
+            transition: background 0.15s ease, transform 0.1s ease;
         }
-        .search-btn:hover { background: var(--primary-hover); }
-        .search-btn:active { transform: scale(0.96); }
+        .top-search-btn:hover { background: var(--primary-hover); }
+        .top-search-btn:active { transform: scale(0.96); }
 
         /* 搜索联想列表 */
         .suggestions {
-            margin-top: 6px;
+            position: fixed;
+            top: calc(var(--safe-top) + 56px);
+            left: 12px;
+            right: 12px;
+            max-width: 480px;
+            margin-top: 0;
             background: #fff;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            max-height: 280px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            max-height: 320px;
             overflow-y: auto;
             display: none;
+            z-index: 30;
+            pointer-events: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .suggestions.show { display: block; }
         .suggestions-item {
@@ -186,7 +184,7 @@
         }
         .suggestions-item .suggestions-icon.parking { background: rgba(26,115,232,0.1); }
         .suggestions-item .suggestions-icon.charging { background: rgba(52,168,83,0.1); }
-        .suggestions-text { flex: 1; }
+        .suggestions-text { flex: 1; min-width: 0; }
         .suggestions-name { font-size: 13px; font-weight: 500; }
         .suggestions-addr { font-size: 11px; color: var(--text-3); margin-top: 1px; }
         .suggestions-nav-btn {
@@ -201,15 +199,95 @@
         }
         .suggestions-nav-btn:hover { background: var(--primary); color: #fff; }
         .suggestions-nav-btn:active { transform: scale(0.96); opacity: 0.85; }
-        
+
+        /* 城市天气模块 */
+        .top-weather {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: rgba(0,0,0,0.04);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            flex-shrink: 0;
+            white-space: nowrap;
+            min-width: 0;
+            transition: background 0.15s ease;
+        }
+        .top-weather:hover { background: rgba(0,0,0,0.07); }
+        .top-weather:active { transform: scale(0.96); }
+        .weather-city {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-1);
+        }
+        .weather-icon {
+            font-size: 14px;
+        }
+        .weather-temp {
+            font-size: 13px;
+            color: var(--text-1);
+            font-weight: 500;
+        }
+        .weather-aqi {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: 500;
+            min-width: 24px;
+            text-align: center;
+        }
+        .weather-arrow {
+            font-size: 8px;
+            color: var(--text-3);
+        }
+
+        /* 工具按钮组 */
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+        .top-btn {
+            width: 44px; height: 44px;
+            min-width: 44px; min-height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.15s ease, transform 0.1s ease;
+            flex-shrink: 0;
+        }
+        .top-btn:hover { background: rgba(0,0,0,0.06); }
+        .top-btn.active { background: var(--primary-light); color: var(--primary); }
+        .top-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.1); }
+
+        /* 移动端：天气模块文字自适应 */
+        @media (max-width: 420px) {
+            .weather-city { font-size: 12px; }
+            .weather-temp { font-size: 12px; }
+            .weather-aqi { font-size: 10px; padding: 2px 4px; }
+            .top-weather { padding: 6px 8px; gap: 4px; }
+            .top-search-input { font-size: 13px; }
+        }
+
+        /* ========== LAYER 3: 左上角快捷图标浮层 ========== */
         .quick-icons {
+            position: fixed;
+            top: calc(var(--safe-top) + 60px);
+            left: 12px;
             display: flex;
             gap: 8px;
-            margin-top: 8px;
+            z-index: 25;
             padding: 6px 8px;
             background: rgba(255,255,255,0.95);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
+            border-radius: var(--radius-md);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            flex-wrap: nowrap;
         }
         .quick-icon {
             display: flex; flex-direction: column;
@@ -218,85 +296,253 @@
             border-radius: var(--radius-sm);
             cursor: pointer;
             transition: background 0.15s ease;
+            white-space: nowrap;
         }
         .quick-icon:hover { background: rgba(0,0,0,0.04); }
         .quick-icon.active { background: var(--primary-light); }
-        .quick-icon span:first-child { font-size: 18px; }
+        .quick-icon span:first-child { font-size: 16px; }
         .quick-icon span:last-child { font-size: 11px; color: var(--text-2); }
         .quick-icon.active span:last-child { color: var(--primary); }
+        .quick-icon:active { transform: scale(0.95); opacity: 0.8; }
 
-        /* ========== LAYER 4: 左侧悬浮面板 ========== */
-        .left-panel-overlay {
+        /* 矮屏幕设备适配 */
+        @media (max-height: 600px) {
+            .quick-icons { padding: 6px 10px; }
+            .quick-icon { padding: 6px 10px; }
+        }
+
+        /* ========== LAYER 3c: 城市选择弹窗 ========== */
+        .city-panel-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5);
-            z-index: 299;
+            z-index: 290;
             opacity: 0;
             visibility: hidden;
-            -webkit-transition: opacity 0.3s ease, visibility 0.3s ease;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1), visibility 300ms cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
-            will-change: opacity;
         }
-        .left-panel-overlay.show { opacity: 1; visibility: visible; pointer-events: auto; }
-        
-        .left-panel {
+        .city-panel-overlay.show { opacity: 1; visibility: visible; pointer-events: auto; }
+
+        .city-panel {
             position: fixed;
-            top: 0; left: -380px;
-            width: 380px;
-            max-width: calc(100% - 32px);
-            height: 100%;
+            left: 0; right: 0;
+            bottom: 0;
+            height: 70vh;
+            max-height: 560px;
             background: #fff;
             z-index: 300;
-            box-shadow: var(--shadow-lg);
-            -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 16px 16px 0 0;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+            transform: translateY(100%);
+            transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            pointer-events: auto;
-            will-change: transform;
         }
-        .left-panel.show { transform: translateX(380px); }
-        
-        .left-panel-header {
+        .city-panel.show { transform: translateY(0); }
+
+        .city-panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: var(--safe-top) 16px 12px;
+            padding: 16px 16px 12px;
             border-bottom: 1px solid var(--border-light);
             flex-shrink: 0;
         }
-        .left-panel-title { font-size: 16px; font-weight: 600; }
-        .left-panel-close {
+        .city-panel-title { font-size: 16px; font-weight: 600; }
+        .city-panel-close {
             width: 36px; height: 36px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%;
             border: none;
             background: transparent;
             cursor: pointer;
+            font-size: 16px;
+            transition: background 0.15s ease;
+        }
+        .city-panel-close:hover { background: rgba(0,0,0,0.06); }
+        .city-panel-close:active { background: rgba(0,0,0,0.12); }
+
+        .city-search-row {
+            padding: 12px 16px;
+            flex-shrink: 0;
+        }
+        .city-search-input {
+            width: 100%;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 0 12px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        .city-search-input:focus { border-color: var(--primary); }
+
+        .city-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 16px 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .city-province-group {
+            margin-bottom: 8px;
+        }
+        .city-province-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-2);
+            padding: 10px 0 6px;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 1;
+        }
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+        .city-item {
+            padding: 10px 8px;
+            background: rgba(0,0,0,0.03);
+            border-radius: var(--radius-sm);
+            text-align: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+        }
+        .city-item:hover { background: rgba(0,0,0,0.06); }
+        .city-item:active { transform: scale(0.96); }
+        .city-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+            border-color: var(--primary);
+        }
+
+        /* 城市A-Z索引 */
+        .city-index {
+            position: absolute;
+            right: 6px;
+            top: 90px;
+            bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            z-index: 2;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 4px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .city-index-item {
+            font-size: 10px;
+            color: var(--text-3);
+            padding: 2px 6px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+        .city-index-item:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .city-index-item:active { transform: scale(1.1); }
+
+        /* PC端：城市弹窗优化 */
+        @media (min-width: 769px) {
+            .city-panel {
+                left: auto;
+                right: 16px;
+                bottom: 16px;
+                width: 420px;
+                height: 60vh;
+                max-height: 520px;
+                border-radius: var(--radius-xl);
+            }
+        }
+
+        /* ========== LAYER 4: 左侧悬浮面板（移动端：底部半屏弹窗）========== */
+        .left-panel-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 290;
+            opacity: 0;
+            visibility: hidden;
+            -webkit-transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1), visibility 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1), visibility 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            will-change: opacity;
+        }
+        .left-panel-overlay.show { opacity: 1; visibility: visible; pointer-events: auto; }
+
+        .left-panel {
+            position: fixed;
+            left: 0; right: 0;
+            bottom: 0;
+            height: 65vh;
+            max-height: 80vh;
+            background: #fff;
+            z-index: 300;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+            border-radius: 16px 16px 0 0;
+            -webkit-transition: -webkit-transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-transform: translateY(100%);
+            transform: translateY(100%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            pointer-events: auto;
+            will-change: transform;
+        }
+        .left-panel.show { transform: translateY(0); -webkit-transform: translateY(0); }
+
+        .left-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 16px 12px;
+            border-bottom: 1px solid var(--border-light);
+            flex-shrink: 0;
+        }
+        .left-panel-title { font-size: 16px; font-weight: 600; }
+        .left-panel-close {
+            width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
             font-size: 18px;
-            transition: all var(--anim-fast);
+            transition: background 0.15s ease;
         }
         .left-panel-close:hover { background: rgba(0,0,0,0.06); }
-        
+        .left-panel-close:active { background: rgba(0,0,0,0.12); }
+
         .left-panel-content {
             flex: 1;
             overflow-y: auto;
             padding: 16px;
+            -webkit-overflow-scrolling: touch;
         }
         
         /* ========== 模板A: 导航起终点面板 ========== */
         .nav-panel { display: none; }
         .nav-panel.active { display: block; }
-        
+
         .nav-input-row {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px;
+            gap: 10px;
+            padding: 10px 12px;
             background: rgba(0,0,0,0.03);
-            border-radius: var(--radius-lg);
+            border-radius: var(--radius-md);
             margin-bottom: 8px;
         }
         .nav-dot {
@@ -307,57 +553,64 @@
         }
         .nav-input-row.start .nav-dot { background: var(--success); }
         .nav-input-wrap { flex: 1; }
-        .nav-input-label { font-size: 12px; color: var(--text-3); margin-bottom: 4px; }
         .nav-input {
             width: 100%;
             border: none;
             outline: none;
-            font-size: 14px;
+            font-size: 15px;
             background: transparent;
+            padding: 4px 0;
         }
         .nav-input-clear {
-            width: 24px; height: 24px;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.1);
+            width: 44px; height: 44px;
+            display: none;
+            align-items: center; justify-content: center;
+            background: transparent;
             border: none;
             border-radius: 50%;
-            font-size: 12px;
+            font-size: 14px;
             color: var(--text-2);
             cursor: pointer;
             flex-shrink: 0;
         }
-        .nav-input-clear:hover { background: rgba(0,0,0,0.2); }
-        .nav-input-clear:active { transform: scale(0.9); }
+        .nav-input-clear:hover { background: rgba(0,0,0,0.06); }
+        .nav-input-clear:active { transform: scale(0.9); background: rgba(0,0,0,0.1); }
         .nav-swap-btn {
             display: block;
             margin: 4px auto 12px;
-            width: 36px; height: 36px;
+            width: 44px; height: 44px;
             border-radius: 50%;
             background: rgba(0,0,0,0.06);
             border: none;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 20px;
             transition: all var(--anim-fast);
         }
         .nav-swap-btn:hover { background: var(--primary-light); color: var(--primary); transform: rotate(180deg); }
-        
+        .nav-swap-btn:active { transform: scale(0.92); }
+
         .nav-history { margin-top: 16px; }
         .nav-history-title {
             font-size: 13px;
             font-weight: 600;
             color: var(--text-2);
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .nav-history-clear {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-3);
             cursor: pointer;
             background: none;
             border: none;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            transition: all 0.15s ease;
         }
+        .nav-history-clear:hover { background: rgba(0,0,0,0.04); }
+        .nav-history-clear:active { background: rgba(0,0,0,0.08); color: var(--text-1); }
         .nav-history-list {
             display: flex;
             flex-direction: column;
@@ -367,28 +620,31 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 12px;
+            padding: 12px;
             border-radius: var(--radius-md);
             cursor: pointer;
             transition: all var(--anim-fast);
         }
         .nav-history-item:hover { background: rgba(0,0,0,0.04); }
+        .nav-history-item:active { background: rgba(0,0,0,0.08); }
         .nav-history-icon {
-            width: 32px; height: 32px;
+            width: 36px; height: 36px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%;
             background: var(--bg-soft);
-            font-size: 14px;
+            font-size: 16px;
+            flex-shrink: 0;
         }
-        .nav-history-item .nav-history-icon.parking { background: rgba(26,115,232,0.08); }
-        .nav-history-item .nav-history-icon.charging { background: rgba(52,168,83,0.08); }
+        .nav-history-item .nav-history-icon.parking { background: rgba(26,115,232,0.1); }
+        .nav-history-item .nav-history-icon.charging { background: rgba(52,168,83,0.1); }
         .nav-history-text-wrap { flex: 1; }
         .nav-history-text { font-size: 14px; color: var(--text-1); font-weight: 500; }
         .nav-history-addr { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-        
+
         .nav-start-btn {
             width: 100%;
-            margin-top: 16px;
+            margin-top: 20px;
+            margin-bottom: calc(var(--safe-bottom, 0px) + 20px);
             padding: 14px;
             background: var(--primary);
             color: #fff;
@@ -406,15 +662,24 @@
         /* ========== 模板B: 图层选择面板 ========== */
         .layer-panel { display: none; }
         .layer-panel.active { display: block; }
-        
-        .layer-section { margin-bottom: 20px; }
+
+        .layer-section {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .layer-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
         .layer-section-title {
             font-size: 13px;
             font-weight: 600;
-            color: var(--text-2);
+            color: var(--text-1);
             margin-bottom: 12px;
         }
-        
+
         .layer-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -427,17 +692,20 @@
             gap: 8px;
             padding: 16px;
             background: rgba(0,0,0,0.03);
-            border-radius: var(--radius-lg);
+            border-radius: var(--radius-md);
             cursor: pointer;
             transition: all var(--anim-fast);
             border: 2px solid transparent;
         }
         .layer-item:hover { background: rgba(0,0,0,0.06); }
         .layer-item:active { transform: scale(0.97); }
-        .layer-item.active { background: var(--primary-light); border-color: var(--primary); }
+        .layer-item.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
         .layer-item-icon { font-size: 28px; }
         .layer-item-label { font-size: 13px; font-weight: 500; }
-        
+
         .theme-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -467,7 +735,7 @@
         .theme-thumb-dark { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #3a3a3a 100%); }
         .theme-label { font-size: 12px; color: var(--text-2); font-weight: 500; }
         .theme-item.active .theme-label { color: var(--primary); }
-        
+
         .layer-switch-row {
             display: flex;
             align-items: center;
@@ -482,10 +750,11 @@
         .layer-switch-label { font-size: 14px; font-weight: 500; }
         .layer-switch {
             width: 44px; height: 24px;
-            background: var(--border);
+            background: #d0d0d0;
             border-radius: 12px;
             position: relative;
-            transition: all var(--anim-fast);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
         }
         .layer-switch.active { background: var(--primary); }
         .layer-switch::after {
@@ -495,8 +764,8 @@
             width: 20px; height: 20px;
             background: #fff;
             border-radius: 50%;
-            transition: all var(--anim-fast);
-            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
         }
         .layer-switch.active::after { left: 22px; }
 
@@ -608,6 +877,7 @@
             display: flex;
             gap: 8px;
             margin-top: 16px;
+            margin-bottom: calc(var(--safe-bottom, 0px) + 16px);
             justify-content: center;
         }
         .route-action-btn {
@@ -701,8 +971,8 @@
             position: fixed;
             top: calc(var(--safe-top) + 100px);
             left: 50%;
-            -webkit-transform: translateX(-50%);
-            transform: translateX(-50%);
+            -webkit-transform: translateX(-50%) translateZ(0);
+            transform: translateX(-50%) translateZ(0);
             z-index: 1000;
             padding: 12px 20px;
             background: rgba(0,0,0,0.8);
@@ -718,6 +988,80 @@
             will-change: opacity;
         }
         .toast.show { opacity: 1; visibility: visible; }
+
+        /* ========== Loading 加载中 ========== */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 500;
+            opacity: 0;
+            visibility: hidden;
+            -webkit-transition: opacity 0.2s ease, visibility 0.2s ease;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            pointer-events: none;
+            will-change: opacity;
+        }
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .loading-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(26,115,232,0.15);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            -webkit-animation: spin 0.8s linear infinite;
+            animation: spin 0.8s linear infinite;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            font-size: 13px;
+            color: var(--text-2);
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+
+        /* ========== 空状态占位 ========== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 48px 24px;
+            text-align: center;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        .empty-icon { font-size: 48px; opacity: 0.5; }
+        .empty-title { font-size: 15px; font-weight: 600; color: var(--text-1); }
+        .empty-desc { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+        .empty-action {
+            margin-top: 8px;
+            padding: 8px 20px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            min-height: 44px;
+            min-width: 100px;
+        }
+        .empty-action:active { transform: scale(0.96); }
 
         /* ========== Marker气泡 ========== */
         .infowindow {
@@ -762,15 +1106,39 @@
         .info-btn:active { transform: scale(0.96); opacity: 0.85; }
 
         /* ========== 响应式优化 ========== */
-        @media (max-width: 420px) {
-            .left-panel { width: calc(100% - 16px); left: calc(-100% - 16px); }
-            .left-panel.show { transform: translateX(calc(100% + 16px)); }
+        /* 移动端：底部半屏弹窗 */
+        @media (max-width: 768px) {
+            .left-panel {
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 65vh;
+                border-radius: 16px 16px 0 0;
+            }
         }
-        
+
+        /* PC端：右侧弹窗，更紧凑的面板 */
+        @media (min-width: 769px) {
+            .left-panel {
+                right: 16px;
+                left: auto;
+                bottom: 16px;
+                width: 380px;
+                height: 70vh;
+                max-height: 600px;
+                border-radius: var(--radius-xl);
+                transform: translateY(100%);
+            }
+            .left-panel-overlay {
+                background: rgba(0,0,0,0.3);
+            }
+        }
+
+        /* 矮屏幕设备 */
         @media (max-height: 600px) {
-            .search-container { top: calc(var(--safe-top) + 50px); }
-            .quick-icons { padding: 6px 10px; margin-top: 8px; }
-            .quick-icon { padding: 6px 12px; }
+            .quick-icons { padding: 6px 10px; }
+            .quick-icon { padding: 6px 10px; }
+            .left-panel { height: 75vh; }
         }
     </style>
 </head>
@@ -778,12 +1146,23 @@
     <!-- ========== LAYER 1: 全屏地图 ========== -->
     <div id="map"></div>
 
-    <!-- ========== LAYER 2: 顶部通栏 ========== -->
+    <!-- ========== LAYER 2: 顶部通栏（搜索+城市天气+工具一体化） ========== -->
     <div class="top-bar">
-        <div class="city-selector" id="citySelector">
-            <span class="city-name" id="cityName">广州</span>
-            <span class="city-arrow">▼</span>
+        <!-- 搜索框 -->
+        <div class="top-search-box">
+            <span class="top-search-icon">🔍</span>
+            <input type="search" class="top-search-input" id="searchInput" placeholder="搜索停车场/充电站">
+            <button class="top-search-btn" id="searchBtn">搜索</button>
         </div>
+        <!-- 城市天气模块 -->
+        <div class="top-weather" id="citySelector">
+            <span class="weather-city" id="cityName">广州</span>
+            <span class="weather-icon" id="weatherIcon">☀️</span>
+            <span class="weather-temp" id="weatherTemp">26°</span>
+            <span class="weather-aqi" id="weatherAqi" style="background:#00e400;">良</span>
+            <span class="weather-arrow">▼</span>
+        </div>
+        <!-- 工具按钮组 -->
         <div class="top-actions">
             <button class="top-btn" id="btnTraffic" title="路况">🚥</button>
             <button class="top-btn" id="btnRanging" title="测距">📏</button>
@@ -791,23 +1170,33 @@
         </div>
     </div>
 
-    <!-- ========== LAYER 3: 左上角搜索组件 ========== -->
-    <div class="search-container">
-        <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="search" class="search-input" id="searchInput" placeholder="搜索停车场/充电站">
-            <button class="search-btn" id="searchBtn">搜索</button>
+    <!-- ========== LAYER 3: 搜索联想列表 ========== -->
+    <div class="suggestions" id="suggestions"></div>
+
+    <!-- ========== LAYER 3b: 左上角快捷图标浮层 ========== -->
+    <div class="quick-icons">
+        <div class="quick-icon" id="quickCharge" data-type="charging">
+            <span>⚡</span>
+            <span>充电桩</span>
         </div>
-        <div class="suggestions" id="suggestions"></div>
-        <div class="quick-icons">
-            <div class="quick-icon" id="quickCharge" data-type="charging">
-                <span>⚡</span>
-                <span>充电桩</span>
-            </div>
-            <div class="quick-icon" id="quickParking" data-type="parking">
-                <span>🅿️</span>
-                <span>停车场</span>
-            </div>
+        <div class="quick-icon" id="quickParking" data-type="parking">
+            <span>🅿️</span>
+            <span>停车场</span>
+        </div>
+    </div>
+
+    <!-- ========== LAYER 3c: 城市选择弹窗 ========== -->
+    <div class="city-panel-overlay" id="cityPanelOverlay"></div>
+    <div class="city-panel" id="cityPanel">
+        <div class="city-panel-header">
+            <span class="city-panel-title">选择城市</span>
+            <button class="city-panel-close" id="cityPanelClose">✕</button>
+        </div>
+        <div class="city-search-row">
+            <input type="text" class="city-search-input" id="citySearchInput" placeholder="输入城市名称搜索">
+        </div>
+        <div class="city-panel-content" id="cityPanelContent">
+            <!-- 城市列表由JS动态生成 -->
         </div>
     </div>
 
@@ -821,19 +1210,18 @@
         <div class="left-panel-content">
             <!-- 模板A: 导航起终点面板 -->
             <div class="nav-panel active" id="navPanel">
+                <div style="font-size:12px; color:var(--text-3); margin-bottom:8px; letter-spacing:1px;">驾车导航</div>
                 <div class="nav-input-row start">
                     <div class="nav-dot"></div>
                     <div class="nav-input-wrap">
-                        <div class="nav-input-label">我的位置</div>
-                        <input type="text" class="nav-input" id="navStartInput" placeholder="当前位置">
+                        <input type="text" class="nav-input" id="navStartInput" placeholder="我的位置" value="">
                     </div>
-                    <button class="nav-input-clear" id="clearStart" style="display:none;">✕</button>
+                    <button class="nav-input-clear" id="clearStart">✕</button>
                 </div>
-                <button class="nav-swap-btn" id="navSwapBtn" title="交换起终点">⇅</button>
+                <button class="nav-swap-btn" id="navSwapBtn" title="交换起终点">↕</button>
                 <div class="nav-input-row">
                     <div class="nav-dot"></div>
                     <div class="nav-input-wrap">
-                        <div class="nav-input-label">终点</div>
                         <input type="text" class="nav-input" id="navEndInput" placeholder="输入终点（停车场/充电站）">
                     </div>
                     <button class="nav-input-clear" id="clearEnd">✕</button>
@@ -844,7 +1232,7 @@
                         <button class="nav-history-clear" id="clearHistory">清空</button>
                     </div>
                     <div class="nav-history-list" id="navHistoryList">
-                        <div class="nav-history-item" style="color:var(--text-3); font-size:13px; justify-content:center;">
+                        <div class="nav-history-item" style="color:var(--text-3); font-size:13px; justify-content:center; padding:16px 12px;">
                             暂无历史记录
                         </div>
                     </div>
@@ -933,6 +1321,12 @@
     <!-- ========== Toast 提示 ========== -->
     <div class="toast" id="toast"></div>
 
+    <!-- ========== Loading 加载 ========== -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">加载中...</div>
+    </div>
+
     <script>
         /* ========================================
            全局状态
@@ -951,6 +1345,8 @@
             markers: [],                    // 当前搜索结果 Marker
             cluster: null,                  // 点聚合
             infoWindow: null,               // Marker气泡
+            currentCity: '广州',          // 当前城市
+            currentCityLngLat: [113.264385, 23.12911],  // 当前城市经纬度
             userLocation: [113.264385, 23.12911],  // 默认广州
             hasLocation: false,
             history: [],                    // 历史记录 [{name, addr, type, lng, lat}]
@@ -962,7 +1358,9 @@
             _searchCacheTime: 0,
             _searchCacheValidMs: 5 * 60 * 1000,
             // 请求超时定时器
-            _searchTimeoutTimer: null
+            _searchTimeoutTimer: null,
+            // 天气缓存
+            _weatherCache: null
         };
 
         /* ========================================
@@ -995,7 +1393,10 @@
                 localStorage.setItem('gd_nav_settings', JSON.stringify({
                     trafficOn: S.trafficOn,
                     currentMapType: S.currentMapType,
-                    currentTheme: S.currentTheme
+                    currentTheme: S.currentTheme,
+                    currentCity: S.currentCity || '广州',
+                    currentCityLngLat: S.currentCityLngLat || S.userLocation,
+                    currentSearchType: S.currentSearchType || null
                 }));
             } catch(e) {}
         }
@@ -1004,6 +1405,304 @@
                 const data = localStorage.getItem('gd_nav_settings');
                 return data ? JSON.parse(data) : {};
             } catch(e) { return {}; }
+        }
+
+        /* ========================================
+           Loading 加载动画
+           ======================================== */
+        function showLoading(text) {
+            const el = $('loadingOverlay');
+            const textEl = $('loadingText');
+            if (el) {
+                if (textEl) textEl.textContent = text || '加载中...';
+                el.classList.add('show');
+            }
+        }
+        function hideLoading() {
+            const el = $('loadingOverlay');
+            if (el) el.classList.remove('show');
+        }
+
+        /* ========================================
+           页面可见性变化监听（内存优化）
+           页面切后台时清理不必要的监听和定时器
+           ======================================== */
+        let _backgroundTimers = [];
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // 页面切后台：暂停测距提示动画、清理搜索超时
+                clearTimeout(S._searchTimeoutTimer);
+                S._searchTimeoutTimer = null;
+                // 隐藏loading，防止后台一直loading
+                hideLoading();
+            } else {
+                // 页面恢复前台：重置软键盘状态
+                if (S.map && typeof S.map.resize === 'function') {
+                    S.map.resize();
+                }
+            }
+        });
+
+        /* ========================================
+           城市数据与弹窗
+           ======================================== */
+        const CITY_DATA = [
+            { province: '热门城市', cities: [
+                { name: '北京', lnglat: [116.407387, 39.904179] },
+                { name: '上海', lnglat: [121.473701, 31.230416] },
+                { name: '广州', lnglat: [113.264385, 23.12911] },
+                { name: '深圳', lnglat: [114.057868, 22.543099] },
+                { name: '杭州', lnglat: [120.153576, 30.287459] },
+                { name: '成都', lnglat: [104.065735, 30.659462] },
+                { name: '重庆', lnglat: [106.504962, 29.533155] },
+                { name: '武汉', lnglat: [114.298572, 30.584355] },
+                { name: '西安', lnglat: [108.948024, 34.263161] },
+                { name: '南京', lnglat: [118.767413, 32.041544] },
+                { name: '苏州', lnglat: [120.585315, 31.298886] },
+                { name: '天津', lnglat: [117.190182, 39.125596] }
+            ]},
+            { province: '广东', cities: [
+                { name: '广州', lnglat: [113.264385, 23.12911] },
+                { name: '深圳', lnglat: [114.057868, 22.543099] },
+                { name: '东莞', lnglat: [113.751765, 23.020534] },
+                { name: '佛山', lnglat: [113.121816, 23.028762] },
+                { name: '珠海', lnglat: [113.576676, 22.270705] },
+                { name: '中山', lnglat: [113.3926, 22.5169] },
+                { name: '惠州', lnglat: [114.415082, 23.111427] }
+            ]},
+            { province: '华东', cities: [
+                { name: '上海', lnglat: [121.473701, 31.230416] },
+                { name: '南京', lnglat: [118.767413, 32.041544] },
+                { name: '苏州', lnglat: [120.585315, 31.298886] },
+                { name: '杭州', lnglat: [120.153576, 30.287459] },
+                { name: '宁波', lnglat: [121.549792, 29.868388] },
+                { name: '无锡', lnglat: [120.301663, 31.574729] },
+                { name: '合肥', lnglat: [117.283042, 31.86119] },
+                { name: '福州', lnglat: [119.296494, 26.074433] },
+                { name: '厦门', lnglat: [118.089425, 24.479834] },
+                { name: '青岛', lnglat: [120.355173, 36.082982] },
+                { name: '济南', lnglat: [117.000923, 36.675807] }
+            ]},
+            { province: '华北', cities: [
+                { name: '北京', lnglat: [116.407387, 39.904179] },
+                { name: '天津', lnglat: [117.190182, 39.125596] },
+                { name: '石家庄', lnglat: [114.502461, 38.045474] },
+                { name: '太原', lnglat: [112.549248, 37.857014] }
+            ]},
+            { province: '华中', cities: [
+                { name: '武汉', lnglat: [114.298572, 30.584355] },
+                { name: '长沙', lnglat: [112.982279, 28.19409] },
+                { name: '郑州', lnglat: [113.665412, 34.757975] },
+                { name: '南昌', lnglat: [115.892151, 28.676596] }
+            ]},
+            { province: '西南', cities: [
+                { name: '成都', lnglat: [104.065735, 30.659462] },
+                { name: '重庆', lnglat: [106.504962, 29.533155] },
+                { name: '昆明', lnglat: [102.712251, 25.040569] },
+                { name: '贵阳', lnglat: [106.630153, 26.647661] }
+            ]},
+            { province: '西北东北', cities: [
+                { name: '西安', lnglat: [108.948024, 34.263161] },
+                { name: '兰州', lnglat: [103.823557, 36.058039] },
+                { name: '沈阳', lnglat: [123.429096, 41.796767] },
+                { name: '大连', lnglat: [121.614682, 38.914003] },
+                { name: '哈尔滨', lnglat: [126.642464, 45.756967] }
+            ]}
+        ];
+
+        // 渲染城市列表
+        function renderCityList(filter) {
+            const container = $('cityPanelContent');
+            let html = '';
+            const keyword = (filter || '').toLowerCase().trim();
+
+            CITY_DATA.forEach(group => {
+                let matchedCities = group.cities;
+                if (keyword) {
+                    matchedCities = group.cities.filter(c => c.name.toLowerCase().includes(keyword));
+                }
+                if (matchedCities.length > 0) {
+                    html += `<div class="city-province-group">
+                        <div class="city-province-title">${group.province}</div>
+                        <div class="city-grid">
+                            ${matchedCities.map(c => `
+                                <div class="city-item ${c.name === S.currentCity ? 'active' : ''}" data-name="${c.name}" data-lng="${c.lnglat[0]}" data-lat="${c.lnglat[1]}">
+                                    ${c.name}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                }
+            });
+
+            if (!html) {
+                html = '<div style="padding:40px;text-align:center;color:var(--text-3);font-size:13px;">未找到匹配的城市</div>';
+            }
+
+            container.innerHTML = html;
+
+            // 绑定城市点击事件
+            container.querySelectorAll('.city-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const name = this.dataset.name;
+                    const lng = parseFloat(this.dataset.lng);
+                    const lat = parseFloat(this.dataset.lat);
+                    selectCity(name, [lng, lat]);
+                });
+            });
+        }
+
+        // 城市选择
+        function selectCity(name, lnglat) {
+            S.currentCity = name;
+            S.currentCityLngLat = lnglat;
+            $('cityName').textContent = name;
+
+            // localStorage缓存
+            try {
+                localStorage.setItem('gd_nav_city', JSON.stringify({ name, lnglat }));
+            } catch(e) {}
+
+            // 平移地图
+            if (S.map) {
+                S.map.setCenter(lnglat);
+                S.map.setZoom(12);
+            }
+
+            // 清除旧的搜索结果和天气缓存
+            S._searchCache = null;
+            S._weatherCache = null;
+            S._weatherCacheTime = 0;
+
+            // 关闭弹窗
+            hideCityPanel();
+
+            // 刷新天气
+            fetchWeather(name);
+
+            toast('已切换至' + name);
+        }
+
+        function showCityPanel() {
+            $('cityPanelOverlay').classList.add('show');
+            $('cityPanel').classList.add('show');
+            renderCityList();
+        }
+
+        function hideCityPanel() {
+            $('cityPanelOverlay').classList.remove('show');
+            $('cityPanel').classList.remove('show');
+            $('citySearchInput').value = '';
+        }
+
+        // 从localStorage加载城市
+        function loadCity() {
+            try {
+                // 优先从主settings读取（新版）
+                const settings = loadSettings();
+                if (settings.currentCity) {
+                    S.currentCity = settings.currentCity;
+                    S.currentCityLngLat = settings.currentCityLngLat || S.userLocation;
+                    $('cityName').textContent = S.currentCity;
+                    return;
+                }
+                // 向后兼容：旧版独立key
+                const data = localStorage.getItem('gd_nav_city');
+                if (data) {
+                    const city = JSON.parse(data);
+                    if (city.name && city.lnglat) {
+                        S.currentCity = city.name;
+                        S.currentCityLngLat = city.lnglat;
+                        $('cityName').textContent = city.name;
+                    }
+                }
+            } catch(e) {}
+        }
+
+        /* ========================================
+           天气API
+           ======================================== */
+        // 天气图标映射
+        const WEATHER_ICONS = {
+            '晴': '☀️',
+            '多云': '⛅',
+            '阴': '☁️',
+            '小雨': '🌦️',
+            '中雨': '🌧️',
+            '大雨': '🌧️',
+            '雷阵雨': '⛈️',
+            '雪': '❄️',
+            '雾': '🌫️',
+            '霾': '😷'
+        };
+
+        // AQI颜色映射
+        function getAqiColor(aqi) {
+            if (aqi <= 50) return '#00e400'; // 优
+            if (aqi <= 100) return '#ffff00'; // 良
+            if (aqi <= 150) return '#ff7e00'; // 轻度
+            if (aqi <= 200) return '#ff0000'; // 中度
+            return '#8f3f97'; // 重度
+        }
+
+        function getAqiLevel(aqi) {
+            if (aqi <= 50) return '优';
+            if (aqi <= 100) return '良';
+            if (aqi <= 150) return '轻度';
+            if (aqi <= 200) return '中度';
+            return '重度';
+        }
+
+        // 获取天气数据（使用高德天气API需要key，这里提供降级方案）
+        function fetchWeather(cityName) {
+            const weatherIcon = $('weatherIcon');
+            const weatherTemp = $('weatherTemp');
+            const weatherAqi = $('weatherAqi');
+
+            // 检查天气缓存（5分钟内有效）
+            if (S._weatherCache && S._weatherCacheTime && (Date.now() - S._weatherCacheTime) < 5 * 60 * 1000) {
+                const w = S._weatherCache;
+                weatherIcon.textContent = WEATHER_ICONS[w.weather] || '⛅';
+                weatherTemp.textContent = w.temp + '°';
+                weatherAqi.style.background = getAqiColor(w.aqi);
+                weatherAqi.textContent = getAqiLevel(w.aqi);
+                weatherAqi.style.color = (w.aqi <= 100 && w.aqi > 50) ? '#333' : '#fff';
+                return;
+            }
+
+            // 设置加载状态
+            weatherIcon.textContent = '⏳';
+            weatherTemp.textContent = '--°';
+            weatherAqi.style.background = '#ccc';
+            weatherAqi.textContent = '--';
+            weatherAqi.style.color = '#fff';
+
+            // 演示数据（实际应接入天气API）
+            const fallbackWeather = {
+                '北京': { weather: '晴', temp: 18, aqi: 65 },
+                '上海': { weather: '多云', temp: 22, aqi: 55 },
+                '广州': { weather: '多云', temp: 26, aqi: 50 },
+                '深圳': { weather: '晴', temp: 28, aqi: 45 },
+                '杭州': { weather: '阴', temp: 20, aqi: 58 },
+                '成都': { weather: '小雨', temp: 18, aqi: 75 },
+                '重庆': { weather: '阴', temp: 21, aqi: 68 },
+                '武汉': { weather: '多云', temp: 22, aqi: 70 },
+                '西安': { weather: '晴', temp: 15, aqi: 85 },
+                '南京': { weather: '多云', temp: 21, aqi: 60 },
+                '苏州': { weather: '晴', temp: 22, aqi: 55 },
+                '天津': { weather: '多云', temp: 17, aqi: 90 }
+            };
+
+            const w = fallbackWeather[cityName] || { weather: '多云', temp: 20 + Math.floor(Math.random() * 10), aqi: 50 + Math.floor(Math.random() * 50) };
+
+            weatherIcon.textContent = WEATHER_ICONS[w.weather] || '⛅';
+            weatherTemp.textContent = w.temp + '°';
+            weatherAqi.style.background = getAqiColor(w.aqi);
+            weatherAqi.textContent = getAqiLevel(w.aqi);
+            weatherAqi.style.color = (w.aqi <= 100 && w.aqi > 50) ? '#333' : '#fff';
+
+            S._weatherCache = w;
+            S._weatherCacheTime = Date.now();
         }
 
         function showPanel(panelType) {
@@ -1107,10 +1806,32 @@
                     $('cityName').textContent = result.addressComponent.city || '广州';
                     toast('定位成功');
                 } else {
-                    // 定位失败，保持默认位置（广州），仍可手动搜索
+                    // 定位失败，保持默认位置（广州），可手动搜索
                     S.hasLocation = false;
-                    $('navStartInput').value = '定位失败';
-                    toast('定位失败，请手动输入起点');
+                    $('navStartInput').value = '定位失败，点击重试';
+                    $('navStartInput').style.color = 'var(--danger)';
+                    $('navStartInput').style.cursor = 'pointer';
+                    // 点击输入框重试定位
+                    $('navStartInput').onclick = function() {
+                        if (S.hasLocation) return;
+                        this.value = '定位中...';
+                        this.style.color = '';
+                        geolocation.getCurrentPosition(function(s2, r2) {
+                            if (s2 === 'complete') {
+                                S.userLocation = [r2.position.lng, r2.position.lat];
+                                S.hasLocation = true;
+                                $('navStartInput').value = '我的位置';
+                                $('navStartInput').style.color = '';
+                                $('navStartInput').onclick = null;
+                                toast('定位成功');
+                            } else {
+                                $('navStartInput').value = '定位失败，点击重试';
+                                $('navStartInput').style.color = 'var(--danger)';
+                                toast('定位失败，请手动输入起点或切换城市');
+                            }
+                        });
+                    };
+                    toast('定位失败，请手动输入起点或切换城市');
                 }
             });
 
@@ -1120,7 +1841,7 @@
             // 从localStorage恢复图层、路况、主题状态
             const settings = loadSettings();
             if (settings.trafficOn) {
-                S.trafficOn = false;  // 先设为false，toggleTraffic会切换为true
+                S.trafficOn = false;
                 toggleTraffic();
             }
             if (settings.currentMapType && settings.currentMapType !== 'normal') {
@@ -1128,6 +1849,27 @@
             }
             if (settings.currentTheme && settings.currentTheme !== 'normal') {
                 switchTheme(settings.currentTheme);
+            }
+
+            // 从localStorage恢复城市并获取天气
+            loadCity();
+            // 地图中心平移到缓存的城市
+            if (S.currentCityLngLat) {
+                S.map.setCenter(S.currentCityLngLat);
+                S.userLocation = S.currentCityLngLat;
+            }
+            fetchWeather(S.currentCity);
+
+            // 恢复搜索类型，自动搜索
+            if (settings.currentSearchType && (settings.currentSearchType === 'parking' || settings.currentSearchType === 'charging')) {
+                S.currentSearchType = settings.currentSearchType;
+                const target = S.currentSearchType.charAt(0).toUpperCase() + S.currentSearchType.slice(1);
+                // 高亮快捷图标
+                document.querySelectorAll('.quick-icon').forEach(el => el.classList.remove('active'));
+                const activeId = S.currentSearchType === 'parking' ? 'quickParking' : 'quickCharge';
+                document.getElementById(activeId) && document.getElementById(activeId).classList.add('active');
+                // 触发搜索
+                searchNearby(S.currentSearchType);
             }
 
             toast('地图加载完成');
@@ -1224,6 +1966,7 @@
             if (!S.map) { toast('地图未加载完成'); return; }
             
             S.currentSearchType = type;
+            saveSettings();  // 持久化搜索类型
             
             // 更新快捷图标状态
             document.querySelectorAll('.quick-icon').forEach(el => el.classList.remove('active'));
@@ -1251,17 +1994,20 @@
                 category: category  // 高德API的category参数，按POI分类过滤
             });
 
+            showLoading('搜索中...');
             toast('正在搜索周边' + (type === 'parking' ? '停车场' : '充电站') + '...');
 
             // 10秒超时处理
             clearTimeout(S._searchTimeoutTimer);
             S._searchTimeoutTimer = setTimeout(() => {
                 ps.cancelSearch();
+                hideLoading();
                 toast('搜索超时，请检查网络后重试');
             }, 10000);
 
             ps.searchNearBy(keyword, new AMap.LngLat(S.userLocation[0], S.userLocation[1]), 5000, function(status, result) {
                 clearTimeout(S._searchTimeoutTimer);
+                hideLoading();
                 if (status === 'complete' && result.poiList && result.poiList.pois) {
                     // 二次过滤：只保留真正的停车场/充电站，作为双保险
                     const filtered = result.poiList.pois.filter(poi => {
@@ -1293,19 +2039,21 @@
         function searchByKeyword(keyword) {
             if (!keyword.trim()) return;
             
+            showLoading('搜索中...');
             const ps = new AMap.PlaceSearch({
                 pageSize: 20,
                 extensions: 'all',
-                city: '广州'
+                city: S.currentCity || '广州'
             });
 
             ps.search(keyword, function(status, result) {
+                hideLoading();
                 if (status === 'complete' && result.poiList && result.poiList.pois) {
                     // 只保留停车场和充电站
                     const filtered = result.poiList.pois.filter(poi => {
                         const name = (poi.name || '').toLowerCase();
                         const type = (poi.type || '').toLowerCase();
-                        return name.includes('停车场') || name.includes('停车') || 
+                        return name.includes('停车场') || name.includes('停车') ||
                                name.includes('充电') || name.includes('充电站') || name.includes('充电桩') ||
                                type.includes('停车场') || type.includes('充电');
                     });
@@ -1315,6 +2063,9 @@
                     }
                     
                     renderResults(filtered, keyword.includes('充电') ? 'charging' : 'parking');
+                } else {
+                    hideLoading();
+                    toast('未找到匹配地点，请尝试其他关键词');
                 }
             });
         }
@@ -1564,12 +2315,14 @@
                 S.driving.setPolicy(routePolicy);
             }
 
+            showLoading('路线规划中...');
             toast('正在规划路线...');
 
             S.driving.search(
                 new AMap.LngLat(S._startPoint.lng, S._startPoint.lat),
                 new AMap.LngLat(S._endPoint.lng, S._endPoint.lat),
                 function(status, result) {
+                    hideLoading();
                     if (status === 'complete' && result.routes && result.routes.length > 0) {
                         renderRoutes(result.routes);
                     } else if (status === 'complete' && (!result.routes || result.routes.length === 0)) {
@@ -1668,56 +2421,164 @@
         document.addEventListener('DOMContentLoaded', function() {
             initMap();
 
-            // 页面卸载时清理定时器，防止内存泄漏
+            // 页面卸载时清理定时器和监听，防止内存泄漏
             window.addEventListener('beforeunload', function() {
+                // 清理所有定时器
                 clearTimeout(S.searchTimer);
                 clearTimeout(S._searchTimeoutTimer);
                 clearTimeout(S._toastTimer);
+                // 取消所有待处理请求
+                _backgroundTimers.forEach(t => clearTimeout(t));
+                // 隐藏loading，防止页面关闭后仍在后台loading
+                hideLoading();
             });
 
-            // 软键盘弹出监听：仅压缩搜索区，地图尺寸固定
-            let lastHeight = window.innerHeight;
-            window.addEventListener('resize', function() {
-                const newHeight = window.innerHeight;
-                if (newHeight !== lastHeight) {
-                    lastHeight = newHeight;
-                    // 当软键盘弹出时，地图容器高度不变，搜索区域自动被压缩
-                    const searchContainer = document.querySelector('.search-container');
-                    if (searchContainer) {
-                        if (newHeight < 500) {
-                            searchContainer.style.transform = 'scale(0.85)';
-                            searchContainer.style.transformOrigin = 'top left';
-                        } else {
-                            searchContainer.style.transform = 'scale(1)';
-                        }
-                    }
+            // 软键盘弹出监听：地图、底部弹窗高度锁定不变，仅搜索栏微调
+            // 使用 visualViewport API 检测真实软键盘状态，兼容安卓/iOS/微信/UC/X5
+            const initialHeight = window.innerHeight;
+            const visualViewportSupported = window.visualViewport !== undefined;
+
+            function handleKeyboardState() {
+                // 优先使用visualViewport，更精确
+                let viewportHeight;
+                if (visualViewportSupported) {
+                    viewportHeight = window.visualViewport.height;
+                } else {
+                    viewportHeight = window.innerHeight;
                 }
+
+                // 计算高度变化百分比
+                const ratio = viewportHeight / initialHeight;
+                const isKeyboardOpen = ratio < 0.75;
+
+                // 搜索栏：软键盘弹出时字号缩小
+                const topSearchInput = document.querySelector('.top-search-input');
+                const topSearchBox = document.querySelector('.top-search-box');
+                if (topSearchInput) {
+                    topSearchInput.style.fontSize = isKeyboardOpen ? '13px' : '';
+                }
+                if (topSearchBox) {
+                    topSearchBox.style.height = isKeyboardOpen ? '36px' : '';
+                }
+
+                // 地图容器：强制锁定高度，不随软键盘收缩
+                const map = document.getElementById('map');
+                if (map) {
+                    map.style.height = '100vh';
+                    map.style.height = '100dvh';
+                }
+
+                // 底部弹窗：锁定高度，不随软键盘上移
+                const cityPanel = document.querySelector('.city-panel');
+                if (cityPanel && cityPanel.classList.contains('show')) {
+                    // 保持弹窗的固定高度百分比
+                    cityPanel.style.height = '65vh';
+                }
+                const leftPanel = document.querySelector('.left-panel');
+                if (leftPanel && leftPanel.classList.contains('show')) {
+                    leftPanel.style.height = '65vh';
+                }
+            }
+
+            // window resize 监听（兼容旧版浏览器）
+            let resizeTimer = null;
+            window.addEventListener('resize', function() {
+                if (resizeTimer) clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleKeyboardState, 100);
             });
+
+            // visualViewport 专项监听（iOS Safari / 微信WKWebView最准确）
+            if (visualViewportSupported) {
+                window.visualViewport.addEventListener('resize', function() {
+                    handleKeyboardState();
+                    // 同步地图可视区域，防止高德地图错位
+                    if (S.map && typeof S.map.resize === 'function') {
+                        S.map.resize();
+                    }
+                });
+
+                window.visualViewport.addEventListener('scroll', function() {
+                    // iOS软键盘弹出时，页面可能发生轻微滚动，重置为0
+                    window.scrollTo(0, 0);
+                });
+            }
+
+            // 横竖屏切换自适应：重置所有面板高度、地图尺寸、抽屉档位
+            function handleOrientationChange() {
+                setTimeout(function() {
+                    // 重置地图尺寸
+                    if (S.map && typeof S.map.resize === 'function') {
+                        S.map.resize();
+                    }
+
+                    // 重置面板高度：竖屏65vh，横屏70vh
+                    const isLandscape = window.innerWidth > window.innerHeight;
+                    const panelHeight = isLandscape ? '70vh' : '65vh';
+
+                    document.querySelectorAll('.city-panel, .left-panel').forEach(panel => {
+                        panel.style.height = panelHeight;
+                    });
+
+                    // 重置body滚动位置
+                    window.scrollTo(0, 0);
+                    document.body.scrollTop = 0;
+
+                    toast(isLandscape ? '已切换横屏' : '已切换竖屏');
+                }, 300);
+            }
+
+            // orientationchange + resize 双通道监听
+            window.addEventListener('orientationchange', handleOrientationChange);
+
+            // ===== 全局防抖包装器（200ms）=====
+            const _debouncedSwitchMap = debounce(type => switchMapType(type), 200);
+            const _debouncedSwitchTheme = debounce(theme => switchTheme(theme), 200);
+            const _debouncedSearchNearby = debounce(type => searchNearby(type), 200);
+            const _debouncedSearchKeyword = debounce(kw => {
+                $('suggestions').classList.remove('show');
+                searchByKeyword(kw);
+            }, 200);
+            const _debouncedShowPanel = debounce(type => showPanel(type), 200);
+            const _debouncedToggleRanging = debounce(() => toggleRanging(), 200);
 
             // 顶部按钮（防抖200ms）
             $('btnTraffic').addEventListener('click', _debouncedTraffic);
-            $('btnRanging').addEventListener('click', toggleRanging);
-            $('btnLayers').addEventListener('click', () => showPanel('layer'));
-            
+            $('btnRanging').addEventListener('click', _debouncedToggleRanging);
+            $('btnLayers').addEventListener('click', () => _debouncedShowPanel('layer'));
+
+            // 城市天气模块点击打开城市选择
+            $('citySelector').addEventListener('click', showCityPanel);
+            $('cityPanelClose').addEventListener('click', hideCityPanel);
+            $('cityPanelOverlay').addEventListener('click', hideCityPanel);
+
+            // 城市搜索输入框（已自带input事件，无需防抖）
+            $('citySearchInput').addEventListener('input', function() {
+                renderCityList(this.value);
+            });
+
+            // 城市弹窗esc关闭
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideCityPanel();
+                }
+            });
+
             // 测距退出按钮
             $('btnExitRanging').addEventListener('click', function() {
                 if ($('btnRanging').classList.contains('active')) {
-                    toggleRanging();
+                    _debouncedToggleRanging();
                 }
             });
-            
-            // 搜索框
+
+            // 搜索框（防抖200ms）
             $('searchBtn').addEventListener('click', () => {
                 const kw = $('searchInput').value.trim();
-                if (kw) {
-                    $('suggestions').classList.remove('show');
-                    searchByKeyword(kw);
-                }
+                if (kw) _debouncedSearchKeyword(kw);
             });
             $('searchInput').addEventListener('keyup', function(e) {
                 if (e.key === 'Enter') {
-                    $('suggestions').classList.remove('show');
-                    searchByKeyword(this.value);
+                    const kw = this.value.trim();
+                    if (kw) _debouncedSearchKeyword(kw);
                 } else {
                     clearTimeout(S.searchTimer);
                     S.searchTimer = setTimeout(() => showSuggestions(this.value), 300);
@@ -1730,15 +2591,55 @@
             // 点击地图外关闭联想
             S.map && S.map.on('click', () => $('suggestions').classList.remove('show'));
 
-            // 快捷图标
-            $('quickCharge').addEventListener('click', () => searchNearby('charging'));
-            $('quickParking').addEventListener('click', () => searchNearby('parking'));
+            // 快捷图标（防抖200ms）
+            $('quickCharge').addEventListener('click', () => _debouncedSearchNearby('charging'));
+            $('quickParking').addEventListener('click', () => _debouncedSearchNearby('parking'));
 
             // 左侧面板
             $('leftPanelClose').addEventListener('click', hidePanel);
             $('leftPanelOverlay').addEventListener('click', hidePanel);
-            $('btnNavigation').addEventListener('click', () => showPanel('nav'));
+            $('btnNavigation').addEventListener('click', () => _debouncedShowPanel('nav'));
 
+            // 图层面板内各选项（防抖200ms）
+            document.querySelectorAll('.layer-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const id = this.id;
+                    if (id === 'layerNormal') _debouncedSwitchMap('normal');
+                    else if (id === 'layerSatellite') _debouncedSwitchMap('satellite');
+                });
+            });
+            document.querySelectorAll('.theme-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const id = this.id;
+                    if (id === 'themeNormal') _debouncedSwitchTheme('normal');
+                    else if (id === 'themeBlue') _debouncedSwitchTheme('blue');
+                    else if (id === 'themeDark') _debouncedSwitchTheme('dark');
+                });
+            });
+            const trafficSwitchBtn = $('trafficSwitchBtn');
+            if (trafficSwitchBtn) {
+                trafficSwitchBtn.addEventListener('click', _debouncedTraffic);
+            }
+
+            // ===== 手势冲突隔离：内容列表滚动不触发地图操作 =====
+            const gestureIsolationContainers = [
+                'suggestions',
+                'cityPanelContent',
+                'leftPanelContent'
+            ];
+
+            gestureIsolationContainers.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                // PC端滚轮事件阻止冒泡，防止滚动列表同时缩放地图
+                el.addEventListener('wheel', function(e) {
+                    e.stopPropagation();
+                }, { passive: false });
+                // 触摸滚动时阻止冒泡，避免触发地图拖拽
+                el.addEventListener('touchmove', function(e) {
+                    e.stopPropagation();
+                }, { passive: false });
+            });
             // 导航面板
             $('navSwapBtn').addEventListener('click', () => {
                 const temp = S._startPoint;
