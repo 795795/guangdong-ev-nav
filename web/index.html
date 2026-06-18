@@ -3770,7 +3770,6 @@
             window.addEventListener('orientationchange', handleOrientationChange);
 
             // ===== 全局防抖包装器（200ms）=====
-            const _debouncedSwitchMap = debounce(type => switchMapType(type), 200);
             const _debouncedSwitchTheme = debounce(theme => switchTheme(theme), 200);
             const _debouncedSearchNearby = debounce(type => searchNearby(type), 200);
             const _debouncedSearchKeyword = debounce(kw => {
