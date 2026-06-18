@@ -14,30 +14,32 @@
     <meta name="x5-page-mode" content="app">
     <meta name="applicable-device" content="mobile,pc">
     <title>广东新能源导航</title>
-    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=faf78a1b9d57c1e1a88fd9f50c795032&plugin=AMap.PlaceSearch,AMap.Geocoder,AMap.Geolocation,AMap.Driving,AMap.RangingTool,AMap.TileLayer,AMap.MarkerCluster"></script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=faf78a1b9d57c1e1a88fd9f50c795032&plugin=AMap.PlaceSearch,AMap.Geocoder,AMap.Geolocation,AMap.Driving,AMap.RangingTool,AMap.TileLayer,AMap.MarkerCluster" onerror="document.getElementById('map').innerHTML='<div style=&quot;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-2);gap:12px;&quot;><div style=&quot;font-size:48px;&quot;>⚠️</div><div style=&quot;font-size:15px;font-weight:600;&quot;>地图加载失败</div><div style=&quot;font-size:13px;&quot;>请检查网络后</div><button onclick=&quot;location.reload()&quot; style=&quot;margin-top:8px;padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;&quot;>重新加载</button></div>';document.getElementById('map').style.background='#f7f8fa';"></script>
     
     <style>
         :root {
             --primary: #1a73e8;
             --primary-light: rgba(26,115,232,0.08);
             --primary-hover: #1557b0;
-            --success: #34a853;
+            --primary-dark: #0f4a9e;
+            --success: #2ec97d;
             --danger: #ea4335;
-            --bg-soft: #f5f5f5;
-            --text-1: #1f1f1f;
+            --bg-soft: #f7f8fa;
+            --text-1: #202124;
             --text-2: #5f6368;
-            --text-3: #9ca3af;
-            --border: #e0e0e0;
-            --border-light: #f0f0f0;
+            --text-3: #9aa0a6;
+            --border: #dadce0;
+            --border-light: #f1f3f4;
+            --radius-xs: 4px;
             --radius-sm: 6px;
             --radius-md: 8px;
             --radius-lg: 12px;
             --radius-xl: 16px;
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.06);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-            --anim-fast: 0.15s ease;
-            --anim-normal: 0.3s ease;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-lg: 0 4px 20px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.08);
+            --anim-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --anim-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
             --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -45,42 +47,76 @@
             --safe-right: env(safe-area-inset-right, 0px);
         }
         
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            /* 所有元素禁止文本选择/拖拽蓝块，提升点击体验 */
+            -webkit-touch-callout: none;
+        }
+        /* 输入框允许用户选择 */
+        input, textarea, [contenteditable] {
+            -webkit-user-select: auto;
+            user-select: auto;
+        }
         html, body {
             height: 100%;
-            height: 100dvh;
             width: 100%;
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
+        html {
+            /* 禁止双指缩放/双击缩放 */
+            touch-action: manipulation;
+        }
         body {
             background: #fff;
             color: var(--text-1);
+            /* 锁定为视口高度，规避页面回弹 */
+            min-height: 100vh;
+            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             overflow-x: hidden;  /* 禁止横向滚动 */
             overflow-y: hidden;
+            /* 禁止页面下拉回弹 + 弹簧效果 */
             overscroll-behavior: none;
             overscroll-behavior-y: none;
             overscroll-behavior-x: none;
+            /* 移除移动端300ms点击延迟 */
             touch-action: manipulation;
             -webkit-overflow-scrolling: touch;
             -webkit-user-select: none;
             user-select: none;
             -webkit-text-size-adjust: 100%;
             -ms-text-size-adjust: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+        }
+        /* 阻止移动端长按菜单、双指默认缩放 */
+        *:not(input):not(textarea):not([contenteditable]) {
+            -webkit-touch-callout: none;
         }
 
         /* ========== LAYER 1: 全屏地图 ========== */
         #map {
             position: fixed;
             top: 0; left: 0;
+            right: 0; bottom: 0;
             width: 100%;
-            height: 100%;
-            height: 100vh;  /* 兼容旧版安卓 */
-            height: 100dvh; /* 现代浏览器优先，规避软键盘塌陷 */
+            height: 100vh;   /* 兼容旧版安卓 */
+            height: 100dvh;  /* 现代浏览器优先，规避软键盘塌陷 */
             z-index: 1;
             box-sizing: border-box;
+            /* 防止地图被外部拖动触发 */
+            touch-action: none;
         }
 
         /* ========== LAYER 2: 顶部通栏（搜索+城市天气+工具一体化 ========== */
@@ -92,12 +128,14 @@
             height: calc(56px + var(--safe-top));
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.95);
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.96);
             -webkit-backdrop-filter: blur(12px);
             backdrop-filter: blur(12px);
             pointer-events: auto;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 1px 10px rgba(0,0,0,0.04);
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
         }
 
         /* 搜索框：弹性占比最大 */
@@ -107,44 +145,46 @@
             display: flex;
             align-items: center;
             background: #fff;
-            border-radius: var(--radius-md);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            min-height: 44px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 6px rgba(0,0,0,0.04);
+            min-height: 40px;
             padding: 0 4px 0 12px;
             overflow: hidden;
             pointer-events: auto;
+            border: 1px solid rgba(0,0,0,0.06);
         }
         .top-search-icon {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-3);
             flex-shrink: 0;
         }
         .top-search-input {
             flex: 1;
             min-width: 0;
-            height: 40px;
+            height: 36px;
             border: none;
             outline: none;
             font-size: 14px;
             background: transparent;
             padding: 0 8px;
+            color: var(--text-1);
         }
         .top-search-btn {
-            min-height: 44px;
-            min-width: 44px;
+            min-height: 32px;
+            min-width: 60px;
             padding: 0 14px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: var(--radius-sm);
+            border-radius: 6px;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             flex-shrink: 0;
-            transition: background 0.15s ease, transform 0.1s ease;
+            transition: background 0.2s ease, transform 0.1s ease;
         }
         .top-search-btn:hover { background: var(--primary-hover); }
-        .top-search-btn:active { transform: scale(0.96); }
+        .top-search-btn:active { transform: scale(0.96); background: var(--primary-dark); }
 
         /* 搜索联想列表 */
         .suggestions {
@@ -207,15 +247,16 @@
             gap: 6px;
             padding: 6px 10px;
             background: rgba(0,0,0,0.04);
-            border-radius: var(--radius-md);
+            border-radius: 8px;
             cursor: pointer;
             flex-shrink: 0;
             white-space: nowrap;
             min-width: 0;
-            transition: background 0.15s ease;
+            transition: background 0.2s ease, transform 0.1s ease;
+            border: 1px solid transparent;
         }
-        .top-weather:hover { background: rgba(0,0,0,0.07); }
-        .top-weather:active { transform: scale(0.96); }
+        .top-weather:hover { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.04); }
+        .top-weather:active { transform: scale(0.98); }
         .weather-city {
             font-size: 13px;
             font-weight: 600;
@@ -232,39 +273,43 @@
         .weather-aqi {
             font-size: 11px;
             padding: 2px 6px;
-            border-radius: 4px;
+            border-radius: 6px;
             color: #fff;
             font-weight: 500;
             min-width: 24px;
             text-align: center;
+            white-space: nowrap;
         }
         .weather-arrow {
             font-size: 8px;
             color: var(--text-3);
+            flex-shrink: 0;
         }
 
         /* 工具按钮组 */
         .top-actions {
             display: flex;
             align-items: center;
-            gap: 2px;
+            gap: 4px;
             flex-shrink: 0;
+            padding: 0 2px;
         }
         .top-btn {
-            width: 44px; height: 44px;
-            min-width: 44px; min-height: 44px;
+            width: 40px; height: 40px;
+            min-width: 40px; min-height: 40px;
             display: flex; align-items: center; justify-content: center;
-            border-radius: var(--radius-sm);
+            border-radius: 8px;
             background: transparent;
-            border: none;
+            border: 1px solid transparent;
             cursor: pointer;
             font-size: 18px;
-            transition: background 0.15s ease, transform 0.1s ease;
+            transition: background 0.2s ease, transform 0.1s ease, border-color 0.2s ease;
             flex-shrink: 0;
+            color: var(--text-2);
         }
-        .top-btn:hover { background: rgba(0,0,0,0.06); }
-        .top-btn.active { background: var(--primary-light); color: var(--primary); }
-        .top-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.1); }
+        .top-btn:hover { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.04); color: var(--text-1); }
+        .top-btn.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary-light); }
+        .top-btn:active { transform: scale(0.94); background: rgba(0,0,0,0.1); }
 
         /* 移动端：天气模块文字自适应 */
         @media (max-width: 420px) {
@@ -281,29 +326,36 @@
             top: calc(var(--safe-top) + 60px);
             left: 12px;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             z-index: 25;
-            padding: 6px 8px;
-            background: rgba(255,255,255,0.95);
-            border-radius: var(--radius-md);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 6px;
+            background: rgba(255,255,255,0.96);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
             flex-wrap: nowrap;
+            border: 1px solid rgba(0,0,0,0.03);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            pointer-events: auto;
+            touch-action: manipulation;
         }
         .quick-icon {
             display: flex; flex-direction: column;
-            align-items: center; gap: 2px;
-            padding: 6px 12px;
-            border-radius: var(--radius-sm);
+            align-items: center; justify-content: center;
+            gap: 2px;
+            padding: 6px 10px;
+            min-width: 56px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: background 0.15s ease;
+            transition: background var(--anim-fast), transform 0.1s ease;
             white-space: nowrap;
         }
         .quick-icon:hover { background: rgba(0,0,0,0.04); }
         .quick-icon.active { background: var(--primary-light); }
-        .quick-icon span:first-child { font-size: 16px; }
+        .quick-icon span:first-child { font-size: 15px; line-height: 1; }
         .quick-icon span:last-child { font-size: 11px; color: var(--text-2); }
         .quick-icon.active span:last-child { color: var(--primary); }
-        .quick-icon:active { transform: scale(0.95); opacity: 0.8; }
+        .quick-icon:active { transform: scale(0.95); background: rgba(0,0,0,0.06); }
 
         /* 矮屏幕设备适配 */
         @media (max-height: 600px) {
@@ -339,6 +391,11 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            pointer-events: auto;
+            touch-action: pan-y;
+            /* 适配 iPhone 底部小黑条 */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            will-change: transform;
         }
         .city-panel.show { transform: translateY(0); }
 
@@ -564,6 +621,9 @@
             flex-direction: column;
             overflow: hidden;
             pointer-events: auto;
+            touch-action: pan-y;
+            /* 适配 iPhone 底部小黑条 */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
             will-change: transform;
         }
         .left-panel.show { transform: translateY(0); -webkit-transform: translateY(0); }
@@ -626,153 +686,6 @@
             }
         }
 
-        /* ========== 模板M: 移动端点位列表面板 ========== */
-        .poi-list-panel { display: none; }
-        .poi-list-panel.active { display: block; }
-
-        .poi-mobile-filter {
-            display: flex;
-            gap: 8px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-light);
-            margin-bottom: 12px;
-            flex-shrink: 0;
-        }
-        .poi-mobile-filter .filter-tag {
-            flex: 1;
-            padding: 8px 0;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 13px;
-            color: var(--text-2);
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .poi-mobile-filter .filter-tag:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .poi-mobile-filter .filter-tag.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
-        }
-
-        .poi-mobile-list {
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .poi-mobile-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 48px 24px;
-            text-align: center;
-        }
-        .poi-mobile-empty .empty-mobile-icon {
-            font-size: 42px;
-            opacity: 0.4;
-            margin-bottom: 12px;
-        }
-        .poi-mobile-empty .empty-mobile-title {
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--text-1);
-            margin-bottom: 6px;
-        }
-        .poi-mobile-empty .empty-mobile-desc {
-            font-size: 13px;
-            color: var(--text-3);
-            margin-bottom: 16px;
-        }
-        .poi-mobile-empty .empty-mobile-action {
-            padding: 10px 24px;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            border-radius: 20px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 150ms ease;
-        }
-        .poi-mobile-empty .empty-mobile-action:hover { background: var(--primary-hover); }
-        .poi-mobile-empty .empty-mobile-action:active { transform: scale(0.96); }
-
-        .poi-mobile-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            border-bottom: 1px solid var(--border-light);
-            cursor: pointer;
-            transition: background 0.15s ease;
-        }
-        .poi-mobile-item:last-child { border-bottom: none; }
-        .poi-mobile-item:hover { background: var(--bg-soft); }
-        .poi-mobile-item:active { background: rgba(0,0,0,0.05); }
-
-        .poi-mobile-icon {
-            width: 36px; height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-soft);
-            border-radius: 8px;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-        .poi-mobile-icon.charging { color: #34a853; }
-        .poi-mobile-icon.parking { color: #1a73e8; }
-
-        .poi-mobile-content {
-            flex: 1;
-            min-width: 0;
-            padding: 0 12px;
-        }
-        .poi-mobile-name {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-1);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .poi-mobile-addr {
-            font-size: 12px;
-            color: var(--text-3);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-top: 2px;
-        }
-
-        .poi-mobile-distance {
-            font-size: 12px;
-            color: var(--text-3);
-            padding: 0 8px;
-            flex-shrink: 0;
-        }
-
-        .poi-mobile-nav {
-            width: 44px; height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--primary);
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            color: #fff;
-            font-size: 16px;
-            transition: all 0.15s ease;
-            flex-shrink: 0;
-        }
-        .poi-mobile-nav:hover { background: var(--primary-hover); }
-        .poi-mobile-nav:active { transform: scale(0.95); }
-        
         /* ========== 模板A: 导航起终点面板 ========== */
         .nav-panel { display: none; }
         .nav-panel.active { display: block; }
@@ -1143,7 +1056,7 @@
         .map-tools {
             position: fixed;
             right: 16px;
-            bottom: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
             z-index: 25;
             display: flex;
             flex-direction: column;
@@ -1170,24 +1083,27 @@
             position: fixed;
             top: calc(var(--safe-top) + 68px);
             left: 16px;
-            bottom: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
             width: 340px;
             min-width: 280px;
             max-width: 360px;
             background: #fff;
-            border-radius: var(--radius-lg);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08), 0 6px 24px rgba(0,0,0,0.06);
             z-index: 30;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             pointer-events: auto;
-            transform: translateX(0);
-            transition: transform 300ms var(--ease-smooth);
+            transform: translateX(0) translateZ(0);
+            transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
             will-change: transform;
+            border: 1px solid rgba(0,0,0,0.04);
+            /* 隔离列表滚动与地图手势 */
+            touch-action: pan-y;
         }
         .poi-sidebar.collapsed {
-            transform: translateX(calc(-100% - 8px));
+            transform: translateX(calc(-100% - 8px)) translateZ(0);
         }
 
         /* 侧边栏头部 */
@@ -1195,26 +1111,28 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-light);
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
             flex-shrink: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.01), transparent);
         }
         .poi-search-box {
             flex: 1;
             display: flex;
             align-items: center;
             background: var(--bg-soft);
-            border-radius: var(--radius-md);
+            border-radius: 8px;
             padding: 8px 12px;
             gap: 8px;
+            border: 1px solid rgba(0,0,0,0.04);
         }
-        .poi-search-icon { font-size: 14px; color: var(--text-3); }
+        .poi-search-icon { font-size: 13px; color: var(--text-3); }
         .poi-search-input {
             flex: 1;
             background: transparent;
             border: none;
             outline: none;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-1);
         }
         .poi-search-input::placeholder { color: var(--text-3); }
@@ -1225,93 +1143,121 @@
             justify-content: center;
             background: transparent;
             border: none;
-            border-radius: 50%;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 16px;
             color: var(--text-2);
-            transition: all var(--anim-fast);
+            transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
         }
         .poi-close-btn:hover {
             background: var(--bg-soft);
             color: var(--text-1);
         }
+        .poi-close-btn:active { transform: scale(0.92); background: rgba(0,0,0,0.08); }
 
         /* 筛选标签 */
         .poi-filter-bar {
             display: flex;
+            align-items: center;
             gap: 8px;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-light);
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
             flex-shrink: 0;
         }
         .filter-tag {
-            padding: 6px 14px;
+            padding: 5px 12px;
             background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 13px;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 8px;
+            font-size: 12px;
             color: var(--text-2);
             cursor: pointer;
-            transition: all var(--anim-fast);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-weight: 400;
         }
         .filter-tag:hover {
             border-color: var(--primary);
             color: var(--primary);
+            background: rgba(26,115,232,0.04);
         }
+        .filter-tag:active { transform: scale(0.96); }
         .filter-tag.active {
             background: var(--primary);
             border-color: var(--primary);
             color: #fff;
+            font-weight: 500;
         }
 
         /* 列表容器 */
         .poi-list {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
-            padding: 8px;
+            padding: 6px;
+            /* 列表滚动只允许垂直，水平交给地图拖拽 */
+            touch-action: pan-y;
+            overscroll-behavior: contain;
         }
 
         /* 列表条目 */
         .poi-item {
             display: flex;
             align-items: center;
-            padding: 12px;
-            margin-bottom: 4px;
+            padding: 10px 10px;
+            margin-bottom: 2px;
             background: transparent;
-            border-radius: var(--radius-md);
+            border-radius: 8px;
             cursor: pointer;
-            transition: all var(--anim-fast);
+            transition: background 0.2s ease, transform 0.1s ease;
+            border: 1px solid transparent;
         }
         .poi-item:hover {
             background: var(--bg-soft);
+            border-color: rgba(0,0,0,0.03);
+        }
+        .poi-item:active {
+            transform: scale(0.99);
+            background: rgba(0,0,0,0.04);
         }
         .poi-item.active {
-            background: rgba(26,115,232,0.08);
+            background: rgba(26,115,232,0.06);
+            border-color: rgba(26,115,232,0.15);
         }
 
         /* 条目图标 */
         .poi-icon {
-            width: 36px; height: 36px;
+            width: 32px; height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--bg-soft);
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 16px;
             flex-shrink: 0;
+            transition: background 0.2s ease;
         }
-        .poi-icon.charging { color: #34a853; }
-        .poi-icon.parking { color: #1a73e8; }
+        .poi-item:hover .poi-icon { background: rgba(255,255,255,0.8); }
+        .poi-icon.charging {
+            color: #2ec97d;
+            background: rgba(46,201,125,0.1);
+        }
+        .poi-icon.parking {
+            color: #1a73e8;
+            background: rgba(26,115,232,0.1);
+        }
+        .poi-item:hover .poi-icon.charging { background: rgba(46,201,125,0.15); }
+        .poi-item:hover .poi-icon.parking { background: rgba(26,115,232,0.15); }
 
         /* 条目内容 */
         .poi-content {
             flex: 1;
             min-width: 0;
-            padding: 0 12px;
+            padding: 0 10px;
         }
         .poi-name {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             color: var(--text-1);
             overflow: hidden;
@@ -1319,43 +1265,47 @@
             white-space: nowrap;
         }
         .poi-address {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-3);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            margin-top: 2px;
+            margin-top: 3px;
+            word-break: break-all;
         }
 
         /* 距离 */
         .poi-distance {
             font-size: 12px;
-            color: var(--text-3);
+            color: var(--primary);
             padding: 0 8px;
             flex-shrink: 0;
+            font-weight: 500;
+            white-space: nowrap;
         }
 
         /* 导航箭头 */
         .poi-nav-btn {
-            width: 44px; height: 44px;
+            width: 32px; height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--primary);
             border: none;
-            border-radius: 50%;
+            border-radius: 8px;
             cursor: pointer;
             color: #fff;
-            font-size: 16px;
-            transition: all var(--anim-fast);
+            font-size: 14px;
+            transition: background 0.2s ease, transform 0.1s ease;
             flex-shrink: 0;
+            font-weight: 600;
         }
         .poi-nav-btn:hover {
             background: var(--primary-hover);
-            transform: scale(1.05);
         }
         .poi-nav-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.94);
+            background: var(--primary-dark);
         }
 
         /* 空状态 */
@@ -1364,78 +1314,86 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 48px 24px;
+            padding: 56px 24px;
             text-align: center;
         }
         .poi-empty .empty-icon {
-            font-size: 48px;
-            opacity: 0.4;
-            margin-bottom: 12px;
+            font-size: 44px;
+            opacity: 0.35;
+            margin-bottom: 16px;
         }
         .poi-empty .empty-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
             color: var(--text-1);
             margin-bottom: 6px;
         }
         .poi-empty .empty-desc {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-3);
-            margin-bottom: 16px;
+            margin-bottom: 18px;
+            max-width: 220px;
+            line-height: 1.5;
+            word-break: break-word;
         }
         .poi-empty .empty-action {
-            padding: 10px 24px;
+            padding: 8px 22px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: var(--radius-md);
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: all var(--anim-fast);
+            transition: background 0.2s ease, transform 0.1s ease;
         }
         .poi-empty .empty-action:hover {
             background: var(--primary-hover);
         }
         .poi-empty .empty-action:active {
-            transform: scale(0.96);
+            transform: scale(0.95);
+            background: var(--primary-dark);
         }
 
         /* 展开按钮 */
         .poi-expand-btn {
             position: absolute;
-            right: -44px;
+            right: -42px;
             top: 50%;
             transform: translateY(-50%);
-            width: 44px;
-            height: 88px;
+            width: 42px;
+            height: 84px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 4px;
             background: #fff;
-            border: none;
-            border-radius: 0 var(--radius-md) var(--radius-md) 0;
-            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.08);
             cursor: pointer;
             opacity: 0;
             visibility: hidden;
-            transition: all var(--anim-normal);
+            transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-2);
         }
         .poi-sidebar.collapsed .poi-expand-btn {
             opacity: 1;
             visibility: visible;
         }
         .poi-expand-btn:hover {
-            background: var(--bg-soft);
+            background: var(--primary-light);
+            color: var(--primary);
         }
-        .expand-icon { font-size: 14px; color: var(--text-2); }
+        .poi-expand-btn:active { transform: translateY(-50%) scale(0.95); }
+        .expand-icon { font-size: 14px; line-height: 1; }
         .expand-label {
             font-size: 11px;
-            color: var(--text-2);
             writing-mode: vertical-rl;
-            text-orientation: mixed;
+            text-orientation: upright;
+            letter-spacing: 2px;
         }
 
         /* ========== 详情弹窗（极致精简版） ========== */
@@ -1443,17 +1401,20 @@
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(0.9) translateZ(0);
-            width: 320px;
+            transform: translate(-50%, -50%) scale(0.92) translateZ(0);
+            width: 340px;
             max-width: calc(100vw - 32px);
             background: #fff;
-            border-radius: var(--radius-lg);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1), 0 8px 40px rgba(0,0,0,0.08);
             z-index: 500;
             overflow: hidden;
             opacity: 0;
             visibility: hidden;
             transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(0,0,0,0.03);
+            pointer-events: auto;
+            touch-action: manipulation;
         }
         .poi-detail-modal.show {
             opacity: 1;
@@ -1466,8 +1427,9 @@
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            padding: 16px 16px 12px;
-            border-bottom: 1px solid var(--border-light);
+            padding: 18px 16px 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: linear-gradient(to bottom, rgba(26,115,232,0.02), transparent);
         }
         .poi-detail-info {
             flex: 1;
@@ -1475,20 +1437,21 @@
             padding-right: 12px;
         }
         .poi-detail-name {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
             color: var(--text-1);
-            line-height: 1.3;
+            line-height: 1.35;
             overflow: hidden;
-            text-overflow: ellipsis;
+            word-break: break-word;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
         }
         .poi-detail-distance {
             font-size: 13px;
-            color: var(--text-3);
-            margin-top: 4px;
+            color: var(--primary);
+            margin-top: 6px;
+            font-weight: 500;
         }
         .poi-detail-close {
             width: 28px;
@@ -1496,36 +1459,41 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bg-soft);
+            background: transparent;
             border: none;
-            border-radius: 50%;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             color: var(--text-2);
             flex-shrink: 0;
-            transition: all var(--anim-fast);
+            transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
         }
         .poi-detail-close:hover {
-            background: var(--border);
+            background: var(--bg-soft);
             color: var(--text-1);
+        }
+        .poi-detail-close:active {
+            transform: scale(0.92);
+            background: rgba(0,0,0,0.08);
         }
 
         /* 地址和营业时间行 */
         .poi-detail-row {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            font-size: 14px;
+            gap: 10px;
+            padding: 12px 16px;
+            font-size: 13px;
         }
         .poi-detail-row + .poi-detail-row {
-            border-top: 1px solid var(--border-light);
+            border-top: 1px solid rgba(0,0,0,0.04);
         }
         .poi-detail-icon {
-            font-size: 16px;
+            font-size: 14px;
             flex-shrink: 0;
-            width: 20px;
+            width: 18px;
             text-align: center;
+            opacity: 0.6;
         }
         .poi-detail-value {
             flex: 1;
@@ -1533,12 +1501,14 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            word-break: break-all;
         }
 
         /* 底部路线规划按钮 */
         .poi-detail-footer {
-            padding: 16px;
-            padding-top: 8px;
+            padding: 14px 16px 16px;
+            border-top: 1px solid rgba(0,0,0,0.03);
+            background: linear-gradient(to top, rgba(0,0,0,0.01), transparent);
         }
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             .poi-detail-footer {
@@ -1547,22 +1517,24 @@
         }
         .poi-route-btn {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: var(--radius-md);
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all var(--anim-fast);
-            min-height: 48px;
+            transition: background 0.2s ease, transform 0.1s ease;
+            min-height: 44px;
+            letter-spacing: 0.5px;
         }
         .poi-route-btn:hover {
             background: var(--primary-hover);
         }
         .poi-route-btn:active {
             transform: scale(0.98);
+            background: var(--primary-dark);
         }
 
         /* 弹窗遮罩 */
@@ -1573,11 +1545,15 @@
             z-index: 499;
             opacity: 0;
             visibility: hidden;
-            transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .poi-detail-overlay.show {
             opacity: 1;
             visibility: visible;
+            pointer-events: auto;
         }
 
         /* 移动端隐藏侧边栏 */
@@ -1646,11 +1622,11 @@
             visibility: hidden;
             -webkit-transition: opacity 0.15s ease, visibility 0.15s ease;
             transition: opacity 0.15s ease, visibility 0.15s ease;
-            max-width: 320px;
+            max-width: calc(100vw - 32px);
             text-align: center;
             will-change: opacity;
         }
-        .toast.show { opacity: 1; visibility: visible; }
+        .toast.show { opacity: 1; visibility: visible; pointer-events: auto; }
 
         /* ========== Loading 加载中 ========== */
         .loading-overlay {
@@ -1961,26 +1937,6 @@
                 <button class="nav-start-btn" id="navStartBtn">路线规划</button>
             </div>
 
-            <!-- 模板M: 移动端点位列表面板 -->
-            <div class="poi-list-panel" id="poiListPanel">
-                <!-- 筛选标签 -->
-                <div class="poi-mobile-filter">
-                    <button class="filter-tag active" data-filter="distance">距离最近</button>
-                    <button class="filter-tag" data-filter="free">空闲优先</button>
-                    <button class="filter-tag" data-filter="fast">仅快充</button>
-                </div>
-                <!-- 列表容器 -->
-                <div class="poi-mobile-list" id="poiMobileList">
-                    <!-- 空状态 -->
-                    <div class="poi-mobile-empty" id="poiMobileEmpty">
-                        <div class="empty-mobile-icon">📍</div>
-                        <div class="empty-mobile-title">附近暂无充电站 / 停车场</div>
-                        <div class="empty-mobile-desc">可能是搜索范围过小或网络异常，请重试</div>
-                        <button class="empty-mobile-action" id="poiMobileEmptyRetry">重新搜索</button>
-                    </div>
-                </div>
-            </div>
-            
             <!-- 模板B: 图层选择面板 -->
             <div class="layer-panel" id="layerPanel">
                 <div class="layer-section">
@@ -2147,12 +2103,50 @@
         const _debouncedTraffic = debounce(toggleTraffic, 200);
         const _debouncedSwitchMap = debounce(switchMapType, 200);
         
-        function toast(msg, duration) {
+        /* ========================================
+           统一网络状态检查（断网时统一拦截并提示）
+           ======================================== */
+        function checkNetwork(msg) {
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                toast(msg || '网络已断开，请检查网络后重试');
+                return false;
+            }
+            return true;
+        }
+
+        /* ========================================
+           Toast 提示（支持重试按钮兜底）
+           recoverToast(msg, actionLabel, actionFn)
+           ======================================== */
+        function recoverToast(msg, actionLabel, actionFn) {
             const el = $('toast');
-            el.textContent = msg;
-            el.classList.add('show');
             clearTimeout(S._toastTimer);
-            S._toastTimer = setTimeout(() => el.classList.remove('show'), duration || 2000);
+            el.classList.remove('show');
+            el.innerHTML = '';
+            if (actionLabel && actionFn) {
+                // 带操作按钮兜底提示
+                const msgSpan = document.createElement('span');
+                msgSpan.textContent = msg;
+                el.appendChild(msgSpan);
+                const btn = document.createElement('button');
+                btn.textContent = actionLabel;
+                btn.style.cssText = 'margin-left:10px;padding:3px 10px;background:rgba(255,255,255,0.25);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:12px;font-size:13px;cursor:pointer;pointer-events:auto;touch-action:manipulation;';
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    el.classList.remove('show');
+                    if (typeof actionFn === 'function') actionFn();
+                });
+                el.appendChild(btn);
+            } else {
+                el.textContent = msg;
+            }
+            // toast出现后自动隐藏（带操作按钮时停留4秒）
+            S._toastTimer = setTimeout(() => el.classList.remove('show'), actionLabel ? 4000 : 2000);
+            requestAnimationFrame(() => el.classList.add('show'));
+        }
+
+        function toast(msg, duration) {
+            recoverToast(msg);
         }
 
         // localStorage状态读写（图层、路况、主题设置持久化）
@@ -2225,6 +2219,12 @@
             if (!pois || pois.length === 0) {
                 list.innerHTML = '';
                 list.appendChild(empty);
+                // 根据搜索类型显示不同的空状态文案
+                const typeText = type === 'charging' ? '充电站' : '停车场';
+                const emptyTitle = empty.querySelector('.empty-title');
+                const emptyDesc = empty.querySelector('.empty-desc');
+                if (emptyTitle) emptyTitle.textContent = '当前区域暂无' + typeText;
+                if (emptyDesc) emptyDesc.textContent = '可能是搜索范围过小或网络异常，请重试';
                 empty.style.display = 'flex';
                 return;
             }
@@ -2350,103 +2350,6 @@
             overlay.classList.remove('show');
         }
 
-        /* 移动端点位列表面板渲染 */
-        function renderPoiMobileList(pois, type, filterType) {
-            const list = $('poiMobileList');
-            const empty = $('poiMobileEmpty');
-            
-            // 如果没有传入数据，使用缓存数据
-            if (!pois) {
-                pois = S._searchCache?.pois || [];
-            }
-            if (!type) {
-                type = S.currentSearchType || 'charging';
-            }
-            if (!filterType) {
-                filterType = 'distance';
-            }
-
-            if (!pois || pois.length === 0) {
-                list.innerHTML = '';
-                list.appendChild(empty);
-                empty.style.display = 'flex';
-                return;
-            }
-
-            empty.style.display = 'none';
-
-            // 应用筛选
-            let filtered = [...pois];
-            switch (filterType) {
-                case 'distance':
-                    filtered.sort((a, b) => {
-                        const d1 = calculateDistance(S.userLocation, [a.location.lng, a.location.lat]);
-                        const d2 = calculateDistance(S.userLocation, [b.location.lng, b.location.lat]);
-                        return d1 - d2;
-                    });
-                    break;
-                case 'free':
-                    filtered = filtered.filter(p => {
-                        const name = (p.name || '').toLowerCase();
-                        return name.includes('空闲') || name.includes('空') || name.includes('免费');
-                    });
-                    break;
-                case 'fast':
-                    filtered = filtered.filter(p => {
-                        const name = (p.name || '').toLowerCase();
-                        const t = (p.type || '').toLowerCase();
-                        return name.includes('快充') || t.includes('快充');
-                    });
-                    break;
-            }
-
-            const html = filtered.map((poi, index) => {
-                const distance = calculateDistance(S.userLocation, [poi.location.lng, poi.location.lat]);
-                const distanceText = distance < 1 ? (distance * 1000).toFixed(0) + 'm' : distance.toFixed(1) + 'km';
-                const icon = type === 'charging' ? '⚡' : '🅿️';
-                const iconClass = type === 'charging' ? 'charging' : 'parking';
-                
-                return `
-                    <div class="poi-mobile-item" data-index="${index}">
-                        <div class="poi-mobile-icon ${iconClass}">${icon}</div>
-                        <div class="poi-mobile-content">
-                            <div class="poi-mobile-name">${escapeHtml(poi.name)}</div>
-                            <div class="poi-mobile-addr">${escapeHtml(poi.address || poi.location.address || '')}</div>
-                        </div>
-                        <div class="poi-mobile-distance">${distanceText}</div>
-                        <button class="poi-mobile-nav" data-index="${index}">↑</button>
-                    </div>
-                `;
-            }).join('');
-
-            list.innerHTML = html;
-
-            // 绑定点击事件
-            list.querySelectorAll('.poi-mobile-item').forEach((item, index) => {
-                item.addEventListener('click', function(e) {
-                    if (e.target.classList.contains('poi-mobile-nav')) {
-                        // 点击导航箭头
-                        const poi = filtered[index];
-                        showPanel('nav');
-                        $('navEndInput').value = poi.name;
-                        if (S.userLocation && S.hasLocation) {
-                            $('navStartInput').value = '我的位置';
-                        }
-                    } else {
-                        // 点击条目其他部分，显示详情
-                        const poi = filtered[index];
-                        S._selectedPoi = poi;
-                        showPoiDetail(poi, type);
-                        // 地图平移到该点
-                        if (S.map) {
-                            S.map.setCenter([poi.location.lng, poi.location.lat]);
-                            S.map.setZoom(16);
-                        }
-                    }
-                });
-            });
-        }
-
         function savePoiSidebarSettings() {
             const sidebar = $('poiSidebar');
             const activeFilter = document.querySelector('.filter-tag.active')?.dataset.filter || 'distance';
@@ -2530,6 +2433,23 @@
                     fetchWeather(S.currentCity);
                 }
             }
+        });
+
+        /* ========================================
+           全局断网 / 联网事件监听
+           ======================================== */
+        window.addEventListener('online', function() {
+            // 恢复联网：清除天气缓存重拉，提示用户
+            if (S.currentCity) {
+                S._weatherCache = null;
+                S._weatherCacheTime = 0;
+                fetchWeather(S.currentCity);
+            }
+            toast('网络已恢复');
+        });
+        window.addEventListener('offline', function() {
+            // 断网：弹出警告，停止所有搜索/路线规划
+            recoverToast('网络已断开，部分功能暂不可用', '知道了', null);
         });
 
         /* ========================================
@@ -2837,12 +2757,27 @@
 
             // 断网/弱网检查
             if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-                weatherIcon.textContent = '📡';
-                weatherTemp.textContent = '离线';
+                weatherIcon.textContent = '⚠️';
+                weatherTemp.textContent = '--';
                 weatherAqi.style.background = '#9e9e9e';
-                weatherAqi.textContent = '网络异常';
+                weatherAqi.textContent = '离线';
+                weatherAqi.style.color = '#fff';
+                // 离线时点击城市区域可重试
+                const citySel = $('citySelector');
+                if (citySel) {
+                    citySel.style.cursor = 'pointer';
+                    citySel.title = '点击重试加载天气';
+                    citySel.onclick = function() {
+                        S._weatherCache = null;
+                        S._weatherCacheTime = 0;
+                        fetchWeather(cityName);
+                    };
+                }
                 return;
             }
+            // 清除离线重试绑定
+            const citySel = $('citySelector');
+            if (citySel) { citySel.style.cursor = ''; citySel.title = ''; citySel.onclick = null; }
 
             // 演示数据（完整城市映射，保持稳定不变）
             const fallbackWeather = {
@@ -2888,10 +2823,6 @@
             if (panelType === 'nav') $('navPanel').classList.add('active');
             else if (panelType === 'layer') $('layerPanel').classList.add('active');
             else if (panelType === 'route') $('routeResultPanel').classList.add('active');
-            else if (panelType === 'poi') {
-                $('poiListPanel').classList.add('active');
-                renderPoiMobileList();
-            }
         }
 
         function hidePanel() {
@@ -2912,6 +2843,8 @@
            地图初始化
            ======================================== */
         function initMap() {
+            showLoading('地图加载中...');
+
             S.map = new AMap.Map('map', {
                 center: S.userLocation,
                 zoom: 13,
@@ -2977,32 +2910,58 @@
                     $('cityName').textContent = result.addressComponent.city || '广州';
                     toast('定位成功');
                 } else {
-                    // 定位失败，保持默认位置（广州），可手动搜索
+                    // 定位失败：区分超时 / 拒绝 / 未知错误
                     S.hasLocation = false;
                     $('navStartInput').value = '定位失败，点击重试';
                     $('navStartInput').style.color = 'var(--danger)';
                     $('navStartInput').style.cursor = 'pointer';
-                    // 点击输入框重试定位
-                    $('navStartInput').onclick = function() {
+                    // 检测错误类型（高德 result 可能含 info）
+                    const errInfo = (result && result.info) ? result.info.toLowerCase() : '';
+                    let errMsg = '定位失败，请手动输入起点或切换城市';
+                    if (errInfo.includes('timeout') || errInfo.includes('超时')) {
+                        errMsg = '定位超时，请检查定位权限后重试';
+                    } else if (errInfo.includes('permission') || errInfo.includes('拒绝') || errInfo.includes('denied')) {
+                        errMsg = '定位权限被拒绝，请开启定位权限后重试';
+                    }
+                    recoverToast(errMsg, '重试', function() {
                         if (S.hasLocation) return;
-                        this.value = '定位中...';
-                        this.style.color = '';
+                        $('navStartInput').value = '定位中...';
+                        $('navStartInput').style.color = '';
                         geolocation.getCurrentPosition(function(s2, r2) {
                             if (s2 === 'complete') {
                                 S.userLocation = [r2.position.lng, r2.position.lat];
                                 S.hasLocation = true;
                                 $('navStartInput').value = '我的位置';
                                 $('navStartInput').style.color = '';
+                                $('navStartInput').style.cursor = '';
                                 $('navStartInput').onclick = null;
                                 toast('定位成功');
                             } else {
                                 $('navStartInput').value = '定位失败，点击重试';
                                 $('navStartInput').style.color = 'var(--danger)';
-                                toast('定位失败，请手动输入起点或切换城市');
+                                recoverToast('定位失败，请手动输入起点或切换城市', '重试', function() {
+                                    if (S.hasLocation) return;
+                                    $('navStartInput').value = '定位中...';
+                                    $('navStartInput').style.color = '';
+                                    geolocation.getCurrentPosition(function(s3, r3) {
+                                        if (s3 === 'complete') {
+                                            S.userLocation = [r3.position.lng, r3.position.lat];
+                                            S.hasLocation = true;
+                                            $('navStartInput').value = '我的位置';
+                                            $('navStartInput').style.color = '';
+                                            $('navStartInput').style.cursor = '';
+                                            $('navStartInput').onclick = null;
+                                            toast('定位成功');
+                                        } else {
+                                            $('navStartInput').value = '定位失败，请手动输入';
+                                            $('navStartInput').style.color = 'var(--danger)';
+                                            toast('请手动输入起点');
+                                        }
+                                    });
+                                });
                             }
                         });
-                    };
-                    toast('定位失败，请手动输入起点或切换城市');
+                    });
                 }
             });
 
@@ -3044,6 +3003,7 @@
             }
 
             toast('地图加载完成');
+            hideLoading();
         }
 
         /* ========================================
@@ -3059,15 +3019,45 @@
         }
 
         function createMarker(poi, type) {
-            const markerColor = type === 'parking' ? '#1a73e8' : '#34a853';
+            // 充电桩使用绿色系，停车场使用蓝色系，视觉区分清晰
+            const isParking = type === 'parking';
+            const markerColor = isParking ? '#1a73e8' : '#2ec97d';
+            const borderColor = isParking ? '#ffffff' : '#ffffff';
+            const label = isParking ? '🅿 停车' : '⚡ 充电';
+            const shadow = isParking
+                ? '0 1px 3px rgba(26,115,232,0.3), 0 2px 8px rgba(26,115,232,0.2), 0 -2px 0 rgba(26,115,232,0.6) inset'
+                : '0 1px 3px rgba(46,201,125,0.3), 0 2px 8px rgba(46,201,125,0.2), 0 -2px 0 rgba(46,201,125,0.6) inset';
 
             const marker = new AMap.Marker({
                 position: [poi.location.lng, poi.location.lat],
                 title: poi.name,
-                content: type === 'parking'
-                    ? '<div style="background:#1a73e8;color:#fff;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2);border:2px solid #fff;">🅿️ 停车</div>'
-                    : '<div style="background:#34a853;color:#fff;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2);border:2px solid #fff;">⚡ 充电</div>',
-                offset: new AMap.Pixel(-35, -18)
+                content:
+                    '<div style="' +
+                    'background:' + markerColor + ';' +
+                    'color:#fff;' +
+                    'padding:5px 12px 7px;' +
+                    'border-radius:8px;' +
+                    'font-size:12px;' +
+                    'font-weight:600;' +
+                    'white-space:nowrap;' +
+                    'box-shadow:' + shadow + ';' +
+                    'border:2px solid #fff;' +
+                    'transform:translateZ(0);' +
+                    'position:relative;' +
+                    '">' +
+                    label +
+                    '</div>' +
+                    '<div style="' +
+                    'position:absolute;' +
+                    'bottom:-6px;' +
+                    'left:50%;' +
+                    'transform:translateX(-50%);' +
+                    'width:0;height:0;' +
+                    'border-left:5px solid transparent;' +
+                    'border-right:5px solid transparent;' +
+                    'border-top:7px solid #fff;' +
+                    '"></div>',
+                offset: new AMap.Pixel(-40, -28)
             });
 
             // 点击Marker直接打开详情弹窗（替代高德infowindow，样式更统一）
@@ -3095,17 +3085,13 @@
                 return;
             }
 
-            const markerColor = type === 'parking' ? '#1a73e8' : '#34a853';
+            const markerColor = type === 'parking' ? '#1a73e8' : '#2ec97d';
             const newMarkers = pois.map(poi => createMarker(poi, type));
             S.markers = newMarkers;
 
             // 更新PC侧边栏列表
-            if (window.innerWidth > 768 && typeof renderPoiList === 'function') {
+            if (typeof renderPoiList === 'function') {
                 renderPoiList(pois, type);
-            }
-            // 更新移动端列表
-            if (window.innerWidth <= 768 && typeof renderPoiMobileList === 'function') {
-                renderPoiMobileList(pois, type);
             }
 
             // 点聚合（统一使用AMap.MarkerCluster，无论点位数量多少都启用，解决密集点位卡顿问题
@@ -3120,9 +3106,30 @@
                         const count = context.count;
                         // 聚合点尺寸根据数量分级显示不同大小
                         const size = count < 10 ? 36 : count < 50 ? 42 : 48;
+                        // 聚合点阴影颜色与当前搜索类型匹配
+                        const clusterShadow = type === 'parking'
+                            ? '0 2px 10px rgba(26,115,232,0.3), 0 4px 16px rgba(26,115,232,0.2)'
+                            : '0 2px 10px rgba(46,201,125,0.3), 0 4px 16px rgba(46,201,125,0.2)';
                         return new AMap.Marker({
                             position: context.lnglat,
-                            content: '<div style="background:' + markerColor + ';color:#fff;width:' + size + 'px;height:' + size + 'px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.2);border:2px solid #fff;">' + count + '</div>',
+                            content:
+                                '<div style="' +
+                                'background:' + markerColor + ';' +
+                                'color:#fff;' +
+                                'width:' + size + 'px;' +
+                                'height:' + size + 'px;' +
+                                'border-radius:50%;' +
+                                'display:flex;' +
+                                'align-items:center;' +
+                                'justify-content:center;' +
+                                'font-size:13px;' +
+                                'font-weight:700;' +
+                                'box-shadow:' + clusterShadow + ';' +
+                                'border:3px solid #fff;' +
+                                'transform:translateZ(0);' +
+                                '">' +
+                                count +
+                                '</div>',
                             offset: new AMap.Pixel(-size / 2, -size / 2)
                         });
                     }
@@ -3142,7 +3149,9 @@
 
         function searchNearby(type) {
             if (!S.map) { toast('地图未加载完成'); return; }
-            
+            // 断网拦截
+            if (!checkNetwork('网络已断开，无法搜索附近点位')) return;
+
             S.currentSearchType = type;
             saveSettings();  // 持久化搜索类型
             
@@ -3179,6 +3188,7 @@
                 category: category  // 高德API的category参数，按POI分类过滤
             });
 
+            const retryFn = function() { searchNearby(type); };
             showLoading('搜索中...');
             toast('正在搜索周边' + (type === 'parking' ? '停车场' : '充电站') + '...');
 
@@ -3187,7 +3197,7 @@
             S._searchTimeoutTimer = setTimeout(() => {
                 ps.cancelSearch();
                 hideLoading();
-                toast('搜索超时，请检查网络后重试');
+                recoverToast('搜索超时，请检查网络后重试', '重试', retryFn);
             }, 10000);
 
             ps.searchNearBy(keyword, new AMap.LngLat(S.userLocation[0], S.userLocation[1]), 5000, function(status, result) {
@@ -3212,30 +3222,24 @@
                     S._searchCacheTime = now;
                     renderResults(filtered.length > 0 ? filtered : result.poiList.pois, type);
                 } else if (status === 'error' || status === 'no_data') {
-                    // 无数据：展示空状态面板而非只弹toast
+                    // 无数据：空态面板 + 兜底toast+重试
                     clearMarkers();
-                    if (window.innerWidth > 768) {
-                        if (typeof renderPoiList === 'function') renderPoiList([], type);
-                    } else {
-                        if (typeof renderPoiMobileList === 'function') renderPoiMobileList([], type);
-                    }
-                    toast('当前区域无' + (type === 'parking' ? '停车场' : '充电站'));
+                    if (typeof renderPoiList === 'function') renderPoiList([], type);
+                    recoverToast('当前区域无' + (type === 'parking' ? '停车场' : '充电站'), '重新搜索', retryFn);
                 } else {
-                    // 其他错误
+                    // 其他错误或网络问题
                     clearMarkers();
-                    if (window.innerWidth > 768) {
-                        if (typeof renderPoiList === 'function') renderPoiList([], type);
-                    } else {
-                        if (typeof renderPoiMobileList === 'function') renderPoiMobileList([], type);
-                    }
-                    toast('搜索失败，请检查网络后重试');
+                    if (typeof renderPoiList === 'function') renderPoiList([], type);
+                    recoverToast('搜索失败，请检查网络后重试', '重试', retryFn);
                 }
             });
         }
 
         function searchByKeyword(keyword) {
             if (!keyword.trim()) return;
-            
+            if (!checkNetwork('网络已断开，无法搜索地点')) return;
+
+            const retryFn = function() { searchByKeyword(keyword); };
             showLoading('搜索中...');
             const ps = new AMap.PlaceSearch({
                 pageSize: 20,
@@ -3243,7 +3247,15 @@
                 city: S.currentCity || '广州'
             });
 
+            // 10秒超时保护
+            const kwTimer = setTimeout(() => {
+                ps.cancelSearch();
+                hideLoading();
+                recoverToast('搜索超时，请检查网络后重试', '重试', retryFn);
+            }, 10000);
+
             ps.search(keyword, function(status, result) {
+                clearTimeout(kwTimer);
                 hideLoading();
                 if (status === 'complete' && result.poiList && result.poiList.pois) {
                     // 只保留停车场和充电站
@@ -3261,8 +3273,7 @@
                     
                     renderResults(filtered, keyword.includes('充电') ? 'charging' : 'parking');
                 } else {
-                    hideLoading();
-                    toast('未找到匹配地点，请尝试其他关键词');
+                    recoverToast('未找到匹配地点，请尝试其他关键词', '重试', retryFn);
                 }
             });
         }
@@ -3497,7 +3508,10 @@
                 showPanel('nav');
                 return;
             }
+            // 断网拦截
+            if (!checkNetwork('网络已断开，无法规划路线')) return;
             
+            const retryFn = function() { planRoute(policy); };
             const routePolicy = policy !== undefined ? parseInt(policy) : 0;
             
             // 复用现有Driving实例，避免重复创建导致闪烁
@@ -3519,7 +3533,7 @@
             clearTimeout(S._routeTimeoutTimer);
             S._routeTimeoutTimer = setTimeout(() => {
                 hideLoading();
-                toast('路线规划超时，请检查网络后重试');
+                recoverToast('路线规划超时，请检查网络后重试', '重试', retryFn);
             }, 10000);
 
             S.driving.search(
@@ -3532,13 +3546,13 @@
                         renderRoutes(result.routes);
                     } else if (status === 'complete' && (!result.routes || result.routes.length === 0)) {
                         // 驾车路线规划成功但没有可用路线
-                        $('routeList').innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-3); font-size: 14px;">暂无通行路线<br><span style="font-size:12px;margin-top:8px;display:inline-block;">可能起点终点距离过近或无法通行</span></div>';
+                        $('routeList').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-3);font-size:14px;">🛣️ 暂无通行路线<br><span style="font-size:12px;margin-top:8px;display:inline-block;color:var(--text-2);">可能起点终点距离过近或无法通行</span></div>';
                         $('routeActions').style.display = 'none';
-                        toast('暂无通行路线');
+                        recoverToast('暂无通行路线，请尝试其他起终点', '重试', retryFn);
                     } else {
                         // 系统错误
-                        $('routeList').innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-3); font-size: 14px;">路线规划失败<br><span style="font-size:12px;margin-top:8px;display:inline-block;">请检查网络后重试</span></div>';
-                        toast('路线规划失败');
+                        $('routeList').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-3);font-size:14px;">⚠️ 路线规划失败<br><span style="font-size:12px;margin-top:8px;display:inline-block;color:var(--text-2);">请检查网络后重试</span></div>';
+                        recoverToast('路线规划失败，请检查网络后重试', '重试', retryFn);
                     }
                 }
             );
@@ -3820,33 +3834,14 @@
             // 点击地图外关闭联想
             S.map && S.map.on('click', () => $('suggestions').classList.remove('show'));
 
-            // 快捷图标（防抖200ms）
+            // 快捷图标（防抖200ms）- 统一使用PC侧边栏
             $('quickCharge').addEventListener('click', function() {
                 _debouncedSearchNearby('charging');
-                // 根据设备类型决定打开PC侧边栏还是移动端面板
-                if (window.innerWidth <= 768) {
-                    showPanel('poi');
-                } else {
-                    showPoiSidebar();
-                }
+                showPoiSidebar();
             });
             $('quickParking').addEventListener('click', function() {
                 _debouncedSearchNearby('parking');
-                if (window.innerWidth <= 768) {
-                    showPanel('poi');
-                } else {
-                    showPoiSidebar();
-                }
-            });
-
-            // ===== 移动端点位列表面板筛选标签 =====
-            document.querySelectorAll('.poi-mobile-filter .filter-tag').forEach(tag => {
-                tag.addEventListener('click', function() {
-                    document.querySelectorAll('.poi-mobile-filter .filter-tag').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    const filterType = this.dataset.filter;
-                    renderPoiMobileList(null, null, filterType);
-                });
+                showPoiSidebar();
             });
 
             // ===== 抽屉面板顶部拖拽条 =====
@@ -3994,17 +3989,6 @@
                     }
                 });
             }
-            // 移动端空状态重试按钮
-            const mobileRetry = $('poiMobileEmptyRetry');
-            if (mobileRetry) {
-                mobileRetry.addEventListener('click', function() {
-                    if (S.currentSearchType === 'charging' || S.currentSearchType === 'parking') {
-                        _debouncedSearchNearby(S.currentSearchType);
-                    } else {
-                        toast('请先选择搜索类型（充电桩或停车场）');
-                    }
-                });
-            }
             // 详情弹窗关闭
             $('poiDetailClose').addEventListener('click', hidePoiDetail);
             $('poiDetailOverlay').addEventListener('click', hidePoiDetail);
@@ -4050,7 +4034,7 @@
             }
 
             // 列表滚动时阻止触发面板拖拽
-            const listContainers = ['leftPanelContent', 'poiMobileList'];
+            const listContainers = ['leftPanelContent'];
             listContainers.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
@@ -4067,8 +4051,7 @@
             const gestureIsolationContainers = [
                 'suggestions',
                 'cityPanelContent',
-                'leftPanelContent',
-                'poiMobileList'
+                'leftPanelContent'
             ];
 
             gestureIsolationContainers.forEach(id => {
@@ -4174,14 +4157,6 @@
             $('navEndInput').addEventListener('input', function() {
                 $('clearEnd').style.display = this.value ? 'flex' : 'none';
             });
-
-            // 图层面板（防抖200ms）
-            $('layerNormal').addEventListener('click', () => { _debouncedSwitchMap('normal'); });
-            $('layerSatellite').addEventListener('click', () => { _debouncedSwitchMap('satellite'); });
-            $('themeNormal').addEventListener('click', () => switchTheme('normal'));
-            $('themeBlue').addEventListener('click', () => switchTheme('blue'));
-            $('themeDark').addEventListener('click', () => switchTheme('dark'));
-            $('trafficSwitch').addEventListener('click', _debouncedTraffic);
 
             // 路线tab
             document.querySelectorAll('.route-tab').forEach(tab => {
